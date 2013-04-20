@@ -39,7 +39,7 @@ namespace DosDebugger
 
         Disassembler.Disassembler dasm;
 
-        private void btnDisassemble_Click(object sender, EventArgs e)
+        private void btnTest_Click(object sender, EventArgs e)
         {
             //TestDecode(mzFile.Image, mzFile.EntryPoint, mzFile.BaseAddress);
             TestDecode(mzFile.Image, new FarPointer16(baseSegment, 0x17fc), mzFile.BaseAddress);
@@ -226,6 +226,14 @@ namespace DosDebugger
             if (lvProcedures.SelectedIndices.Count == 1)
             {
                 GoToLocation(FarPointer16.Parse(lvProcedures.SelectedItems[0].Text));
+            }
+        }
+
+        private void lvErrors_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvErrors.SelectedIndices.Count == 1)
+            {
+                GoToLocation(FarPointer16.Parse(lvErrors.SelectedItems[0].Text));
             }
         }
     }

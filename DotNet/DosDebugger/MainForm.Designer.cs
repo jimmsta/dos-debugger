@@ -33,7 +33,7 @@
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnMzInfo = new System.Windows.Forms.Button();
-            this.btnDisassemble = new System.Windows.Forms.Button();
+            this.btnTest = new System.Windows.Forms.Button();
             this.btnAnalyze = new System.Windows.Forms.Button();
             this.lvProcedures = new Util.Forms.DoubleBufferedListView();
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -87,15 +87,15 @@
             this.btnMzInfo.UseVisualStyleBackColor = true;
             this.btnMzInfo.Click += new System.EventHandler(this.btnMzInfo_Click);
             // 
-            // btnDisassemble
+            // btnTest
             // 
-            this.btnDisassemble.Location = new System.Drawing.Point(622, 12);
-            this.btnDisassemble.Name = "btnDisassemble";
-            this.btnDisassemble.Size = new System.Drawing.Size(100, 30);
-            this.btnDisassemble.TabIndex = 2;
-            this.btnDisassemble.Text = "Disassemble";
-            this.btnDisassemble.UseVisualStyleBackColor = true;
-            this.btnDisassemble.Click += new System.EventHandler(this.btnDisassemble_Click);
+            this.btnTest.Location = new System.Drawing.Point(622, 12);
+            this.btnTest.Name = "btnTest";
+            this.btnTest.Size = new System.Drawing.Size(100, 30);
+            this.btnTest.TabIndex = 2;
+            this.btnTest.Text = "Test";
+            this.btnTest.UseVisualStyleBackColor = true;
+            this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
             // btnAnalyze
             // 
@@ -117,7 +117,7 @@
             this.lvProcedures.Location = new System.Drawing.Point(12, 48);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(165, 359);
+            this.lvProcedures.Size = new System.Drawing.Size(165, 416);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
@@ -127,7 +127,7 @@
             // columnHeader4
             // 
             this.columnHeader4.Text = "Procedure";
-            this.columnHeader4.Width = 126;
+            this.columnHeader4.Width = 125;
             // 
             // lvErrors
             // 
@@ -140,20 +140,21 @@
             this.lvErrors.Location = new System.Drawing.Point(183, 302);
             this.lvErrors.MultiSelect = false;
             this.lvErrors.Name = "lvErrors";
-            this.lvErrors.Size = new System.Drawing.Size(645, 105);
+            this.lvErrors.Size = new System.Drawing.Size(645, 162);
             this.lvErrors.TabIndex = 6;
             this.lvErrors.UseCompatibleStateImageBehavior = false;
             this.lvErrors.View = System.Windows.Forms.View.Details;
+            this.lvErrors.DoubleClick += new System.EventHandler(this.lvErrors_DoubleClick);
             // 
             // columnHeader5
             // 
             this.columnHeader5.Text = "Location";
-            this.columnHeader5.Width = 126;
+            this.columnHeader5.Width = 125;
             // 
             // columnHeader6
             // 
             this.columnHeader6.Text = "Message";
-            this.columnHeader6.Width = 353;
+            this.columnHeader6.Width = 480;
             // 
             // btnGoTo
             // 
@@ -170,7 +171,10 @@
             this.cbBookmarks.FormattingEnabled = true;
             this.cbBookmarks.Items.AddRange(new object[] {
             "2920:17FC useful routine",
-            "2920:377D jump table",
+            "2920:377D jump table 1",
+            "2920:8B53 jump table 2",
+            "2920:6184 jump table 3",
+            "2920:44B4 jump table 4",
             "2920:7430 program entry"});
             this.cbBookmarks.Location = new System.Drawing.Point(183, 15);
             this.cbBookmarks.Name = "cbBookmarks";
@@ -181,13 +185,13 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(840, 419);
+            this.ClientSize = new System.Drawing.Size(840, 476);
             this.Controls.Add(this.cbBookmarks);
             this.Controls.Add(this.btnGoTo);
             this.Controls.Add(this.lvErrors);
             this.Controls.Add(this.lvProcedures);
             this.Controls.Add(this.btnAnalyze);
-            this.Controls.Add(this.btnDisassemble);
+            this.Controls.Add(this.btnTest);
             this.Controls.Add(this.btnMzInfo);
             this.Controls.Add(this.lvListing);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -206,7 +210,7 @@
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.Button btnMzInfo;
-        private System.Windows.Forms.Button btnDisassemble;
+        private System.Windows.Forms.Button btnTest;
         private System.Windows.Forms.Button btnAnalyze;
         private Util.Forms.DoubleBufferedListView lvProcedures;
         private System.Windows.Forms.ColumnHeader columnHeader4;

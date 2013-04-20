@@ -95,6 +95,16 @@ namespace Disassembler
         {
             return this.EffectiveAddress - other.EffectiveAddress;
         }
+
+        public static bool operator ==(FarPointer16 a, FarPointer16 b)
+        {
+            return a.EffectiveAddress == b.EffectiveAddress;
+        }
+
+        public static bool operator !=(FarPointer16 a, FarPointer16 b)
+        {
+            return a.EffectiveAddress != b.EffectiveAddress;
+        }
     }
 
     /// <summary>
