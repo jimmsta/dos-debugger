@@ -93,17 +93,21 @@ namespace Disassembler
 
         public int CompareTo(FarPointer16 other)
         {
-            return this.EffectiveAddress - other.EffectiveAddress;
+            int cmp = (int)this.segment - (int)other.segment;
+            if (cmp == 0)
+                cmp = (int)this.offset - (int)other.offset;
+            return cmp;
+            // return this.EffectiveAddress - other.EffectiveAddress;
         }
 
         public static bool operator ==(FarPointer16 a, FarPointer16 b)
         {
-            return a.EffectiveAddress == b.EffectiveAddress;
+            return (a.segment == b.segment) && (a.offset == b.offset);
         }
 
         public static bool operator !=(FarPointer16 a, FarPointer16 b)
         {
-            return a.EffectiveAddress != b.EffectiveAddress;
+            return (a.segment != b.segment) || (a.offset != b.offset);
         }
     }
 

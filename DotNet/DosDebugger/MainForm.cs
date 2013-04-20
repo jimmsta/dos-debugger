@@ -22,12 +22,20 @@ namespace DosDebugger
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            lvListing.SetWindowTheme("explorer");
+            //lvListing.SetWindowTheme("explorer");
+            cbBookmarks.SelectedIndex = 1;
             string fileName = @"E:\Dev\Projects\RevEng\data\H.EXE";
+            DoLoadFile(fileName);
+        }
+
+        private void DoLoadFile(string fileName)
+        {
             mzFile = new MZFile(fileName);
             mzFile.Relocate(baseSegment);
             dasm = new Disassembler.Disassembler(mzFile.Image, mzFile.BaseAddress);
-            cbBookmarks.SelectedIndex = 1;
+            lvErrors.Items.Clear();
+            lvListing.Items.Clear();
+            lvProcedures.Items.Clear();
         }
 
         private void btnMzInfo_Click(object sender, EventArgs e)
@@ -271,6 +279,20 @@ namespace DosDebugger
             {
                 GoToLocation(FarPointer16.Parse(lvErrors.SelectedItems[0].Text));
             }
+        }
+
+        private void mnuFileExit_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void mnuFileOpen_Click(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            string fileName = openFileDialog1.FileName;
+            DoLoadFile(fileName);
         }
     }
 }

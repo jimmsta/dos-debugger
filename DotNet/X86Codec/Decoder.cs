@@ -32,6 +32,10 @@ namespace X86Codec
             {
                 return null;
             }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         /// <summary>
