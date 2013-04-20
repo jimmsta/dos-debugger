@@ -83,13 +83,15 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Disassembler\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\Disassembler\Disassembler.csproj">
       <Project>{fe4abc64-1873-4e7d-b930-d50d2e948e1e}</Project>
       <Name>Disassembler</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Util\Util-v2.0.csproj">
+      <Project>{70014904-13e0-4afa-a6dd-0ec93100c3c7}</Project>
+      <Name>Util-v2.0</Name>
     </ProjectReference>
     <ProjectReference Include="..\X86Codec\X86Codec.csproj">
       <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>

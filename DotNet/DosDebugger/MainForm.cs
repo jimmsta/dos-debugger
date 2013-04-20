@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using Disassembler;
 using X86Codec;
+using Util.Forms;
 
 namespace DosDebugger
 {
@@ -21,6 +22,7 @@ namespace DosDebugger
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            lvListing.SetWindowTheme("explorer");
             string fileName = @"E:\Dev\Projects\RevEng\data\H.EXE";
             mzFile = new MZFile(fileName);
             mzFile.Relocate(baseSegment);
@@ -89,14 +91,7 @@ namespace DosDebugger
 
                 System.Diagnostics.Debug.WriteLine(sb.ToString());
 #else
-                ListViewItem item = new ListViewItem();
-                item.Text = string.Format(ip.ToString());
-                item.SubItems.Add(FormatBinary(image, index, instruction.EncodedLength));
-                item.SubItems.Add(instruction.ToString());
-
-                item.UseItemStyleForSubItems = false;
-                item.SubItems[1].BackColor = Color.LightGray;
-                lvListing.Items.Add(item);
+                DisplayInstruction(ip, instruction);
 #endif
                 index += instruction.EncodedLength;
                 ip += instruction.EncodedLength;
@@ -158,8 +153,8 @@ namespace DosDebugger
             item.SubItems.Add(FormatBinary(mzFile.Image, start - mzFile.BaseAddress, instruction.EncodedLength));
             item.SubItems.Add(instruction.ToString());
 
-            item.UseItemStyleForSubItems = false;
-            item.SubItems[1].BackColor = Color.LightGray;
+            //item.UseItemStyleForSubItems = false;
+            //item.SubItems[1].BackColor = Color.LightGray;
             lvListing.Items.Add(item);
         }
     }
