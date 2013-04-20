@@ -137,6 +137,15 @@ namespace DosDebugger
                     i += insn.EncodedLength;
                     inCodeBlock = true;
                 }
+                else if (attr[i].IsBoundary && attr[i].Type == ByteType.Data)
+                {
+                    int j = i + 1;
+                    while (attr[j].Type == ByteType.Data && !attr[j].IsBoundary)
+                        j++;
+                    DisplayData(mzFile.BaseAddress + i, j - i);
+                    i = j;
+                    inCodeBlock = true;
+                }
                 else
                 {
                     if (inCodeBlock)
@@ -172,6 +181,33 @@ namespace DosDebugger
             item.Text = string.Format(start.ToString());
             item.SubItems.Add(FormatBinary(mzFile.Image, start - mzFile.BaseAddress, instruction.EncodedLength));
             item.SubItems.Add(instruction.ToString());
+
+            //item.UseItemStyleForSubItems = false;
+            //item.SubItems[1].BackColor = Color.LightGray;
+            lvListing.Items.Add(item);
+        }
+
+        private void DisplayData(FarPointer16 start, int len)
+        {
+            ListViewItem item = new ListViewItem();
+            item.Text = string.Format(start.ToString());
+            item.SubItems.Add(FormatBinary(mzFile.Image, start - mzFile.BaseAddress, len));
+
+            string data;
+            int i = start - mzFile.BaseAddress;
+            if (len == 1)
+            {
+                data = string.Format("db {0:x2}", mzFile.Image[i]);
+            }
+            else if (len == 2)
+            {
+                data = string.Format("dw {0:x4}", BitConverter.ToUInt16(mzFile.Image, i));
+            }
+            else
+            {
+                data = "** data **";
+            }
+            item.SubItems.Add(data);
 
             //item.UseItemStyleForSubItems = false;
             //item.SubItems[1].BackColor = Color.LightGray;

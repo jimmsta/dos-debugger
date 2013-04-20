@@ -200,13 +200,13 @@ namespace Disassembler
             for (int i = entryPoints.Count - 1; i < entryPoints.Count; i++)
             {
                 XRef xref = entryPoints[i];
-                FarPointer16 pos = xref.Target;
+                FarPointer16 target = xref.Target;
 
                 // If we encounter a xref whose target we don't know, e.g.
                 // in an instruction 
                 //   jmp     word ptr [data_573] 
                 // Skip this xref.
-                if (pos == FarPointer16.Invalid)
+                if (target == FarPointer16.Invalid)
                 {
                     errors.Add(new Error(xref.Source, "Cannot determine the target of this instruction."));
                     continue;
@@ -218,23 +218,76 @@ namespace Disassembler
                 // we push it to the queue but does not process it here.
                 if (xref.Type == XRefType.FunctionCall)
                 {
-                    calls.Add(pos);
+                    calls.Add(target);
                     continue;
                 }
 
-                // If the xref refers to a jump table entry, we delay its
-                // 
-                //TBD;
+                // If the target refers to a jump table entry, we delay its
+                // processing until we have processed all other types of
+                // cross-references. This reduces the chance that we process
+                // past the end of the jump table.
+                if (xref.Type == XRefType.NearJumpTableEntry)
+                {
+                    int iNonJumpTable = i + 1;
+                    for (; iNonJumpTable < entryPoints.Count; iNonJumpTable++)
+                    {
+                        if (entryPoints[iNonJumpTable].Type != XRefType.NearJumpTableEntry)
+                            break;
+                    }
+                    if (iNonJumpTable < entryPoints.Count)
+                    {
+                        XRef t = entryPoints[iNonJumpTable];
+                        entryPoints[iNonJumpTable] = xref;
+                        entryPoints[i] = t;
+                        i--;
+                        continue;
+                    }
+
+                    // Process this one.
+                    int b = target - baseAddress;
+                    if (!(attr[b].Type == ByteType.Unknown &&
+                        attr[b + 1].Type == ByteType.Unknown))
+                        continue;
+
+                    // Mark the jump table entry as data.
+                    attr[b].Type = ByteType.Data;
+                    attr[b].IsBoundary = true;
+                    attr[b + 1].Type = ByteType.Data;
+                    attr[b + 1].IsBoundary = false;
+
+                    // Read the jump offset.
+                    ushort jumpOffset = BitConverter.ToUInt16(image, b);
+
+                    // Add a xref from the jump table entry to the jump 
+                    // target.
+                    entryPoints.Add(new XRef
+                    {
+                        Source = target,
+                        Target = new FarPointer16(target.Segment, jumpOffset),
+                        Type = XRefType.NearJumpTableTarget
+                    });
+
+                    // Add a xref from the JMP instruction to the next jump
+                    // table entry.
+                    entryPoints.Add(new XRef
+                    {
+                        Source = xref.Source,
+                        Target = xref.Target + 2,
+                        Type = XRefType.NearJumpTableEntry
+                    });
+                    continue;
+                }
 
                 // Analyze this code block.
-                AnalyzeCodeBlock(pos, entryPoints);
+                AnalyzeCodeBlock(target, entryPoints);
             }
         }
 
         /// <summary>
         /// Analyzes a continuous block of code until end-of-input, analyzed
         /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT. Conditional jumps and calls are recorded.
+        /// HLT. Conditional jumps and calls are recorded but they do not
+        /// terminate the block.
         /// </summary>
         private void AnalyzeCodeBlock(FarPointer16 pos, List<XRef> xrefs)
         {
@@ -246,26 +299,20 @@ namespace Disassembler
                 DecodeResult ret = TryDecodeInstruction(pos, out insn);
                 if (ret == DecodeResult.AlreadyAnalyzed)
                 {
-                    //if (verbose)
-                    //    printf("Already analyzed.\n");
                     break;
                 }
                 if (ret == DecodeResult.UnexpectedData)
                 {
-                    //printf("Jump into data!\n");
                     errors.Add(new Error(pos, ret.ToString()));
                     break;
                 }
                 if (ret == DecodeResult.UnexpectedCode)
                 {
-                    //fprintf(stderr, "%04X:%04X  %s\n", pos.seg, pos.off, 
-                    //    "Jump into the middle of code!");
                     errors.Add(new Error(pos, ret.ToString()));
                     break;
                 }
                 if (ret == DecodeResult.BadInstruction)
                 {
-                    //printf("Bad instruction!\n");
                     errors.Add(new Error(pos, ret.ToString()));
                     break;
                 }
@@ -293,6 +340,8 @@ namespace Disassembler
                         case XRefType.ConditionalJump:
                             break;
                         case XRefType.UnconditionalJump:
+                            return;
+                        case XRefType.NearJumpTableEntry:
                             return;
                         default:
                             throw new ArgumentException("Unexpected.");
@@ -428,7 +477,6 @@ namespace Disassembler
                         Target = start + insn.EncodedLength + opr.Offset,
                         Type = XRefType.UnconditionalJump,
                     };
-                    //return FlowResult.FinishBlock;
                 }
 
                 if (insn.Operands[0] is PointerOperand) // far jump to absolute address
@@ -440,21 +488,18 @@ namespace Disassembler
                         Target = new FarPointer16(opr.Segment, (UInt16)opr.Offset),
                         Type = XRefType.UnconditionalJump
                     };
-                    //return FlowResult.FinishBlock;
                 }
 
-#if false
-                // Handle static jump table. We recognize a jump table 
+#if true
+                // Handle static near jump table. We recognize a jump table 
                 // heuristically if the instruction looks like the following:
                 //
                 //   jmpn word ptr cs:[bx+3782h] 
                 //
                 // That is, it meets the requirements that
-                //   - the instruction is JMPN or JMP
+                //   - the instruction is JMPN
                 //   - the jump target is a word-ptr memory location
                 //   - the memory location has CS prefix
-                //   - the displacement (3782h in this case) is immediately
-                //     following this instruction
                 //   - a base register (e.g. bx) specifies the entry index
                 //
                 // Note that a malformed executable may create a jump table
@@ -464,20 +509,18 @@ namespace Disassembler
                 if (insn.Operands[0] is MemoryOperand)
                 {
                     MemoryOperand opr = (MemoryOperand)insn.Operands[0];
-                    if (opr.Size == CpuSize.Use16Bit &&
+                    if (op == Operation.JMPN &&
+                        opr.Size == CpuSize.Use16Bit &&
                         opr.Segment == Register.CS &&
                         opr.Base != Register.None &&
-                        opr.Index == Register.None &&
-                        opr.Displacement == start.Offset + insn.EncodedLength)
+                        opr.Index == Register.None)
                     {
-                        XRef xref = new XRef
+                        return new XRef
                         {
                             Source = start,
-                            Target = start + insn.EncodedLength,
+                            Target = new FarPointer16(start.Segment, (UInt16)opr.Displacement),
                             Type = XRefType.NearJumpTableEntry
                         };
-                        entryPoints.Add(xref);
-                        return FlowResult.FinishBlock;
                     }
                 }
 #endif
@@ -664,6 +707,8 @@ namespace Disassembler
         /// location of the JMPN instruction is stored in Source.
         /// </summary>
         NearJumpTableEntry,
+
+        NearJumpTableTarget,
 
 #if false
     ENTRY_FAR_JUMP_TABLE        = 8,    /* the dword at this location appears to represent
