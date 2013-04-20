@@ -115,7 +115,7 @@ namespace DosDebugger
             Disassembler.Disassembler dasm = new Disassembler.Disassembler(
                 mzFile.Image, mzFile.BaseAddress);
 
-            dasm.Analyze(new FarPointer16(baseSegment, 0x17fc));
+            dasm.Analyze(new FarPointer16(baseSegment, 0x17fc), true);
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
             // Display analyzed code.
@@ -143,6 +143,12 @@ namespace DosDebugger
                     inCodeBlock = false;
                     i++;
                 }
+            }
+
+            FarPointer16[] procEntries = dasm.Procedures;
+            foreach (FarPointer16 ptr in procEntries)
+            {
+                lvProcedures.Items.Add(ptr.ToString());
             }
         }
 

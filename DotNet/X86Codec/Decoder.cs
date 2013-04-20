@@ -6,13 +6,44 @@ namespace X86Codec
     public class Decoder
     {
         /// <summary>
+        /// Decodes an instruction from the given location using the specified
+        /// CPU mode.
+        /// </summary>
+        /// <param name="code">Code buffer.</param>
+        /// <param name="startIndex">Location of first byte of instruction.
+        /// </param>
+        /// <param name="cpuMode">CPU operating mode.</param>
+        /// <returns>The decoded instruction, or null if failed.</returns>
+        public static Instruction Decode(byte[] code, int startIndex, CpuMode cpuMode)
+        {
+            if (cpuMode != CpuMode.RealAddressMode)
+                throw new NotSupportedException();
+
+            DecoderContext context = new DecoderContext();
+            context.AddressSize = CpuSize.Use16Bit;
+            context.OperandSize = CpuSize.Use16Bit;
+
+            X86Codec.Decoder decoder = new X86Codec.Decoder();
+            try
+            {
+                return decoder.Decode(code, startIndex, context);
+            }
+            catch (InvalidInstructionException)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Decodes an instruction.
         /// </summary>
         /// <param name="code">X86 binary code.</param>
-        /// <param name="startIndex">Index of the first byte to start decoding.</param>
-        /// <param name="context">Options.</param>
-        /// <param name="instruction">The decoded instruction.</param>
-        /// <returns>The number of bytes consumed, or 0 if the instruction is invalid.</returns>
+        /// <param name="startIndex">Index of the first byte to start
+        /// decoding.</param>
+        /// <param name="context">Decoding context.</param>
+        /// <returns>The decoded instruction.</returns>
+        /// <exception cref="InvalidInstructionException">If decoding failed.
+        /// </exception>
         public Instruction Decode(byte[] code, int startIndex, DecoderContext context)
         {
             Instruction instruction = new Instruction();

@@ -35,6 +35,8 @@
             this.btnMzInfo = new System.Windows.Forms.Button();
             this.btnDisassemble = new System.Windows.Forms.Button();
             this.btnAnalyze = new System.Windows.Forms.Button();
+            this.lvProcedures = new Util.Forms.DoubleBufferedListView();
+            this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.SuspendLayout();
             // 
             // lvListing
@@ -47,7 +49,7 @@
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lvListing.HideSelection = false;
-            this.lvListing.Location = new System.Drawing.Point(12, 48);
+            this.lvListing.Location = new System.Drawing.Point(183, 48);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
             this.lvListing.Size = new System.Drawing.Size(645, 322);
@@ -100,17 +102,38 @@
             this.btnAnalyze.UseVisualStyleBackColor = true;
             this.btnAnalyze.Click += new System.EventHandler(this.btnAnalyze_Click);
             // 
+            // lvProcedures
+            // 
+            this.lvProcedures.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader4});
+            this.lvProcedures.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvProcedures.FullRowSelect = true;
+            this.lvProcedures.HideSelection = false;
+            this.lvProcedures.Location = new System.Drawing.Point(12, 48);
+            this.lvProcedures.MultiSelect = false;
+            this.lvProcedures.Name = "lvProcedures";
+            this.lvProcedures.Size = new System.Drawing.Size(165, 322);
+            this.lvProcedures.TabIndex = 4;
+            this.lvProcedures.UseCompatibleStateImageBehavior = false;
+            this.lvProcedures.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader4
+            // 
+            this.columnHeader4.Text = "Procedure";
+            this.columnHeader4.Width = 118;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(669, 382);
+            this.ClientSize = new System.Drawing.Size(840, 382);
+            this.Controls.Add(this.lvProcedures);
             this.Controls.Add(this.btnAnalyze);
             this.Controls.Add(this.btnDisassemble);
             this.Controls.Add(this.btnMzInfo);
             this.Controls.Add(this.lvListing);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MainForm";
             this.Text = "DOS Disassembler";
             this.Load += new System.EventHandler(this.MainForm_Load);
@@ -127,6 +150,8 @@
         private System.Windows.Forms.Button btnMzInfo;
         private System.Windows.Forms.Button btnDisassemble;
         private System.Windows.Forms.Button btnAnalyze;
+        private Util.Forms.DoubleBufferedListView lvProcedures;
+        private System.Windows.Forms.ColumnHeader columnHeader4;
     }
 }
 

@@ -7,7 +7,7 @@ using System.ComponentModel;
 
 namespace Disassembler
 {
-    public struct FarPointer16
+    public struct FarPointer16 : IComparable<FarPointer16>
     {
         private UInt16 segment;
         private UInt16 offset;
@@ -52,6 +52,11 @@ namespace Disassembler
         }
 
         public static readonly FarPointer16 Invalid = new FarPointer16(0xFFFF, 0xFFFF);
+
+        public int CompareTo(FarPointer16 other)
+        {
+            return this.EffectiveAddress - other.EffectiveAddress;
+        }
     }
 
     /// <summary>

@@ -24,6 +24,13 @@ namespace Disassembler
         private List<XRef> entryPoints;
         private FarPointer16 baseAddress;
 
+        /// <summary>
+        /// Maintains a dictionary that maps the entry point address of a
+        /// procedure to a boolean value that indicates whether the procedure
+        /// has been analyzed.
+        /// </summary>
+        private Dictionary<FarPointer16, bool> procedures;
+
         //  VECTOR(dasm_xref_t) entry_points; /* dasm_code_block_t code_blocks */
         /* however, it is not exactly a block; it is more like an entry point */
         //VECTOR(dasm_jump_table_t) jump_tables;
@@ -34,45 +41,76 @@ namespace Disassembler
             this.baseAddress = baseAddress;
             this.attr = new ByteAttributes[image.Length];
             this.entryPoints = new List<XRef>();
+            this.procedures = new Dictionary<FarPointer16, bool>();
 #if false
-             /* Initialize all bytes in the image to unknown status. */
-    memset(d->attr, 0, d->image_size);
-
-    VECTOR_CREATE(d->entry_points, dasm_xref_t);
     VECTOR_CREATE(d->jump_tables, dasm_jump_table_t);
 #endif
         }
 
+        /// <summary>
+        /// Gets the executable image being disassembled.
+        /// </summary>
         public byte[] Image
         {
             get { return image; }
         }
 
+        /// <summary>
+        /// Gets the attributes of each byte in the executable image.
+        /// </summary>
         public ByteAttributes[] ByteAttributes
         {
             get { return attr; }
         }
 
         /// <summary>
-        /// Analyzes the code from the given entry point.
+        /// Gets the entry points of analyzed procedures.
         /// </summary>
-        /// <param name="start"></param>
-        public void Analyze(FarPointer16 start)
+        public FarPointer16[] Procedures
         {
-            //
-            //dasm_xref_t entry;
-            //size_t i = VECTOR_SIZE(d->jump_tables);
-
-            // Create an entry point using the user-supplied starting address.
-            XRef entry = new XRef
+            get
             {
-                Target = start,
-                Source = FarPointer16.Invalid,
-                Type = XRefType.UserSpecified,
-            };
+                FarPointer16[] entries = new FarPointer16[procedures.Count];
+                procedures.Keys.CopyTo(entries, 0);
+                Array.Sort(entries);
+                return entries;
+            }
+        }
 
-            // Analyze the code block specified by the user.
-            AnalyzeCodeBlock(entry);
+        /// <summary>
+        /// Analyzes code starting from the given location. That location
+        /// must be the entry point of a procedure, or otherwise the analysis
+        /// may not work correctly.
+        /// </summary>
+        /// <param name="start">Entry point of a procedure.</param>
+        /// <param name="recursive">Whether to analyze functions called by
+        /// this procedure.</param>
+        public void Analyze(FarPointer16 start, bool recursive)
+        {
+            // Create an entry point using the user-supplied starting address.
+            List<FarPointer16> calls = new List<FarPointer16>();
+            calls.Add(start);
+
+            // Analyze each procedure in the list of procedures.
+            for (int i = 0; i < calls.Count; i++)
+            {
+                FarPointer16 entry = calls[i];
+
+                // If the procedure at this entry point has already been
+                // analyzed, do nothing.
+                if (procedures.ContainsKey(entry))
+                    continue;
+
+                // Analyze this procedure. Function calls made from this
+                // procedure will be appended to the 'calls' list.
+                AnalyzeProcedure(entry, calls);
+
+                // Mark the procedure as processed.
+                procedures[entry] = true;
+
+                if (!recursive)
+                    break;
+            }
 
 #if false
 #if false
@@ -136,28 +174,38 @@ namespace Disassembler
 #endif
         }
 
-        /* Analyze the code block starting at location _start_ recursively. 
-         * Return one of the following status codes:
-         *
-         * FLOW_CONTINUE
-         *     The block was successfully analyzed.
-         * FLOW_FINISH_BLOCK
-         *     The block was already analyzed and nothing was done.
-         */
-        private void AnalyzeCodeBlock(XRef entry)
+        /// <summary>
+        /// Analyzes a procedure starting from the given entry point.
+        /// </summary>
+        /// <param name="start">Address of procedure entry point.</param>
+        /// <param name="calls">List of addresses called by this 
+        /// procedure.</param>
+        private void AnalyzeProcedure(FarPointer16 start, List<FarPointer16> calls)
         {
-            int i = entryPoints.Count;
-
-            // Push the entry to the entry list.
+            // Create a dummy code block.
+            XRef entry = new XRef
+            {
+                Target = start,
+                Source = FarPointer16.Invalid,
+                Type = XRefType.UserSpecified
+            };
             entryPoints.Add(entry);
 
-            // Process each entry point in the queue until there are no more
+            // Process each code block in the queue until there are no more
             // left.
-            for (; i < entryPoints.Count; i++)
+            for (int i = entryPoints.Count - 1; i < entryPoints.Count; i++)
             {
+                // Legacy behavior: if the xref comes from a function call,
+                // we push it to the queue but does not process it here.
+                if (entryPoints[i].Type == XRefType.FunctionCall)
+                {
+                    calls.Add(entryPoints[i].Target);
+                    continue;
+                }
+
                 // Decode the instruction at the given entry point.
                 FarPointer16 pos = entryPoints[i].Target;
-                FarPointer16 from = entryPoints[i].Source;
+                //FarPointer16 from = entryPoints[i].Source;
 #if false
         if (verbose)
         {
@@ -280,13 +328,12 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Try decode an instruction from the byte range starting at offset _start_.
-        /// If successful, stores the instruction in _insn_ and return OK.
-        /// Otherwise returns one of the error codes.
+        /// Try decode an instruction at the given location.
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="instruction"></param>
-        /// <returns></returns>
+        /// <param name="start">The address to decode.</param>
+        /// <param name="instruction">On return, stores the decoded
+        /// instruction if successful, or null if failed.</param>
+        /// <returns>One of the status codes.</returns>
         DecodeResult TryDecodeInstruction(FarPointer16 start, out Instruction instruction)
         {
             instruction = null;
@@ -309,19 +356,9 @@ namespace Disassembler
             }
 
             // Try decode an instruction at this location.
-            DecoderContext context = new DecoderContext();
-            context.AddressSize = CpuSize.Use16Bit;
-            context.OperandSize = CpuSize.Use16Bit;
-
-            X86Codec.Decoder decoder = new X86Codec.Decoder();
-            try
-            {
-                instruction = decoder.Decode(image, b, context);
-            }
-            catch (InvalidInstructionException)
-            {
+            instruction = X86Codec.Decoder.Decode(image, b, CpuMode.RealAddressMode);
+            if (instruction == null)
                 return DecodeResult.BadInstruction;
-            }
 
             // Check that the entire instruction covers unprocessed bytes.
             // If any byte in the area is already processed, return an error.
