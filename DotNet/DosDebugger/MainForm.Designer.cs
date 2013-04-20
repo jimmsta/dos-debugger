@@ -37,6 +37,11 @@
             this.btnAnalyze = new System.Windows.Forms.Button();
             this.lvProcedures = new Util.Forms.DoubleBufferedListView();
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lvErrors = new Util.Forms.DoubleBufferedListView();
+            this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.btnGoTo = new System.Windows.Forms.Button();
+            this.cbBookmarks = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // lvListing
@@ -52,7 +57,7 @@
             this.lvListing.Location = new System.Drawing.Point(183, 48);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(645, 322);
+            this.lvListing.Size = new System.Drawing.Size(645, 248);
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
@@ -74,7 +79,7 @@
             // 
             // btnMzInfo
             // 
-            this.btnMzInfo.Location = new System.Drawing.Point(224, 12);
+            this.btnMzInfo.Location = new System.Drawing.Point(728, 12);
             this.btnMzInfo.Name = "btnMzInfo";
             this.btnMzInfo.Size = new System.Drawing.Size(100, 30);
             this.btnMzInfo.TabIndex = 1;
@@ -84,7 +89,7 @@
             // 
             // btnDisassemble
             // 
-            this.btnDisassemble.Location = new System.Drawing.Point(118, 12);
+            this.btnDisassemble.Location = new System.Drawing.Point(622, 12);
             this.btnDisassemble.Name = "btnDisassemble";
             this.btnDisassemble.Size = new System.Drawing.Size(100, 30);
             this.btnDisassemble.TabIndex = 2;
@@ -112,21 +117,74 @@
             this.lvProcedures.Location = new System.Drawing.Point(12, 48);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(165, 322);
+            this.lvProcedures.Size = new System.Drawing.Size(165, 359);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
+            this.lvProcedures.SelectedIndexChanged += new System.EventHandler(this.lvProcedures_SelectedIndexChanged);
+            this.lvProcedures.DoubleClick += new System.EventHandler(this.lvProcedures_DoubleClick);
             // 
             // columnHeader4
             // 
             this.columnHeader4.Text = "Procedure";
-            this.columnHeader4.Width = 118;
+            this.columnHeader4.Width = 126;
+            // 
+            // lvErrors
+            // 
+            this.lvErrors.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader5,
+            this.columnHeader6});
+            this.lvErrors.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvErrors.FullRowSelect = true;
+            this.lvErrors.HideSelection = false;
+            this.lvErrors.Location = new System.Drawing.Point(183, 302);
+            this.lvErrors.MultiSelect = false;
+            this.lvErrors.Name = "lvErrors";
+            this.lvErrors.Size = new System.Drawing.Size(645, 105);
+            this.lvErrors.TabIndex = 6;
+            this.lvErrors.UseCompatibleStateImageBehavior = false;
+            this.lvErrors.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader5
+            // 
+            this.columnHeader5.Text = "Location";
+            this.columnHeader5.Width = 126;
+            // 
+            // columnHeader6
+            // 
+            this.columnHeader6.Text = "Message";
+            this.columnHeader6.Width = 353;
+            // 
+            // btnGoTo
+            // 
+            this.btnGoTo.Location = new System.Drawing.Point(426, 12);
+            this.btnGoTo.Name = "btnGoTo";
+            this.btnGoTo.Size = new System.Drawing.Size(65, 30);
+            this.btnGoTo.TabIndex = 7;
+            this.btnGoTo.Text = "Go";
+            this.btnGoTo.UseVisualStyleBackColor = true;
+            this.btnGoTo.Click += new System.EventHandler(this.btnGoTo_Click);
+            // 
+            // cbBookmarks
+            // 
+            this.cbBookmarks.FormattingEnabled = true;
+            this.cbBookmarks.Items.AddRange(new object[] {
+            "2920:17FC useful routine",
+            "2920:377D jump table",
+            "2920:7430 program entry"});
+            this.cbBookmarks.Location = new System.Drawing.Point(183, 15);
+            this.cbBookmarks.Name = "cbBookmarks";
+            this.cbBookmarks.Size = new System.Drawing.Size(237, 27);
+            this.cbBookmarks.TabIndex = 8;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(840, 382);
+            this.ClientSize = new System.Drawing.Size(840, 419);
+            this.Controls.Add(this.cbBookmarks);
+            this.Controls.Add(this.btnGoTo);
+            this.Controls.Add(this.lvErrors);
             this.Controls.Add(this.lvProcedures);
             this.Controls.Add(this.btnAnalyze);
             this.Controls.Add(this.btnDisassemble);
@@ -152,6 +210,11 @@
         private System.Windows.Forms.Button btnAnalyze;
         private Util.Forms.DoubleBufferedListView lvProcedures;
         private System.Windows.Forms.ColumnHeader columnHeader4;
+        private Util.Forms.DoubleBufferedListView lvErrors;
+        private System.Windows.Forms.ColumnHeader columnHeader5;
+        private System.Windows.Forms.ColumnHeader columnHeader6;
+        private System.Windows.Forms.Button btnGoTo;
+        private System.Windows.Forms.ComboBox cbBookmarks;
     }
 }
 

@@ -28,7 +28,7 @@ namespace X86Codec
             {
                 return decoder.Decode(code, startIndex, context);
             }
-            catch (InvalidInstructionException)
+            catch (InvalidInstructionException ex)
             {
                 return null;
             }

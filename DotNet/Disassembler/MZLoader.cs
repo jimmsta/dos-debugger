@@ -4,6 +4,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace Disassembler
 {
@@ -39,6 +40,43 @@ namespace Disassembler
         public override string ToString()
         {
             return string.Format("{0:X4}:{1:X4}", segment, offset);
+        }
+
+        public static FarPointer16 Parse(string s)
+        {
+            FarPointer16 ptr;
+            if (!TryParse(s, out ptr))
+                throw new ArgumentException("s");
+            return ptr;
+        }
+
+        public static bool TryParse(string s, out FarPointer16 pointer)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+
+            pointer = new FarPointer16();
+
+            if (s.Length != 9)
+                return false;
+            if (s[4] != ':')
+                return false;
+
+            if (!UInt16.TryParse(
+                    s.Substring(0, 4),
+                    NumberStyles.AllowHexSpecifier,
+                    CultureInfo.InvariantCulture,
+                    out pointer.segment))
+                return false;
+
+            if (!UInt16.TryParse(
+                    s.Substring(5, 4),
+                    NumberStyles.AllowHexSpecifier,
+                    CultureInfo.InvariantCulture,
+                    out pointer.offset))
+                return false;
+
+            return true;
         }
 
         public static FarPointer16 operator +(FarPointer16 p, int increment)

@@ -31,6 +31,8 @@ namespace Disassembler
         /// </summary>
         private Dictionary<FarPointer16, bool> procedures;
 
+        private List<Error> errors = new List<Error>();
+
         //  VECTOR(dasm_xref_t) entry_points; /* dasm_code_block_t code_blocks */
         /* however, it is not exactly a block; it is more like an entry point */
         //VECTOR(dasm_jump_table_t) jump_tables;
@@ -75,6 +77,11 @@ namespace Disassembler
                 Array.Sort(entries);
                 return entries;
             }
+        }
+
+        public IEnumerable<Error> Errors
+        {
+            get { return errors; }
         }
 
         /// <summary>
@@ -234,17 +241,20 @@ namespace Disassembler
                     if (ret == DecodeResult.UnexpectedData)
                     {
                         //printf("Jump into data!\n");
+                        errors.Add(new Error(pos, ret.ToString()));
                         break;
                     }
                     if (ret == DecodeResult.UnexpectedCode)
                     {
                         //fprintf(stderr, "%04X:%04X  %s\n", pos.seg, pos.off, 
                         //    "Jump into the middle of code!");
+                        errors.Add(new Error(pos, ret.ToString()));
                         break;
                     }
                     if (ret == DecodeResult.BadInstruction)
                     {
                         //printf("Bad instruction!\n");
+                        errors.Add(new Error(pos, ret.ToString()));
                         break;
                     }
 
@@ -555,6 +565,18 @@ namespace Disassembler
         private static void DebugPrint(string format, params object[] args)
         {
             System.Diagnostics.Debug.WriteLine(string.Format(format, args));
+        }
+    }
+
+    public class Error
+    {
+        public FarPointer16 Location;
+        public string Message;
+
+        public Error(FarPointer16 location, string message)
+        {
+            this.Location = location;
+            this.Message = message;
         }
     }
 
