@@ -18,8 +18,11 @@ namespace X86Codec
             byte[] code, 
             int startIndex, 
             Pointer location,
-            CpuMode cpuMode)
+            CpuMode cpuMode,
+            out string errorMessage)
         {
+            errorMessage = null;
+
             if (cpuMode != CpuMode.RealAddressMode)
                 throw new NotSupportedException();
 
@@ -34,10 +37,12 @@ namespace X86Codec
             }
             catch (InvalidInstructionException ex)
             {
+                errorMessage = ex.Message;
                 return null;
             }
             catch (Exception ex)
             {
+                errorMessage = ex.Message;
                 return null;
             }
         }
@@ -698,6 +703,9 @@ namespace X86Codec
 
                 case O.Ew: // r/m; 16-bit
                     return DecodeMemoryOperand(reader, RegisterType.General, CpuSize.Use16Bit, context);
+
+                case O.Fv: // FLAGS/EFLAGS/RFLAGS
+                    return new RegisterOperand(Register.FLAGS, context.OperandSize);
 
                 case O.Gb: // general-purpose register; byte
                     return DecodeRegisterOperand(reader, RegisterType.General, CpuSize.Use8Bit, context);

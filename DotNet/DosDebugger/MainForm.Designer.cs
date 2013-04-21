@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.lvListing = new Util.Forms.DoubleBufferedListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -50,8 +51,13 @@
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.btnBack = new System.Windows.Forms.Button();
+            this.btnForward = new System.Windows.Forms.Button();
+            this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
+            this.contextMenuListing.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvListing
@@ -60,6 +66,7 @@
             this.columnHeader1,
             this.columnHeader2,
             this.columnHeader3});
+            this.lvListing.ContextMenuStrip = this.contextMenuListing;
             this.lvListing.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
@@ -71,6 +78,7 @@
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
+            this.lvListing.SelectedIndexChanged += new System.EventHandler(this.lvListing_SelectedIndexChanged);
             // 
             // columnHeader1
             // 
@@ -168,7 +176,7 @@
             // 
             // btnGoTo
             // 
-            this.btnGoTo.Location = new System.Drawing.Point(401, 38);
+            this.btnGoTo.Location = new System.Drawing.Point(516, 38);
             this.btnGoTo.Name = "btnGoTo";
             this.btnGoTo.Size = new System.Drawing.Size(65, 30);
             this.btnGoTo.TabIndex = 7;
@@ -187,7 +195,7 @@
             "2920:44B4 jump table 4",
             "2920:3FCC rep prefix",
             "2920:7430 program entry"});
-            this.cbBookmarks.Location = new System.Drawing.Point(158, 41);
+            this.cbBookmarks.Location = new System.Drawing.Point(273, 41);
             this.cbBookmarks.Name = "cbBookmarks";
             this.cbBookmarks.Size = new System.Drawing.Size(237, 27);
             this.cbBookmarks.TabIndex = 8;
@@ -253,11 +261,47 @@
             this.txtStatus.Size = new System.Drawing.Size(63, 19);
             this.txtStatus.Text = "Message";
             // 
+            // btnBack
+            // 
+            this.btnBack.Location = new System.Drawing.Point(158, 38);
+            this.btnBack.Name = "btnBack";
+            this.btnBack.Size = new System.Drawing.Size(39, 30);
+            this.btnBack.TabIndex = 11;
+            this.btnBack.Text = "<";
+            this.btnBack.UseVisualStyleBackColor = true;
+            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
+            // 
+            // btnForward
+            // 
+            this.btnForward.Location = new System.Drawing.Point(203, 38);
+            this.btnForward.Name = "btnForward";
+            this.btnForward.Size = new System.Drawing.Size(39, 30);
+            this.btnForward.TabIndex = 12;
+            this.btnForward.Text = ">";
+            this.btnForward.UseVisualStyleBackColor = true;
+            this.btnForward.Click += new System.EventHandler(this.btnForward_Click);
+            // 
+            // contextMenuListing
+            // 
+            this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuListingGoToXRef});
+            this.contextMenuListing.Name = "contextMenuListing";
+            this.contextMenuListing.Size = new System.Drawing.Size(177, 50);
+            this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
+            // 
+            // mnuListingGoToXRef
+            // 
+            this.mnuListingGoToXRef.Name = "mnuListingGoToXRef";
+            this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
+            this.mnuListingGoToXRef.Text = "Go to Reference";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(840, 476);
+            this.Controls.Add(this.btnForward);
+            this.Controls.Add(this.btnBack);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.cbBookmarks);
             this.Controls.Add(this.btnGoTo);
@@ -278,6 +322,7 @@
             this.menuStrip1.PerformLayout();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
+            this.contextMenuListing.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -307,6 +352,10 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel txtStatus;
+        private System.Windows.Forms.Button btnBack;
+        private System.Windows.Forms.Button btnForward;
+        private System.Windows.Forms.ContextMenuStrip contextMenuListing;
+        private System.Windows.Forms.ToolStripMenuItem mnuListingGoToXRef;
     }
 }
 

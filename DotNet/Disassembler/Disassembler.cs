@@ -88,6 +88,15 @@ namespace Disassembler
             get { return errors; }
         }
 
+        public IEnumerable<XRef> GetReferencesTo(Pointer location)
+        {
+            foreach (XRef xref in entryPoints)
+            {
+                if (xref.Target == location)
+                    yield return xref;
+            }
+        }
+
         /// <summary>
         /// Analyzes code starting from the given location. That location
         /// must be the entry point of a procedure, or otherwise the analysis
@@ -215,7 +224,8 @@ namespace Disassembler
                 // Skip this xref.
                 if (target == Pointer.Invalid)
                 {
-                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode);
+                    string errMsg;
+                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode, out errMsg);
                     errors.Add(new Error(xref.Source, string.Format(
                         "Cannot determine target of {0} instruction.",
                         insn.Operation.ToString().ToUpperInvariant())));
@@ -306,7 +316,8 @@ namespace Disassembler
                 Instruction insn;
 
                 // Decode an instruction at this location.
-                DecodeResult ret = TryDecodeInstruction(pos, out insn);
+                string errMsg;
+                DecodeResult ret = TryDecodeInstruction(pos, out insn, out errMsg);
                 if (ret == DecodeResult.AlreadyAnalyzed)
                 {
                     break;
@@ -323,7 +334,7 @@ namespace Disassembler
                 }
                 if (ret == DecodeResult.BadInstruction)
                 {
-                    errors.Add(new Error(pos, ret.ToString()));
+                    errors.Add(new Error(pos, "Bad instruction: " + errMsg));
                     break;
                 }
 
@@ -409,8 +420,9 @@ namespace Disassembler
         /// <param name="instruction">On return, stores the decoded
         /// instruction if successful, or null if failed.</param>
         /// <returns>One of the status codes.</returns>
-        DecodeResult TryDecodeInstruction(Pointer start, out Instruction instruction)
+        DecodeResult TryDecodeInstruction(Pointer start, out Instruction instruction, out string errMsg)
         {
+            errMsg = null;
             instruction = null;
             int b = start - baseAddress;
 
@@ -436,7 +448,7 @@ namespace Disassembler
             }
 
             // Try decode an instruction at this location.
-            instruction = X86Codec.Decoder.Decode(image, b,start, CpuMode.RealAddressMode);
+            instruction = X86Codec.Decoder.Decode(image, b,start, CpuMode.RealAddressMode, out errMsg);
             if (instruction == null)
                 return DecodeResult.BadInstruction;
 
@@ -665,7 +677,7 @@ namespace Disassembler
     /* Represents a cross-referential link in the code and data. For a xref 
  * between code and code, it is equivalent to an edge in a Control Flow Graph.
  */
-    class XRef
+    public class XRef
     {
         /// <summary>
         /// Gets or sets the target address being referenced.
@@ -686,7 +698,7 @@ namespace Disassembler
     /// <summary>
     /// Defines types of cross-references.
     /// </summary>
-    enum XRefType
+    public enum XRefType
     {
         /// <summary>
         /// user specified entry point (e.g. program start)

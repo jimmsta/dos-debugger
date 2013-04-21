@@ -24,7 +24,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
         }
 
@@ -265,8 +265,8 @@ namespace DosDebugger
                 if (current.EffectiveAddress >= target.EffectiveAddress)
                 {
                     //item.EnsureVisible();
-                    lvListing.TopItem = item;
                     lvListing.Focus();
+                    lvListing.TopItem = item;
                     item.Selected = true;
                     return true;
                 }
@@ -307,6 +307,89 @@ namespace DosDebugger
 
             string fileName = openFileDialog1.FileName;
             DoLoadFile(fileName);
+        }
+
+        private void lvListing_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (lvListing.SelectedIndices.Count == 1)
+            {
+                int row = lvListing.SelectedIndices[0];
+                if (navCurrent == null)
+                {
+                    navCurrent = navHistory.AddFirst(row);
+                    return;
+                }
+
+                if (row == navCurrent.Value)
+                    return;
+                if (navCurrent.Next != null && row == navCurrent.Next.Value)
+                {
+                    navCurrent = navCurrent.Next;
+                    return;
+                }
+
+                while (navCurrent.Next != null)
+                {
+                    navHistory.RemoveLast();
+                }
+                navCurrent = navHistory.AddAfter(navCurrent, row);
+            }
+        }
+
+        private LinkedList<int> navHistory = new LinkedList<int>();
+        private LinkedListNode<int> navCurrent = null;
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            if (navCurrent != null && navCurrent.Previous != null)
+            {
+                navCurrent = navCurrent.Previous;
+                lvListing.Items[navCurrent.Value].Selected = true;
+                lvListing.Items[navCurrent.Value].EnsureVisible();
+                lvListing.Focus();
+            }
+        }
+
+        private void btnForward_Click(object sender, EventArgs e)
+        {
+            if (navCurrent != null && navCurrent.Next != null)
+            {
+                navCurrent = navCurrent.Next;
+                lvListing.Items[navCurrent.Value].Selected = true;
+                lvListing.Items[navCurrent.Value].EnsureVisible();
+                lvListing.Focus();
+            }
+        }
+
+        private void contextMenuListing_Opening(object sender, CancelEventArgs e)
+        {
+            mnuListingGoToXRef.DropDownItems.Clear();
+            mnuListingGoToXRef.Enabled = false;
+
+            if (lvListing.SelectedIndices.Count != 1)
+                return;
+
+            string strLocation = lvListing.SelectedItems[0].Text;
+            if (strLocation.Length != 9)
+                return;
+            Pointer location = Pointer.Parse(strLocation);
+
+            foreach (XRef xref in dasm.GetReferencesTo(location))
+            {
+                ToolStripMenuItem item = new ToolStripMenuItem();
+                item.Text = xref.Source.ToString();
+                item.Click += mnuListingGoToXRefItem_Click;
+                item.Tag = xref.Source;
+                mnuListingGoToXRef.DropDownItems.Add(item);
+            }
+            mnuListingGoToXRef.Enabled = mnuListingGoToXRef.HasDropDownItems;
+        }
+
+        private void mnuListingGoToXRefItem_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            Pointer source = (Pointer)item.Tag;
+            GoToLocation(source);
         }
     }
 }

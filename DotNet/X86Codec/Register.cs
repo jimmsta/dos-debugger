@@ -79,6 +79,7 @@ namespace X86Codec
         EIP = _SPECIAL | 1 | _DWORD,
         FLAGS = _SPECIAL | 2 | _WORD,
         EFLAGS = _SPECIAL | 2 | _DWORD,
+        RFLAGS = _SPECIAL | 2 | _QWORD,
         MXCSR = _SPECIAL | 3 | _DWORD,
 
         // General purpose registers.
