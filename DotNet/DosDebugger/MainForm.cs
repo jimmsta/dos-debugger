@@ -70,7 +70,7 @@ namespace DosDebugger
                 Instruction instruction = null;
                 try
                 {
-                    instruction = decoder.Decode(image, index, options);
+                    instruction = decoder.Decode(image, index, ip, options);
                 }
                 catch (InvalidInstructionException ex)
                 {
@@ -103,7 +103,7 @@ namespace DosDebugger
 
                 System.Diagnostics.Debug.WriteLine(sb.ToString());
 #else
-                DisplayInstruction(ip, instruction);
+                DisplayInstruction(instruction);
 #endif
                 index += instruction.EncodedLength;
                 ip += instruction.EncodedLength;
@@ -139,8 +139,9 @@ namespace DosDebugger
                     context.AddressSize = CpuSize.Use16Bit;
                     context.OperandSize = CpuSize.Use16Bit;
 
-                    Instruction insn = decoder.Decode(dasm.Image, i, context);
-                    DisplayInstruction(mzFile.BaseAddress + i, insn);
+                    // TBD: the location parameter is incorrect.
+                    Instruction insn = decoder.Decode(dasm.Image, i, mzFile.BaseAddress + i, context);
+                    DisplayInstruction(insn);
                     i += insn.EncodedLength;
                     inCodeBlock = true;
                 }
@@ -189,8 +190,9 @@ namespace DosDebugger
                 lvErrors.Items.Count);
         }
 
-        private void DisplayInstruction(Pointer start, Instruction instruction)
+        private void DisplayInstruction(Instruction instruction)
         {
+            Pointer start = instruction.Location;
             ListViewItem item = new ListViewItem();
             item.Text = string.Format(start.ToString());
             item.SubItems.Add(FormatBinary(mzFile.Image, start - mzFile.BaseAddress, instruction.EncodedLength));

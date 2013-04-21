@@ -14,7 +14,11 @@ namespace X86Codec
         /// </param>
         /// <param name="cpuMode">CPU operating mode.</param>
         /// <returns>The decoded instruction, or null if failed.</returns>
-        public static Instruction Decode(byte[] code, int startIndex, CpuMode cpuMode)
+        public static Instruction Decode(
+            byte[] code, 
+            int startIndex, 
+            Pointer location,
+            CpuMode cpuMode)
         {
             if (cpuMode != CpuMode.RealAddressMode)
                 throw new NotSupportedException();
@@ -26,7 +30,7 @@ namespace X86Codec
             X86Codec.Decoder decoder = new X86Codec.Decoder();
             try
             {
-                return decoder.Decode(code, startIndex, context);
+                return decoder.Decode(code, startIndex, location, context);
             }
             catch (InvalidInstructionException ex)
             {
@@ -48,7 +52,11 @@ namespace X86Codec
         /// <returns>The decoded instruction.</returns>
         /// <exception cref="InvalidInstructionException">If decoding failed.
         /// </exception>
-        public Instruction Decode(byte[] code, int startIndex, DecoderContext context)
+        public Instruction Decode(
+            byte[] code, 
+            int startIndex, 
+            Pointer location, 
+            DecoderContext context)
         {
             Instruction instruction = new Instruction();
 
@@ -84,6 +92,7 @@ namespace X86Codec
                 }
                 context.SegmentOverride = seg;
             }
+            instruction.Prefix = prefix;
 
             // Decode the opcode to retrieve opcode specification.
             Op spec = DecodeOpcode(reader);
@@ -99,6 +108,7 @@ namespace X86Codec
 
             // Update the encoded length of the instruction.
             instruction.EncodedLength = reader.Position;
+            instruction.Location = location;
             return instruction;
         }
 
@@ -123,8 +133,8 @@ namespace X86Codec
                 switch (c)
                 {
                     case 0xF0: pfx = Prefixes.LOCK; grp = Prefixes.Group1; break;
-                    case 0xF2: pfx = Prefixes.REPNE; grp = Prefixes.Group1; break;
-                    case 0xF3: pfx = Prefixes.REPE; grp = Prefixes.Group1; break;
+                    case 0xF2: pfx = Prefixes.REPNZ; grp = Prefixes.Group1; break;
+                    case 0xF3: pfx = Prefixes.REP; grp = Prefixes.Group1; break;
 
                     case 0x2E: pfx = Prefixes.CS; grp = Prefixes.Group2; break;
                     case 0x36: pfx = Prefixes.SS; grp = Prefixes.Group2; break;

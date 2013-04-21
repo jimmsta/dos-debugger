@@ -210,7 +210,7 @@ namespace Disassembler
                 // Skip this xref.
                 if (target == Pointer.Invalid)
                 {
-                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, CpuMode.RealAddressMode);
+                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode);
                     errors.Add(new Error(xref.Source, string.Format(
                         "Cannot determine target of {0} instruction.",
                         insn.Operation.ToString().ToUpperInvariant())));
@@ -431,7 +431,7 @@ namespace Disassembler
             }
 
             // Try decode an instruction at this location.
-            instruction = X86Codec.Decoder.Decode(image, b, CpuMode.RealAddressMode);
+            instruction = X86Codec.Decoder.Decode(image, b,start, CpuMode.RealAddressMode);
             if (instruction == null)
                 return DecodeResult.BadInstruction;
 

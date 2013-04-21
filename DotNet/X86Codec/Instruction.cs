@@ -58,46 +58,24 @@ namespace X86Codec
                     s.Append(',');
                 }
                 s.Append(' ');
-                s.Append(Operands[i].ToString());
+                s.Append(FormatOperand(Operands[i]));
             }
             return s.ToString().ToLowerInvariant();
         }
-    }
 
-#if false
-    /// <summary>
-    /// Represents the encoded binary form of an x86 instruction.
-    /// </summary>
-    public struct EncodedInstruction
-    {
-        public byte[] code;
-        public int startIndex;
-        public int current;
-
-        public byte LegacyPrefixLength;
-        public byte RexPrefixLength;
-        public byte OpcodeLength;
-        public byte ModrmLength;
-        public byte SibLength;
-        public byte DisplacementLength;
-        public byte ImmediateLength;
-
-        public EncodedInstruction(byte[] code, int offset) : this()
+        private string FormatOperand(Operand operand)
         {
-            this.code = code;
-            this.startIndex=offset;
+            if (operand is RelativeOperand)
+            {
+                RelativeOperand opr = (RelativeOperand)operand;
+                return (this.Location + this.EncodedLength + opr.Offset).ToString();
+            }
+            else
+            {
+                return operand.ToString();
+            }
         }
-
-        public byte PeekByte()
-        {
-            //if (current >= offset + count)
-            //    throw new InvalidInstructionException("Peeking past the end of the code buffer.");
-            return code[current];
-        }
-
-
     }
-#endif
 
     /// <summary>
     /// Provides methods to read the components of an encoded instruction.
@@ -315,10 +293,10 @@ namespace X86Codec
         Group1 = 0x0F,
         LOCK = 0x01,         /* F0 */
         REPNZ = 0x02,         /* F2 */
-        REPNE = REPNZ,
+       // REPNE = REPNZ,
         REP = 0x04,         /* F3 */
-        REPZ = REP,
-        REPE = REPZ,
+        //REPZ = REP,
+        //REPE = REPZ,
 
         /* Group 2: segment override or branch hints */
         Group2 = 0x01f8,

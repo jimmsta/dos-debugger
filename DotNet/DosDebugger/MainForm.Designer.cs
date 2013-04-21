@@ -44,9 +44,9 @@
             this.cbBookmarks = new System.Windows.Forms.ComboBox();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.mnuFile = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuFileExit = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuFileExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
@@ -64,10 +64,10 @@
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lvListing.HideSelection = false;
-            this.lvListing.Location = new System.Drawing.Point(183, 74);
+            this.lvListing.Location = new System.Drawing.Point(158, 74);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(645, 235);
+            this.lvListing.Size = new System.Drawing.Size(670, 235);
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
@@ -85,7 +85,7 @@
             // columnHeader3
             // 
             this.columnHeader3.Text = "Disassembly";
-            this.columnHeader3.Width = 340;
+            this.columnHeader3.Width = 380;
             // 
             // btnMzInfo
             // 
@@ -127,7 +127,7 @@
             this.lvProcedures.Location = new System.Drawing.Point(12, 74);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(165, 377);
+            this.lvProcedures.Size = new System.Drawing.Size(140, 377);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
@@ -137,7 +137,7 @@
             // columnHeader4
             // 
             this.columnHeader4.Text = "Procedure";
-            this.columnHeader4.Width = 125;
+            this.columnHeader4.Width = 100;
             // 
             // lvErrors
             // 
@@ -147,10 +147,10 @@
             this.lvErrors.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvErrors.FullRowSelect = true;
             this.lvErrors.HideSelection = false;
-            this.lvErrors.Location = new System.Drawing.Point(183, 315);
+            this.lvErrors.Location = new System.Drawing.Point(158, 315);
             this.lvErrors.MultiSelect = false;
             this.lvErrors.Name = "lvErrors";
-            this.lvErrors.Size = new System.Drawing.Size(645, 136);
+            this.lvErrors.Size = new System.Drawing.Size(670, 136);
             this.lvErrors.TabIndex = 6;
             this.lvErrors.UseCompatibleStateImageBehavior = false;
             this.lvErrors.View = System.Windows.Forms.View.Details;
@@ -159,7 +159,7 @@
             // columnHeader5
             // 
             this.columnHeader5.Text = "Location";
-            this.columnHeader5.Width = 125;
+            this.columnHeader5.Width = 100;
             // 
             // columnHeader6
             // 
@@ -168,7 +168,7 @@
             // 
             // btnGoTo
             // 
-            this.btnGoTo.Location = new System.Drawing.Point(426, 38);
+            this.btnGoTo.Location = new System.Drawing.Point(401, 38);
             this.btnGoTo.Name = "btnGoTo";
             this.btnGoTo.Size = new System.Drawing.Size(65, 30);
             this.btnGoTo.TabIndex = 7;
@@ -185,8 +185,9 @@
             "2920:8B53 jump table 2",
             "2920:6184 jump table 3",
             "2920:44B4 jump table 4",
+            "2920:3FCC rep prefix",
             "2920:7430 program entry"});
-            this.cbBookmarks.Location = new System.Drawing.Point(183, 41);
+            this.cbBookmarks.Location = new System.Drawing.Point(158, 41);
             this.cbBookmarks.Name = "cbBookmarks";
             this.cbBookmarks.Size = new System.Drawing.Size(237, 27);
             this.cbBookmarks.TabIndex = 8;
@@ -211,13 +212,6 @@
             this.mnuFile.Size = new System.Drawing.Size(41, 23);
             this.mnuFile.Text = "&File";
             // 
-            // mnuFileExit
-            // 
-            this.mnuFileExit.Name = "mnuFileExit";
-            this.mnuFileExit.Size = new System.Drawing.Size(152, 24);
-            this.mnuFileExit.Text = "E&xit";
-            this.mnuFileExit.Click += new System.EventHandler(this.mnuFileExit_Click);
-            // 
             // mnuFileOpen
             // 
             this.mnuFileOpen.Name = "mnuFileOpen";
@@ -229,6 +223,13 @@
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
             this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+            // 
+            // mnuFileExit
+            // 
+            this.mnuFileExit.Name = "mnuFileExit";
+            this.mnuFileExit.Size = new System.Drawing.Size(152, 24);
+            this.mnuFileExit.Text = "E&xit";
+            this.mnuFileExit.Click += new System.EventHandler(this.mnuFileExit_Click);
             // 
             // openFileDialog1
             // 
