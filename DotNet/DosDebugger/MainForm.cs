@@ -24,7 +24,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
-            string fileName = @"E:\Dev\Projects\RevEng\data\H.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
         }
 
@@ -32,7 +32,7 @@ namespace DosDebugger
         {
             mzFile = new MZFile(fileName);
             mzFile.Relocate(baseSegment);
-            dasm = new Disassembler.Disassembler(mzFile.Image, mzFile.BaseAddress);
+            dasm = new Disassembler.Disassembler16(mzFile.Image, mzFile.BaseAddress);
             lvErrors.Items.Clear();
             lvListing.Items.Clear();
             lvProcedures.Items.Clear();
@@ -45,18 +45,18 @@ namespace DosDebugger
             f.Show(this);
         }
 
-        Disassembler.Disassembler dasm;
+        Disassembler.Disassembler16 dasm;
 
         private void btnTest_Click(object sender, EventArgs e)
         {
             //TestDecode(mzFile.Image, mzFile.EntryPoint, mzFile.BaseAddress);
-            TestDecode(mzFile.Image, new FarPointer16(baseSegment, 0x17fc), mzFile.BaseAddress);
+            //TestDecode(mzFile.Image, new FarPointer16(baseSegment, 0x17fc), mzFile.BaseAddress);
         }
 
         private void TestDecode(
             byte[] image,
-            FarPointer16 startAddress, 
-            FarPointer16 baseAddress)
+            Pointer startAddress, 
+            Pointer baseAddress)
         {
             DecoderContext options = new DecoderContext();
             options.AddressSize = CpuSize.Use16Bit;
@@ -64,7 +64,7 @@ namespace DosDebugger
 
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
-            FarPointer16 ip = startAddress;
+            Pointer ip = startAddress;
             for (int index = startAddress - baseAddress; index < image.Length; )
             {
                 Instruction instruction = null;
@@ -124,7 +124,6 @@ namespace DosDebugger
 
         private void btnAnalyze_Click(object sender, EventArgs e)
         {
-            //dasm.Analyze(new FarPointer16(baseSegment, 0x17fc), true);
             dasm.Analyze(mzFile.EntryPoint, true);
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
@@ -167,8 +166,8 @@ namespace DosDebugger
             lvListing.Visible = true;
 
             // Display subroutines.
-            FarPointer16[] procEntries = dasm.Procedures;
-            foreach (FarPointer16 ptr in procEntries)
+            Pointer[] procEntries = dasm.Procedures;
+            foreach (Pointer ptr in procEntries)
             {
                 lvProcedures.Items.Add(ptr.ToString());
             }
@@ -181,9 +180,16 @@ namespace DosDebugger
                 item.SubItems.Add(error.Message);
                 lvErrors.Items.Add(item);
             }
+
+            // Display status.
+            txtStatus.Text = string.Format(
+                "{0} procedures, {1} instructions, {2} errors",
+                lvProcedures.Items.Count,
+                lvListing.Items.Count,
+                lvErrors.Items.Count);
         }
 
-        private void DisplayInstruction(FarPointer16 start, Instruction instruction)
+        private void DisplayInstruction(Pointer start, Instruction instruction)
         {
             ListViewItem item = new ListViewItem();
             item.Text = string.Format(start.ToString());
@@ -195,7 +201,7 @@ namespace DosDebugger
             lvListing.Items.Add(item);
         }
 
-        private void DisplayData(FarPointer16 start, int len)
+        private void DisplayData(Pointer start, int len)
         {
             ListViewItem item = new ListViewItem();
             item.Text = string.Format(start.ToString());
@@ -225,9 +231,9 @@ namespace DosDebugger
         private void btnGoTo_Click(object sender, EventArgs e)
         {
             // Find the address.
-            FarPointer16 target;
+            Pointer target;
             string addr = cbBookmarks.Text;
-            if (addr.Length < 9 || !FarPointer16.TryParse(addr.Substring(0, 9), out target))
+            if (addr.Length < 9 || !Pointer.TryParse(addr.Substring(0, 9), out target))
             {
                 MessageBox.Show(this, "The address '" + addr + "' is invalid.");
                 return;
@@ -240,13 +246,13 @@ namespace DosDebugger
             }
         }
 
-        private bool GoToLocation(FarPointer16 target)
+        private bool GoToLocation(Pointer target)
         {
             // Find the first entry that is greater than or equal to target.
             foreach (ListViewItem item in lvListing.Items)
             {
-                FarPointer16 current;
-                if (!FarPointer16.TryParse(item.Text, out current))
+                Pointer current;
+                if (!Pointer.TryParse(item.Text, out current))
                     continue;
                 if (current.EffectiveAddress >= target.EffectiveAddress)
                 {
@@ -269,7 +275,7 @@ namespace DosDebugger
         {
             if (lvProcedures.SelectedIndices.Count == 1)
             {
-                GoToLocation(FarPointer16.Parse(lvProcedures.SelectedItems[0].Text));
+                GoToLocation(Pointer.Parse(lvProcedures.SelectedItems[0].Text));
             }
         }
 
@@ -277,7 +283,7 @@ namespace DosDebugger
         {
             if (lvErrors.SelectedIndices.Count == 1)
             {
-                GoToLocation(FarPointer16.Parse(lvErrors.SelectedItems[0].Text));
+                GoToLocation(Pointer.Parse(lvErrors.SelectedItems[0].Text));
             }
         }
 

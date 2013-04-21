@@ -48,7 +48,10 @@
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvListing
@@ -64,7 +67,7 @@
             this.lvListing.Location = new System.Drawing.Point(183, 74);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(645, 248);
+            this.lvListing.Size = new System.Drawing.Size(645, 235);
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
@@ -124,7 +127,7 @@
             this.lvProcedures.Location = new System.Drawing.Point(12, 74);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(165, 390);
+            this.lvProcedures.Size = new System.Drawing.Size(165, 377);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
@@ -144,7 +147,7 @@
             this.lvErrors.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvErrors.FullRowSelect = true;
             this.lvErrors.HideSelection = false;
-            this.lvErrors.Location = new System.Drawing.Point(183, 328);
+            this.lvErrors.Location = new System.Drawing.Point(183, 315);
             this.lvErrors.MultiSelect = false;
             this.lvErrors.Name = "lvErrors";
             this.lvErrors.Size = new System.Drawing.Size(645, 136);
@@ -233,11 +236,28 @@
             this.openFileDialog1.Filter = "Executable file|*.exe";
             this.openFileDialog1.Title = "Select DOS Executable File";
             // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.txtStatus});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 452);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(840, 24);
+            this.statusStrip1.TabIndex = 10;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // txtStatus
+            // 
+            this.txtStatus.Name = "txtStatus";
+            this.txtStatus.Size = new System.Drawing.Size(63, 19);
+            this.txtStatus.Text = "Message";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(840, 476);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.cbBookmarks);
             this.Controls.Add(this.btnGoTo);
             this.Controls.Add(this.lvErrors);
@@ -255,6 +275,8 @@
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -282,6 +304,8 @@
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem mnuFileExit;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel txtStatus;
     }
 }
 

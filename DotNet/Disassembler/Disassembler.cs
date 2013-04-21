@@ -6,12 +6,13 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Provides methods to disassemble and analyze x86 binary code.
+    /// Provides methods to disassemble and analyze 16-bit x86 binary code.
     /// </summary>
-    public class Disassembler
+    public class Disassembler16
     {
         private byte[] image;
         private ByteAttributes[] attr;
+        private UInt16[] byteSegment;
 
         /// <summary>
         /// Maintains a queue of pending code entry points to analyze. At the
@@ -22,14 +23,14 @@ namespace Disassembler
         /// analyzed later.
         /// </summary>
         private List<XRef> entryPoints;
-        private FarPointer16 baseAddress;
+        private Pointer baseAddress;
 
         /// <summary>
         /// Maintains a dictionary that maps the entry point address of a
         /// procedure to a boolean value that indicates whether the procedure
         /// has been analyzed.
         /// </summary>
-        private Dictionary<FarPointer16, bool> procedures;
+        private Dictionary<Pointer, bool> procedures;
 
         private List<Error> errors = new List<Error>();
 
@@ -37,13 +38,14 @@ namespace Disassembler
         /* however, it is not exactly a block; it is more like an entry point */
         //VECTOR(dasm_jump_table_t) jump_tables;
 
-        public Disassembler(byte[] image, FarPointer16 baseAddress)
+        public Disassembler16(byte[] image, Pointer baseAddress)
         {
             this.image = image;
             this.baseAddress = baseAddress;
             this.attr = new ByteAttributes[image.Length];
+            this.byteSegment = new ushort[image.Length]; // TBD
             this.entryPoints = new List<XRef>();
-            this.procedures = new Dictionary<FarPointer16, bool>();
+            this.procedures = new Dictionary<Pointer, bool>();
         }
 
         /// <summary>
@@ -65,11 +67,11 @@ namespace Disassembler
         /// <summary>
         /// Gets the entry points of analyzed procedures.
         /// </summary>
-        public FarPointer16[] Procedures
+        public Pointer[] Procedures
         {
             get
             {
-                FarPointer16[] entries = new FarPointer16[procedures.Count];
+                Pointer[] entries = new Pointer[procedures.Count];
                 procedures.Keys.CopyTo(entries, 0);
                 Array.Sort(entries);
                 return entries;
@@ -89,16 +91,16 @@ namespace Disassembler
         /// <param name="start">Entry point of a procedure.</param>
         /// <param name="recursive">Whether to analyze functions called by
         /// this procedure.</param>
-        public void Analyze(FarPointer16 start, bool recursive)
+        public void Analyze(Pointer start, bool recursive)
         {
             // Create an entry point using the user-supplied starting address.
-            List<FarPointer16> calls = new List<FarPointer16>();
+            List<Pointer> calls = new List<Pointer>();
             calls.Add(start);
 
             // Analyze each procedure in the list of procedures.
             for (int i = 0; i < calls.Count; i++)
             {
-                FarPointer16 entry = calls[i];
+                Pointer entry = calls[i];
 
                 // If the procedure at this entry point has already been
                 // analyzed, do nothing.
@@ -184,13 +186,13 @@ namespace Disassembler
         /// <param name="start">Address of procedure entry point.</param>
         /// <param name="calls">List of addresses called by this 
         /// procedure.</param>
-        private void AnalyzeProcedure(FarPointer16 start, List<FarPointer16> calls)
+        private void AnalyzeProcedure(Pointer start, List<Pointer> calls)
         {
             // Create a dummy code block.
             XRef entry = new XRef
             {
                 Target = start,
-                Source = FarPointer16.Invalid,
+                Source = Pointer.Invalid,
                 Type = XRefType.UserSpecified
             };
             entryPoints.Add(entry);
@@ -200,15 +202,18 @@ namespace Disassembler
             for (int i = entryPoints.Count - 1; i < entryPoints.Count; i++)
             {
                 XRef xref = entryPoints[i];
-                FarPointer16 target = xref.Target;
+                Pointer target = xref.Target;
 
                 // If we encounter a xref whose target we don't know, e.g.
                 // in an instruction 
                 //   jmp     word ptr [data_573] 
                 // Skip this xref.
-                if (target == FarPointer16.Invalid)
+                if (target == Pointer.Invalid)
                 {
-                    errors.Add(new Error(xref.Source, "Cannot determine the target of this instruction."));
+                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, CpuMode.RealAddressMode);
+                    errors.Add(new Error(xref.Source, string.Format(
+                        "Cannot determine target of {0} instruction.",
+                        insn.Operation.ToString().ToUpperInvariant())));
                     continue;
                 }
 
@@ -263,7 +268,7 @@ namespace Disassembler
                     entryPoints.Add(new XRef
                     {
                         Source = target,
-                        Target = new FarPointer16(target.Segment, jumpOffset),
+                        Target = new Pointer(target.Segment, jumpOffset),
                         Type = XRefType.NearJumpTableTarget
                     });
 
@@ -289,7 +294,7 @@ namespace Disassembler
         /// HLT. Conditional jumps and calls are recorded but they do not
         /// terminate the block.
         /// </summary>
-        private void AnalyzeCodeBlock(FarPointer16 pos, List<XRef> xrefs)
+        private void AnalyzeCodeBlock(Pointer pos, List<XRef> xrefs)
         {
             while (true)
             {
@@ -399,10 +404,15 @@ namespace Disassembler
         /// <param name="instruction">On return, stores the decoded
         /// instruction if successful, or null if failed.</param>
         /// <returns>One of the status codes.</returns>
-        DecodeResult TryDecodeInstruction(FarPointer16 start, out Instruction instruction)
+        DecodeResult TryDecodeInstruction(Pointer start, out Instruction instruction)
         {
             instruction = null;
             int b = start - baseAddress;
+
+            // TODO: we actually need to make sure that the full instruction
+            // is within bound, not just the first byte.
+            if (b >= image.Length)
+                return DecodeResult.BadInstruction;
 
             // If the byte to analyze is already marked as data, return a
             // conflict status.
@@ -460,7 +470,7 @@ namespace Disassembler
         /* Analyze an instruction decoded from offset _start_ for _count_ bytes.
          * TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
          */
-        private XRef AnalyzeFlowInstruction(FarPointer16 start, Instruction insn)
+        private XRef AnalyzeFlowInstruction(Pointer start, Instruction insn)
         {
             Operation op = insn.Operation;
 
@@ -485,7 +495,7 @@ namespace Disassembler
                     return new XRef
                     {
                         Source = start,
-                        Target = new FarPointer16(opr.Segment, (UInt16)opr.Offset),
+                        Target = new Pointer(opr.Segment, (UInt16)opr.Offset),
                         Type = XRefType.UnconditionalJump
                     };
                 }
@@ -518,7 +528,7 @@ namespace Disassembler
                         return new XRef
                         {
                             Source = start,
-                            Target = new FarPointer16(start.Segment, (UInt16)opr.Displacement),
+                            Target = new Pointer(start.Segment, (UInt16)opr.Displacement),
                             Type = XRefType.NearJumpTableEntry
                         };
                     }
@@ -529,7 +539,7 @@ namespace Disassembler
                 return new XRef
                 {
                     Source = start,
-                    Target = FarPointer16.Invalid,
+                    Target = Pointer.Invalid,
                     Type = XRefType.UnconditionalJump
                 };
             }
@@ -559,7 +569,7 @@ namespace Disassembler
                     return new XRef
                     {
                         Source = start,
-                        Target = new FarPointer16(opr.Segment, (UInt16)opr.Offset),
+                        Target = new Pointer(opr.Segment, (UInt16)opr.Offset),
                         Type = XRefType.FunctionCall
                     };
                     // return FlowResult.Continue;
@@ -569,7 +579,7 @@ namespace Disassembler
                     return new XRef
                     {
                         Source = start,
-                        Target = FarPointer16.Invalid,
+                        Target = Pointer.Invalid,
                         Type = XRefType.FunctionCall
                     };
                 }
@@ -616,7 +626,7 @@ namespace Disassembler
                         return new XRef
                         {
                             Source = start,
-                            Target = FarPointer16.Invalid,
+                            Target = Pointer.Invalid,
                             Type = XRefType.ConditionalJump
                         };
                     }
@@ -634,10 +644,10 @@ namespace Disassembler
 
     public class Error
     {
-        public FarPointer16 Location;
+        public Pointer Location;
         public string Message;
 
-        public Error(FarPointer16 location, string message)
+        public Error(Pointer location, string message)
         {
             this.Location = location;
             this.Message = message;
@@ -652,12 +662,12 @@ namespace Disassembler
         /// <summary>
         /// Gets or sets the target address being referenced.
         /// </summary>
-        public FarPointer16 Target { get; set; }
+        public Pointer Target { get; set; }
 
         /// <summary>
         /// Gets or sets the source address that refers to target.
         /// </summary>
-        public FarPointer16 Source { get; set; }
+        public Pointer Source { get; set; }
 
         /// <summary>
         /// Gets or sets the type of cross-reference.

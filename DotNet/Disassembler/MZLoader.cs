@@ -4,120 +4,17 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.ComponentModel;
-using System.Globalization;
+using X86Codec;
 
 namespace Disassembler
 {
-    public struct FarPointer16 : IComparable<FarPointer16>
-    {
-        private UInt16 segment;
-        private UInt16 offset;
-
-        public FarPointer16(UInt16 segment, UInt16 offset)
-            : this()
-        {
-            this.segment = segment;
-            this.offset = offset;
-        }
-
-        public UInt16 Segment
-        {
-            get { return segment; }
-            set { segment = value; }
-        }
-
-        public UInt16 Offset
-        {
-            get { return offset; }
-            set { offset = value; }
-        }
-
-        public int EffectiveAddress
-        {
-            get { return segment * 16 + offset; }
-        }
-
-        public override string ToString()
-        {
-            return string.Format("{0:X4}:{1:X4}", segment, offset);
-        }
-
-        public static FarPointer16 Parse(string s)
-        {
-            FarPointer16 ptr;
-            if (!TryParse(s, out ptr))
-                throw new ArgumentException("s");
-            return ptr;
-        }
-
-        public static bool TryParse(string s, out FarPointer16 pointer)
-        {
-            if (s == null)
-                throw new ArgumentNullException("s");
-
-            pointer = new FarPointer16();
-
-            if (s.Length != 9)
-                return false;
-            if (s[4] != ':')
-                return false;
-
-            if (!UInt16.TryParse(
-                    s.Substring(0, 4),
-                    NumberStyles.AllowHexSpecifier,
-                    CultureInfo.InvariantCulture,
-                    out pointer.segment))
-                return false;
-
-            if (!UInt16.TryParse(
-                    s.Substring(5, 4),
-                    NumberStyles.AllowHexSpecifier,
-                    CultureInfo.InvariantCulture,
-                    out pointer.offset))
-                return false;
-
-            return true;
-        }
-
-        public static FarPointer16 operator +(FarPointer16 p, int increment)
-        {
-            return new FarPointer16(p.segment, (ushort)(p.offset + increment));
-        }
-
-        public static int operator -(FarPointer16 a, FarPointer16 b)
-        {
-            return a.EffectiveAddress - b.EffectiveAddress;
-        }
-
-        public static readonly FarPointer16 Invalid = new FarPointer16(0xFFFF, 0xFFFF);
-
-        public int CompareTo(FarPointer16 other)
-        {
-            int cmp = (int)this.segment - (int)other.segment;
-            if (cmp == 0)
-                cmp = (int)this.offset - (int)other.offset;
-            return cmp;
-            // return this.EffectiveAddress - other.EffectiveAddress;
-        }
-
-        public static bool operator ==(FarPointer16 a, FarPointer16 b)
-        {
-            return (a.segment == b.segment) && (a.offset == b.offset);
-        }
-
-        public static bool operator !=(FarPointer16 a, FarPointer16 b)
-        {
-            return (a.segment != b.segment) || (a.offset != b.offset);
-        }
-    }
-
     /// <summary>
     /// Represents a loaded DOS MZ executable file (.EXE).
     /// </summary>
     public class MZFile
     {
         private MZHeader header;
-        private FarPointer16[] relocationTable;
+        private Pointer[] relocationTable;
         private byte[] image;
 
         /* Opens a DOS MZ executable file. */
@@ -171,13 +68,13 @@ namespace Disassembler
                 }
 
                 // Load relocation table.
-                relocationTable = new FarPointer16[header.RelocCount];
+                relocationTable = new Pointer[header.RelocCount];
                 stream.Seek(header.RelocOff, SeekOrigin.Begin);
                 for (int i = 0; i < header.RelocCount; i++)
                 {
                     UInt16 off = reader.ReadUInt16();
                     UInt16 seg = reader.ReadUInt16();
-                    relocationTable[i] = new FarPointer16(seg, off);
+                    relocationTable[i] = new Pointer(seg, off);
                 }
 
                 // Load the whole image into memory.
@@ -210,9 +107,9 @@ namespace Disassembler
             baseAddress.Segment = segment;
         }
 
-        FarPointer16 baseAddress;
+        Pointer baseAddress;
 
-        public FarPointer16 BaseAddress
+        public Pointer BaseAddress
         {
             get { return baseAddress; }
             set
@@ -247,7 +144,7 @@ namespace Disassembler
         /// The module loader should add the actual segment to the word at
         /// these locations.
         /// </summary>
-        public FarPointer16[] RelocationTable
+        public Pointer[] RelocationTable
         {
             get { return relocationTable; }
         }
@@ -256,18 +153,18 @@ namespace Disassembler
         /// Gets the address of the first instruction to execute. This address
         /// is relative to the beginning of the executable image.
         /// </summary>
-        public FarPointer16 EntryPoint
+        public Pointer EntryPoint
         {
-            get { return new FarPointer16(header.InitialCS, header.InitialIP); }
+            get { return new Pointer(header.InitialCS, header.InitialIP); }
         }
 
         /// <summary>
         /// Gets the address of the top of the stack. This address is relative
         /// to the beginning of the executable image.
         /// </summary>
-        public FarPointer16 StackTop
+        public Pointer StackTop
         {
-            get { return new FarPointer16(header.InitialSS, header.InitialSP); }
+            get { return new Pointer(header.InitialSS, header.InitialSP); }
         }
 
         /// <summary>

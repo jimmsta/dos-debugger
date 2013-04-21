@@ -9,6 +9,11 @@ namespace X86Codec
     public class Instruction
     {
         /// <summary>
+        /// Gets or sets the location (CS:IP) of the instruction.
+        /// </summary>
+        public Pointer Location { get; set; }
+
+        /// <summary>
         /// Gets or sets the encoded length (in bytes) of the instruction.
         /// </summary>
         public int EncodedLength { get; set; }
