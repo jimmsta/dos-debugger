@@ -11,7 +11,7 @@ namespace Disassembler
     public class Disassembler16
     {
         private byte[] image;
-        private ByteAttributes[] attr;
+        private ByteAttribute[] attr;
         private UInt16[] byteSegment;
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Disassembler
         {
             this.image = image;
             this.baseAddress = baseAddress;
-            this.attr = new ByteAttributes[image.Length];
+            this.attr = new ByteAttribute[image.Length];
             this.byteSegment = new ushort[image.Length]; // TBD
             this.entryPoints = new List<XRef>();
             this.procedures = new Dictionary<Pointer, bool>();
@@ -59,9 +59,14 @@ namespace Disassembler
         /// <summary>
         /// Gets the attributes of each byte in the executable image.
         /// </summary>
-        public ByteAttributes[] ByteAttributes
+        public ByteAttribute[] ByteAttributes
         {
             get { return attr; }
+        }
+
+        public UInt16[] ByteSegments
+        {
+            get { return byteSegment; }
         }
 
         /// <summary>
@@ -454,6 +459,9 @@ namespace Disassembler
             }
             attr[b].IsBoundary = true;
 
+            // Record the segment of the first byte.
+            byteSegment[b] = start.Segment;
+
             return DecodeResult.OK;
         }
 
@@ -754,7 +762,7 @@ namespace Disassembler
         Data = 3,
     }
 
-    public struct ByteAttributes
+    public struct ByteAttribute
     {
         byte x;
 

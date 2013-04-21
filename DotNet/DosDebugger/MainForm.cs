@@ -24,7 +24,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
             DoLoadFile(fileName);
         }
 
@@ -128,7 +128,7 @@ namespace DosDebugger
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
             // Display analyzed code.
-            ByteAttributes[] attr = dasm.ByteAttributes;
+            ByteAttribute[] attr = dasm.ByteAttributes;
             bool inCodeBlock = false;
             lvListing.Visible = false;
             for (int i = 0; i < attr.Length; )
@@ -139,8 +139,11 @@ namespace DosDebugger
                     context.AddressSize = CpuSize.Use16Bit;
                     context.OperandSize = CpuSize.Use16Bit;
 
+                    UInt16 seg = dasm.ByteSegments[i];
+                    Pointer location = new Pointer(seg, (UInt16)(i - (seg - baseSegment) * 16));
+
                     // TBD: the location parameter is incorrect.
-                    Instruction insn = decoder.Decode(dasm.Image, i, mzFile.BaseAddress + i, context);
+                    Instruction insn = decoder.Decode(dasm.Image, i, location, context);
                     DisplayInstruction(insn);
                     i += insn.EncodedLength;
                     inCodeBlock = true;
@@ -167,10 +170,12 @@ namespace DosDebugger
             lvListing.Visible = true;
 
             // Display subroutines.
+            Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
             Pointer[] procEntries = dasm.Procedures;
             foreach (Pointer ptr in procEntries)
             {
                 lvProcedures.Items.Add(ptr.ToString());
+                segStat[ptr.Segment] = 1;
             }
 
             // Display analysis errors.
@@ -184,10 +189,11 @@ namespace DosDebugger
 
             // Display status.
             txtStatus.Text = string.Format(
-                "{0} procedures, {1} instructions, {2} errors",
+                "{3} segments, {0} procedures, {1} instructions, {2} errors",
                 lvProcedures.Items.Count,
                 lvListing.Items.Count,
-                lvErrors.Items.Count);
+                lvErrors.Items.Count,
+                segStat.Count);
         }
 
         private void DisplayInstruction(Instruction instruction)
