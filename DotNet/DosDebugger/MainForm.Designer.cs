@@ -33,7 +33,8 @@
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.btnMzInfo = new System.Windows.Forms.Button();
+            this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
             this.btnTest = new System.Windows.Forms.Button();
             this.btnAnalyze = new System.Windows.Forms.Button();
             this.lvProcedures = new Util.Forms.DoubleBufferedListView();
@@ -47,17 +48,19 @@
             this.mnuFile = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuFileInfo = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuFileExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.btnBack = new System.Windows.Forms.Button();
             this.btnForward = new System.Windows.Forms.Button();
-            this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
+            this.txtFind = new System.Windows.Forms.TextBox();
+            this.btnFind = new System.Windows.Forms.Button();
+            this.contextMenuListing.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
-            this.contextMenuListing.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvListing
@@ -95,19 +98,23 @@
             this.columnHeader3.Text = "Disassembly";
             this.columnHeader3.Width = 380;
             // 
-            // btnMzInfo
+            // contextMenuListing
             // 
-            this.btnMzInfo.Location = new System.Drawing.Point(728, 38);
-            this.btnMzInfo.Name = "btnMzInfo";
-            this.btnMzInfo.Size = new System.Drawing.Size(100, 30);
-            this.btnMzInfo.TabIndex = 1;
-            this.btnMzInfo.Text = "MZ Info...";
-            this.btnMzInfo.UseVisualStyleBackColor = true;
-            this.btnMzInfo.Click += new System.EventHandler(this.btnMzInfo_Click);
+            this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuListingGoToXRef});
+            this.contextMenuListing.Name = "contextMenuListing";
+            this.contextMenuListing.Size = new System.Drawing.Size(177, 28);
+            this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
+            // 
+            // mnuListingGoToXRef
+            // 
+            this.mnuListingGoToXRef.Name = "mnuListingGoToXRef";
+            this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
+            this.mnuListingGoToXRef.Text = "Go to Reference";
             // 
             // btnTest
             // 
-            this.btnTest.Location = new System.Drawing.Point(622, 38);
+            this.btnTest.Location = new System.Drawing.Point(728, 38);
             this.btnTest.Name = "btnTest";
             this.btnTest.Size = new System.Drawing.Size(100, 30);
             this.btnTest.TabIndex = 2;
@@ -119,7 +126,7 @@
             // 
             this.btnAnalyze.Location = new System.Drawing.Point(12, 38);
             this.btnAnalyze.Name = "btnAnalyze";
-            this.btnAnalyze.Size = new System.Drawing.Size(100, 30);
+            this.btnAnalyze.Size = new System.Drawing.Size(76, 30);
             this.btnAnalyze.TabIndex = 3;
             this.btnAnalyze.Text = "Analyze";
             this.btnAnalyze.UseVisualStyleBackColor = true;
@@ -176,7 +183,7 @@
             // 
             // btnGoTo
             // 
-            this.btnGoTo.Location = new System.Drawing.Point(516, 38);
+            this.btnGoTo.Location = new System.Drawing.Point(446, 38);
             this.btnGoTo.Name = "btnGoTo";
             this.btnGoTo.Size = new System.Drawing.Size(65, 30);
             this.btnGoTo.TabIndex = 7;
@@ -195,7 +202,7 @@
             "2920:44B4 jump table 4",
             "2920:3FCC rep prefix",
             "2920:7430 program entry"});
-            this.cbBookmarks.Location = new System.Drawing.Point(273, 41);
+            this.cbBookmarks.Location = new System.Drawing.Point(203, 41);
             this.cbBookmarks.Name = "cbBookmarks";
             this.cbBookmarks.Size = new System.Drawing.Size(237, 27);
             this.cbBookmarks.TabIndex = 8;
@@ -215,6 +222,8 @@
             this.mnuFile.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuFileOpen,
             this.toolStripMenuItem1,
+            this.mnuFileInfo,
+            this.toolStripMenuItem2,
             this.mnuFileExit});
             this.mnuFile.Name = "mnuFile";
             this.mnuFile.Size = new System.Drawing.Size(41, 23);
@@ -223,19 +232,31 @@
             // mnuFileOpen
             // 
             this.mnuFileOpen.Name = "mnuFileOpen";
-            this.mnuFileOpen.Size = new System.Drawing.Size(152, 24);
+            this.mnuFileOpen.Size = new System.Drawing.Size(179, 24);
             this.mnuFileOpen.Text = "&Open...";
             this.mnuFileOpen.Click += new System.EventHandler(this.mnuFileOpen_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(149, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(176, 6);
+            // 
+            // mnuFileInfo
+            // 
+            this.mnuFileInfo.Name = "mnuFileInfo";
+            this.mnuFileInfo.Size = new System.Drawing.Size(179, 24);
+            this.mnuFileInfo.Text = "Executable &Info...";
+            this.mnuFileInfo.Click += new System.EventHandler(this.mnuFileInfo_Click);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(176, 6);
             // 
             // mnuFileExit
             // 
             this.mnuFileExit.Name = "mnuFileExit";
-            this.mnuFileExit.Size = new System.Drawing.Size(152, 24);
+            this.mnuFileExit.Size = new System.Drawing.Size(179, 24);
             this.mnuFileExit.Text = "E&xit";
             this.mnuFileExit.Click += new System.EventHandler(this.mnuFileExit_Click);
             // 
@@ -263,7 +284,7 @@
             // 
             // btnBack
             // 
-            this.btnBack.Location = new System.Drawing.Point(158, 38);
+            this.btnBack.Location = new System.Drawing.Point(113, 38);
             this.btnBack.Name = "btnBack";
             this.btnBack.Size = new System.Drawing.Size(39, 30);
             this.btnBack.TabIndex = 11;
@@ -273,7 +294,7 @@
             // 
             // btnForward
             // 
-            this.btnForward.Location = new System.Drawing.Point(203, 38);
+            this.btnForward.Location = new System.Drawing.Point(158, 38);
             this.btnForward.Name = "btnForward";
             this.btnForward.Size = new System.Drawing.Size(39, 30);
             this.btnForward.TabIndex = 12;
@@ -281,25 +302,31 @@
             this.btnForward.UseVisualStyleBackColor = true;
             this.btnForward.Click += new System.EventHandler(this.btnForward_Click);
             // 
-            // contextMenuListing
+            // txtFind
             // 
-            this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuListingGoToXRef});
-            this.contextMenuListing.Name = "contextMenuListing";
-            this.contextMenuListing.Size = new System.Drawing.Size(177, 50);
-            this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
+            this.txtFind.Location = new System.Drawing.Point(517, 41);
+            this.txtFind.Name = "txtFind";
+            this.txtFind.Size = new System.Drawing.Size(100, 26);
+            this.txtFind.TabIndex = 13;
+            this.txtFind.Text = "fwait";
             // 
-            // mnuListingGoToXRef
+            // btnFind
             // 
-            this.mnuListingGoToXRef.Name = "mnuListingGoToXRef";
-            this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
-            this.mnuListingGoToXRef.Text = "Go to Reference";
+            this.btnFind.Location = new System.Drawing.Point(623, 38);
+            this.btnFind.Name = "btnFind";
+            this.btnFind.Size = new System.Drawing.Size(65, 30);
+            this.btnFind.TabIndex = 14;
+            this.btnFind.Text = "Find";
+            this.btnFind.UseVisualStyleBackColor = true;
+            this.btnFind.Click += new System.EventHandler(this.btnFind_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(840, 476);
+            this.Controls.Add(this.btnFind);
+            this.Controls.Add(this.txtFind);
             this.Controls.Add(this.btnForward);
             this.Controls.Add(this.btnBack);
             this.Controls.Add(this.statusStrip1);
@@ -309,7 +336,6 @@
             this.Controls.Add(this.lvProcedures);
             this.Controls.Add(this.btnAnalyze);
             this.Controls.Add(this.btnTest);
-            this.Controls.Add(this.btnMzInfo);
             this.Controls.Add(this.lvListing);
             this.Controls.Add(this.menuStrip1);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -318,11 +344,11 @@
             this.Name = "MainForm";
             this.Text = "DOS Disassembler";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.contextMenuListing.ResumeLayout(false);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
-            this.contextMenuListing.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -334,7 +360,6 @@
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ColumnHeader columnHeader3;
-        private System.Windows.Forms.Button btnMzInfo;
         private System.Windows.Forms.Button btnTest;
         private System.Windows.Forms.Button btnAnalyze;
         private Util.Forms.DoubleBufferedListView lvProcedures;
@@ -356,6 +381,10 @@
         private System.Windows.Forms.Button btnForward;
         private System.Windows.Forms.ContextMenuStrip contextMenuListing;
         private System.Windows.Forms.ToolStripMenuItem mnuListingGoToXRef;
+        private System.Windows.Forms.ToolStripMenuItem mnuFileInfo;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
+        private System.Windows.Forms.TextBox txtFind;
+        private System.Windows.Forms.Button btnFind;
     }
 }
 

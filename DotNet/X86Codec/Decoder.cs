@@ -6,23 +6,22 @@ namespace X86Codec
     public class Decoder
     {
         /// <summary>
-        /// Decodes an instruction from the given location using the specified
-        /// CPU mode.
+        /// Decodes an instruction.
         /// </summary>
         /// <param name="code">Code buffer.</param>
         /// <param name="startIndex">Location of first byte of instruction.
         /// </param>
+        /// <param name="location">CS:IP of the instruction to decode.</param>
         /// <param name="cpuMode">CPU operating mode.</param>
-        /// <returns>The decoded instruction, or null if failed.</returns>
+        /// <returns>The decoded instruction.</returns>
+        /// <exception cref="InvalidInstructionException">If decoding fails.
+        /// </exception>
         public static Instruction Decode(
             byte[] code, 
             int startIndex, 
             Pointer location,
-            CpuMode cpuMode,
-            out string errorMessage)
+            CpuMode cpuMode)
         {
-            errorMessage = null;
-
             if (cpuMode != CpuMode.RealAddressMode)
                 throw new NotSupportedException();
 
@@ -31,20 +30,7 @@ namespace X86Codec
             context.OperandSize = CpuSize.Use16Bit;
 
             X86Codec.Decoder decoder = new X86Codec.Decoder();
-            try
-            {
-                return decoder.Decode(code, startIndex, location, context);
-            }
-            catch (InvalidInstructionException ex)
-            {
-                errorMessage = ex.Message;
-                return null;
-            }
-            catch (Exception ex)
-            {
-                errorMessage = ex.Message;
-                return null;
-            }
+            return decoder.Decode(code, startIndex, location, context);
         }
 
         /// <summary>
@@ -321,6 +307,10 @@ namespace X86Codec
                             }
                         }
                         break;
+
+                    case OpcodeExtension.Fpu:
+                        return DecodeFpuOpcode(reader, c);
+
                 }
                 spec = x.MergeOperandsFrom(spec);
             }
@@ -328,6 +318,43 @@ namespace X86Codec
             if (spec.Operation == Operation.None)
                 throw new InvalidInstructionException("Invalid opcode.");
             return spec;
+        }
+
+        private Op DecodeFpuOpcode(InstructionReader reader, byte firstByte)
+        {
+            ModRM modrm = reader.GetModRM();
+            int mod = modrm.MOD;
+            int reg = modrm.REG;
+            switch (firstByte)
+            {
+                case 0xDB:
+                    if (mod == 3)
+                    {
+                        switch (reader.GetModRM().Value)
+                        {
+                            case 0xE2:
+                                return new Op(Operation.FCLEX);
+                        }
+                    }
+                    break;
+
+                case 0xDD:
+                    if (mod == 3)
+                    {
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 7:
+                                return new Op(Operation.FSTSW, O.Mw);
+                        }
+                    }
+                    break;
+            }
+            throw new InvalidInstructionException(string.Format(
+                "Invalid opcode: {0:X2} {1:X2}.",
+                firstByte, modrm.Value));
         }
 
         /// <summary>
@@ -493,7 +520,7 @@ namespace X86Codec
             if (operandSize == CpuSize.Default)
                 throw new ArgumentException("operandSize is not specified.");
             if (context.AddressSize != CpuSize.Use16Bit)
-                throw new NotSupportedException();
+                throw new NotSupportedException("32-bit addressing mode is not supported.");
 
             ModRM modrm = reader.GetModRM();
             int rm = modrm.RM;
@@ -1167,14 +1194,14 @@ namespace X86Codec
             /* D5 */ new Op(Operation.AAD, O.Ib), /* i64 */
             /* D6 */ Op.Empty,
             /* D7 */ new Op(Operation.XLAT), /* XLATB */
-            /* D8 */ Op.Empty, /* escape to x87 fpu */
-            /* D9 */ Op.Empty,
-            /* DA */ Op.Empty,
-            /* DB */ Op.Empty,
-            /* DC */ Op.Empty,
-            /* DD */ Op.Empty,
-            /* DE */ Op.Empty,
-            /* DF */ Op.Empty,
+            /* D8 */ new Op(OpcodeExtension.Fpu),
+            /* D9 */ new Op(OpcodeExtension.Fpu),
+            /* DA */ new Op(OpcodeExtension.Fpu),
+            /* DB */ new Op(OpcodeExtension.Fpu),
+            /* DC */ new Op(OpcodeExtension.Fpu),
+            /* DD */ new Op(OpcodeExtension.Fpu),
+            /* DE */ new Op(OpcodeExtension.Fpu),
+            /* DF */ new Op(OpcodeExtension.Fpu),
 
             /* E0 */ new Op(Operation.LOOPNE, O.Jb), /* f64 */
             /* E1 */ new Op(Operation.LOOPE, O.Jb), /* f64 */
@@ -1224,6 +1251,9 @@ namespace X86Codec
             Ext7,
             Ext8,
             Ext11,
+
+            // See table B.17 (page 2163) for instruction format.
+            Fpu,
         }
     }
 

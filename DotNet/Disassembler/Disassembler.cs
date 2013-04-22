@@ -83,9 +83,9 @@ namespace Disassembler
             }
         }
 
-        public IEnumerable<Error> Errors
+        public Error[] Errors
         {
-            get { return errors; }
+            get { return errors.ToArray(); }
         }
 
         public IEnumerable<XRef> GetReferencesTo(Pointer location)
@@ -224,8 +224,7 @@ namespace Disassembler
                 // Skip this xref.
                 if (target == Pointer.Invalid)
                 {
-                    string errMsg;
-                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode, out errMsg);
+                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode);
                     errors.Add(new Error(xref.Source, string.Format(
                         "Cannot determine target of {0} instruction.",
                         insn.Operation.ToString().ToUpperInvariant())));
@@ -299,7 +298,7 @@ namespace Disassembler
                 }
 
                 // Analyze this code block.
-                AnalyzeCodeBlock(target, entryPoints);
+                AnalyzeCodeBlock(xref, entryPoints);
             }
         }
 
@@ -309,8 +308,9 @@ namespace Disassembler
         /// HLT. Conditional jumps and calls are recorded but they do not
         /// terminate the block.
         /// </summary>
-        private void AnalyzeCodeBlock(Pointer pos, List<XRef> xrefs)
+        private void AnalyzeCodeBlock(XRef xrefStart, List<XRef> xrefs)
         {
+            Pointer pos = xrefStart.Target;
             while (true)
             {
                 Instruction insn;
@@ -318,24 +318,19 @@ namespace Disassembler
                 // Decode an instruction at this location.
                 string errMsg;
                 DecodeResult ret = TryDecodeInstruction(pos, out insn, out errMsg);
-                if (ret == DecodeResult.AlreadyAnalyzed)
+                switch (ret)
                 {
-                    break;
-                }
-                if (ret == DecodeResult.UnexpectedData)
-                {
-                    errors.Add(new Error(pos, ret.ToString()));
-                    break;
-                }
-                if (ret == DecodeResult.UnexpectedCode)
-                {
-                    errors.Add(new Error(pos, ret.ToString()));
-                    break;
-                }
-                if (ret == DecodeResult.BadInstruction)
-                {
-                    errors.Add(new Error(pos, "Bad instruction: " + errMsg));
-                    break;
+                    case DecodeResult.AlreadyAnalyzed:
+                        return;
+                    case DecodeResult.UnexpectedData:
+                    case DecodeResult.UnexpectedCode:
+                        errors.Add(new Error(pos, string.Format(
+                            "Ran into {0} when processing block {1} referred from {2}",
+                            ret, xrefStart.Target, xrefStart.Source)));
+                        return;
+                    case DecodeResult.BadInstruction:
+                        errors.Add(new Error(pos, "Bad instruction: " + errMsg));
+                        return;
                 }
 
                 // Check if this instruction terminates the block.
@@ -448,9 +443,15 @@ namespace Disassembler
             }
 
             // Try decode an instruction at this location.
-            instruction = X86Codec.Decoder.Decode(image, b,start, CpuMode.RealAddressMode, out errMsg);
-            if (instruction == null)
+            try
+            {
+                instruction = X86Codec.Decoder.Decode(image, b, start, CpuMode.RealAddressMode);
+            }
+            catch (Exception ex)
+            {
+                errMsg = ex.Message;
                 return DecodeResult.BadInstruction;
+            }
 
             // Check that the entire instruction covers unprocessed bytes.
             // If any byte in the area is already processed, return an error.
@@ -664,8 +665,8 @@ namespace Disassembler
 
     public class Error
     {
-        public Pointer Location;
-        public string Message;
+        public Pointer Location { get; set; }
+        public string Message { get; set; }
 
         public Error(Pointer location, string message)
         {

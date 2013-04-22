@@ -157,5 +157,9 @@ namespace X86Codec
         JMPF,
         XABORT,
         XBEGIN,
+
+        /* 8087 FPU instructions */
+        FCLEX,
+        FSTSW,
     }
 }

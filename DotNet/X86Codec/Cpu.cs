@@ -3,6 +3,10 @@ using System.Globalization;
 
 namespace X86Codec
 {
+    public class CpuProfile
+    {
+    }
+
     public enum CpuSize : ushort
     {
         Default = 0,

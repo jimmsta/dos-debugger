@@ -24,7 +24,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
             DoLoadFile(fileName);
         }
 
@@ -36,13 +36,6 @@ namespace DosDebugger
             lvErrors.Items.Clear();
             lvListing.Items.Clear();
             lvProcedures.Items.Clear();
-        }
-
-        private void btnMzInfo_Click(object sender, EventArgs e)
-        {
-            ExecutableInfoForm f = new ExecutableInfoForm();
-            f.MzFile = mzFile;
-            f.Show(this);
         }
 
         Disassembler.Disassembler16 dasm;
@@ -179,13 +172,16 @@ namespace DosDebugger
             }
 
             // Display analysis errors.
-            foreach (Error error in dasm.Errors)
+            Error[] errors = dasm.Errors;
+            Array.Sort(errors, new ErrorLocationComparer());
+            foreach (Error error in errors)
             {
                 ListViewItem item = new ListViewItem();
                 item.Text = error.Location.ToString();
                 item.SubItems.Add(error.Message);
                 lvErrors.Items.Add(item);
             }
+
 
             // Display status.
             txtStatus.Text = string.Format(
@@ -194,6 +190,14 @@ namespace DosDebugger
                 lvListing.Items.Count,
                 lvErrors.Items.Count,
                 segStat.Count);
+        }
+
+        private class ErrorLocationComparer : IComparer<Error>
+        {
+            public int Compare(Error x, Error y)
+            {
+                return x.Location.ToString().CompareTo(y.Location.ToString());
+            }
         }
 
         private void DisplayInstruction(Instruction instruction)
@@ -390,6 +394,43 @@ namespace DosDebugger
             ToolStripMenuItem item = (ToolStripMenuItem)sender;
             Pointer source = (Pointer)item.Tag;
             GoToLocation(source);
+        }
+
+        private void mnuFileInfo_Click(object sender, EventArgs e)
+        {
+            ExecutableInfoForm f = new ExecutableInfoForm();
+            f.MzFile = mzFile;
+            f.Show(this);
+        }
+
+        private void btnFind_Click(object sender, EventArgs e)
+        {
+            string s = txtFind.Text.ToUpperInvariant();
+            if (s.Length == 0)
+                return;
+
+            int selection;
+            if (lvListing.SelectedIndices.Count > 0)
+                selection = lvListing.SelectedIndices[0];
+            else
+                selection = -1;
+
+            int n=lvListing.Items.Count;
+            for (int i = 0; i < n; i++)
+            {
+                ListViewItem item = lvListing.Items[(selection + 1 + i) % n];
+                for (int j = 0; j < item.SubItems.Count; j++)
+                {
+                    if (item.SubItems[j].Text.ToUpperInvariant().Contains(s))
+                    {
+                        item.Selected = true;
+                        lvListing.TopItem = item;
+                        lvListing.Focus();
+                        return;
+                    }
+                }
+            }
+            MessageBox.Show(this, "Cannot find " + txtFind.Text);
         }
     }
 }
