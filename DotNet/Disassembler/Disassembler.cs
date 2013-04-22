@@ -151,7 +151,7 @@ namespace Disassembler
                     {
                         if (!procedures.ContainsKey(entry.Target))
                         {
-                            AnalyzeProcedure(entry.Target, xrefs);
+                            AnalyzeProcedure(entry, xrefs);
 
                             // Mark the procedure as processed.
                             procedures[entry.Target] = true;
@@ -163,7 +163,7 @@ namespace Disassembler
                     // procedure again.
                     if (entry.Type == XRefType.NearJumpTableTarget)
                     {
-                        AnalyzeProcedure(entry.Target, xrefs);
+                        AnalyzeProcedure(entry, xrefs);
                     }
                 }
 
@@ -203,18 +203,18 @@ namespace Disassembler
         /// <param name="start">Address to start analysis.</param>
         /// <param name="xrefs">List of procedures called by this 
         /// procedure.</param>
-        private void AnalyzeProcedure(Pointer start, List<XRef> xrefs)
+        private void AnalyzeProcedure(XRef start, List<XRef> xrefs)
         {
             List<XRef> localXrefs = new List<XRef>();
 
             // Create a dummy xref for the starting address.
             localXrefs.Add(new XRef
             {
-                Target = start,
-                Source = Pointer.Invalid,
+                Source = start.Source,
+                Target = start.Target,
                 Type = XRefType.UserSpecified
             });
-
+            
             // Process each entry point in the queue until there are no more
             // entry points left.
             for (int i = 0; i < localXrefs.Count; i++)
@@ -232,14 +232,6 @@ namespace Disassembler
                 AnalyzeCodeBlock(entry, localXrefs);
             }
 
-                // If there are no more outstanding jump tables, we are done.
-                //iJumpTable++;
-                //if (iJumpTable >= jumpTables.Count)
-                //    break;
-
-                // Process the next jump table entry.
-                //ProcessJumpTableEntry(jumpTables[iJumpTable], codeBlocks, jumpTables);
-            
             // Append the local XRef list to the global xref list.
             localXrefs.RemoveAt(0);
             xrefs.AddRange(localXrefs);
@@ -254,10 +246,10 @@ namespace Disassembler
             // processing until we have processed all other types of
             // cross-references. This reduces the chance that we process
             // past the end of the jump table.
-            if (entry.Source.ToString() == "3668:6516")
-            {
-                int kk = 1;
-            }
+            //if (entry.Source.ToString() == "3668:6516")
+            //{
+            //    int kk = 1;
+            //}
 
             // Process this one.
             int b = entry.Target - baseAddress;
@@ -506,19 +498,19 @@ namespace Disassembler
                 case Operation.JO:
                 case Operation.JNO:
                 case Operation.JB:
-                case Operation.JNB:
+                case Operation.JAE:
                 case Operation.JE:
                 case Operation.JNE:
                 case Operation.JBE:
-                case Operation.JNBE:
+                case Operation.JA:
                 case Operation.JS:
                 case Operation.JNS:
                 case Operation.JP:
                 case Operation.JNP:
                 case Operation.JL:
-                case Operation.JNL:
+                case Operation.JGE:
                 case Operation.JLE:
-                case Operation.JNLE:
+                case Operation.JG:
                 case Operation.JCXZ:
                     bcjType = XRefType.ConditionalJump;
                     break;

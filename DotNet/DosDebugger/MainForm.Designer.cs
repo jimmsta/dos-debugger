@@ -58,6 +58,8 @@
             this.btnForward = new System.Windows.Forms.Button();
             this.txtFind = new System.Windows.Forms.TextBox();
             this.btnFind = new System.Windows.Forms.Button();
+            this.lvSegments = new Util.Forms.DoubleBufferedListView();
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuListing.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -144,7 +146,7 @@
             this.lvProcedures.Location = new System.Drawing.Point(12, 74);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(140, 377);
+            this.lvProcedures.Size = new System.Drawing.Size(140, 235);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
@@ -199,6 +201,8 @@
             this.cbBookmarks.Items.AddRange(new object[] {
             "2920:17FC useful routine",
             "3FE6:C830 single-entry jump table",
+            "16C6:C830 single-entry jump table?",
+            "2920:264A es?",
             "2920:377D jump table 1",
             "2920:8B53 jump table 2",
             "2920:6184 jump table 3",
@@ -323,11 +327,32 @@
             this.btnFind.UseVisualStyleBackColor = true;
             this.btnFind.Click += new System.EventHandler(this.btnFind_Click);
             // 
+            // lvSegments
+            // 
+            this.lvSegments.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader7});
+            this.lvSegments.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvSegments.FullRowSelect = true;
+            this.lvSegments.HideSelection = false;
+            this.lvSegments.Location = new System.Drawing.Point(12, 315);
+            this.lvSegments.MultiSelect = false;
+            this.lvSegments.Name = "lvSegments";
+            this.lvSegments.Size = new System.Drawing.Size(140, 134);
+            this.lvSegments.TabIndex = 15;
+            this.lvSegments.UseCompatibleStateImageBehavior = false;
+            this.lvSegments.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Procedure";
+            this.columnHeader7.Width = 100;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(840, 476);
+            this.Controls.Add(this.lvSegments);
             this.Controls.Add(this.btnFind);
             this.Controls.Add(this.txtFind);
             this.Controls.Add(this.btnForward);
@@ -388,6 +413,8 @@
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
         private System.Windows.Forms.TextBox txtFind;
         private System.Windows.Forms.Button btnFind;
+        private Util.Forms.DoubleBufferedListView lvSegments;
+        private System.Windows.Forms.ColumnHeader columnHeader7;
     }
 }
 

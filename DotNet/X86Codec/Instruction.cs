@@ -290,7 +290,7 @@ namespace X86Codec
         None = 0,
 
         // Group 1: lock and repeat prefixes
-        Group1 = 0x0F,
+        Group1 = 0x07,
         LOCK = 0x01,         /* F0 */
         REPNZ = 0x02,         /* F2 */
        // REPNE = REPNZ,

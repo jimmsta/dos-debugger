@@ -18,7 +18,7 @@ namespace DosDebugger
         }
 
         MZFile mzFile;
-        UInt16 baseSegment = 0x2920;
+        UInt16 baseSegment = 0; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
         ListingViewModel listingView;
@@ -27,7 +27,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
         }
 
@@ -136,6 +136,15 @@ namespace DosDebugger
             {
                 lvProcedures.Items.Add(ptr.ToString());
                 segStat[ptr.Segment] = 1;
+            }
+
+            // Display segments.
+            ushort[] segs = new ushort[segStat.Count];
+            segStat.Keys.CopyTo(segs, 0);
+            Array.Sort(segs);
+            foreach (ushort s in segs)
+            {
+                lvSegments.Items.Add(s.ToString("X4"));
             }
 
             // Display status.
