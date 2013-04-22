@@ -81,6 +81,8 @@
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
+            this.lvListing.VirtualMode = true;
+            this.lvListing.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvListing_RetrieveVirtualItem);
             this.lvListing.SelectedIndexChanged += new System.EventHandler(this.lvListing_SelectedIndexChanged);
             // 
             // columnHeader1

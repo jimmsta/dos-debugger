@@ -46,6 +46,7 @@
     <Compile Include="ExecutableInfoForm.Designer.cs">
       <DependentUpon>ExecutableInfoForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ListingViewModel.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

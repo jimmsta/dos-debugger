@@ -56,6 +56,11 @@ namespace Disassembler
             get { return image; }
         }
 
+        public Pointer BaseAddress
+        {
+            get { return baseAddress; }
+        }
+
         /// <summary>
         /// Gets the attributes of each byte in the executable image.
         /// </summary>
