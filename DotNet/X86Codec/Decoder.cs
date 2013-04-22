@@ -1161,6 +1161,15 @@ namespace X86Codec
                         Base = RegisterOperand.Resize(Register.DI, context.AddressSize)
                     };
 
+                case O._XLAT:
+                    return new MemoryOperand
+                    {
+                        Size = CpuSize.Use8Bit,
+                        Segment = context.SegmentOverride,
+                        Base = (context.AddressSize == CpuSize.Use16Bit) ?
+                            Register.BX : Register.EBX
+                    };
+
                 default:
                     throw new NotImplementedException(
                         "DecodeOperand() is not implemented for operand type " + spec.ToString());
@@ -1317,6 +1326,11 @@ namespace X86Codec
 
             /* x87 FPU registers */
             ST0, // ST1, ST2, ST3, ST4, ST5, ST6, ST7,
+
+            /// <summary>
+            /// Special operand for XLAT instruction: byte ptr [eBX]
+            /// </summary>
+            _XLAT,
         }
 
         /// <summary>
@@ -1557,7 +1571,7 @@ namespace X86Codec
             /* D4 */ new Op(Operation.AAM, O.Ib), /* i64 */
             /* D5 */ new Op(Operation.AAD, O.Ib), /* i64 */
             /* D6 */ Op.Empty,
-            /* D7 */ new Op(Operation.XLAT), /* XLATB */
+            /* D7 */ new Op(Operation.XLAT, O._XLAT), /* a.k.a XLATB */
             /* D8 */ new Op(OpcodeExtension.Fpu),
             /* D9 */ new Op(OpcodeExtension.Fpu),
             /* DA */ new Op(OpcodeExtension.Fpu),

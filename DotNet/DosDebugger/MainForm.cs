@@ -39,9 +39,14 @@ namespace DosDebugger
 
             lvErrors.Items.Clear();
             lvProcedures.Items.Clear();
-        
+            lvSegments.Items.Clear();
+
             listingView = null;
             lvListing.VirtualListSize = 0;
+
+            this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
+
+            DoAnalyze();
         }
 
         private void btnTest_Click(object sender, EventArgs e)
@@ -110,6 +115,11 @@ namespace DosDebugger
 #endif
 
         private void btnAnalyze_Click(object sender, EventArgs e)
+        {
+            DoAnalyze();
+        }
+
+        private void DoAnalyze()
         {
             dasm.Analyze(mzFile.EntryPoint);
             X86Codec.Decoder decoder = new X86Codec.Decoder();

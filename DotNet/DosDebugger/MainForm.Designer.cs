@@ -344,7 +344,7 @@
             // 
             // columnHeader7
             // 
-            this.columnHeader7.Text = "Procedure";
+            this.columnHeader7.Text = "Segment";
             this.columnHeader7.Width = 100;
             // 
             // MainForm
