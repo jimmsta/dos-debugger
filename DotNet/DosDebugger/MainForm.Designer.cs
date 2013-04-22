@@ -185,7 +185,7 @@
             // 
             // btnGoTo
             // 
-            this.btnGoTo.Location = new System.Drawing.Point(446, 38);
+            this.btnGoTo.Location = new System.Drawing.Point(416, 38);
             this.btnGoTo.Name = "btnGoTo";
             this.btnGoTo.Size = new System.Drawing.Size(65, 30);
             this.btnGoTo.TabIndex = 7;
@@ -198,6 +198,7 @@
             this.cbBookmarks.FormattingEnabled = true;
             this.cbBookmarks.Items.AddRange(new object[] {
             "2920:17FC useful routine",
+            "3FE6:C830 single-entry jump table",
             "2920:377D jump table 1",
             "2920:8B53 jump table 2",
             "2920:6184 jump table 3",
@@ -206,7 +207,7 @@
             "2920:7430 program entry"});
             this.cbBookmarks.Location = new System.Drawing.Point(203, 41);
             this.cbBookmarks.Name = "cbBookmarks";
-            this.cbBookmarks.Size = new System.Drawing.Size(237, 27);
+            this.cbBookmarks.Size = new System.Drawing.Size(207, 27);
             this.cbBookmarks.TabIndex = 8;
             // 
             // menuStrip1
@@ -306,11 +307,11 @@
             // 
             // txtFind
             // 
-            this.txtFind.Location = new System.Drawing.Point(517, 41);
+            this.txtFind.Location = new System.Drawing.Point(487, 41);
             this.txtFind.Name = "txtFind";
-            this.txtFind.Size = new System.Drawing.Size(100, 26);
+            this.txtFind.Size = new System.Drawing.Size(130, 26);
             this.txtFind.TabIndex = 13;
-            this.txtFind.Text = "fwait";
+            this.txtFind.Text = "jmpn word ptr cs:[";
             // 
             // btnFind
             // 

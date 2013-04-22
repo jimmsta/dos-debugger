@@ -111,7 +111,7 @@ namespace DosDebugger
 
         private void btnAnalyze_Click(object sender, EventArgs e)
         {
-            dasm.Analyze(mzFile.EntryPoint, true);
+            dasm.Analyze(mzFile.EntryPoint);
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
             // Display analysis errors.

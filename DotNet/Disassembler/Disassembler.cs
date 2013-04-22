@@ -22,7 +22,7 @@ namespace Disassembler
         /// addresses to the queue of entry points, so that they can be 
         /// analyzed later.
         /// </summary>
-        private List<XRef> entryPoints;
+        private List<XRef> globalXRefs;
         private Pointer baseAddress;
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Disassembler
             this.baseAddress = baseAddress;
             this.attr = new ByteAttribute[image.Length];
             this.byteSegment = new ushort[image.Length]; // TBD
-            this.entryPoints = new List<XRef>();
+            this.globalXRefs = new List<XRef>();
             this.procedures = new Dictionary<Pointer, bool>();
         }
 
@@ -95,7 +95,7 @@ namespace Disassembler
 
         public IEnumerable<XRef> GetReferencesTo(Pointer location)
         {
-            foreach (XRef xref in entryPoints)
+            foreach (XRef xref in globalXRefs)
             {
                 if (xref.Target == location)
                     yield return xref;
@@ -110,87 +110,80 @@ namespace Disassembler
         /// <param name="start">Entry point of a procedure.</param>
         /// <param name="recursive">Whether to analyze functions called by
         /// this procedure.</param>
-        public void Analyze(Pointer start, bool recursive)
+        public void Analyze(Pointer start)
         {
-            // Create an entry point using the user-supplied starting address.
-            List<Pointer> calls = new List<Pointer>();
-            calls.Add(start);
-
-            // Analyze each procedure in the list of procedures.
-            for (int i = 0; i < calls.Count; i++)
+            // Create a a dummy xref entry using the user-supplied starting
+            // address.
+            List<XRef> xrefs = new List<XRef>();
+            xrefs.Add(new XRef
             {
-                Pointer entry = calls[i];
+                Target = start,
+                Source = Pointer.Invalid,
+                Type = XRefType.FunctionCall,
+            });
 
-                // If the procedure at this entry point has already been
-                // analyzed, do nothing.
-                if (procedures.ContainsKey(entry))
-                    continue;
+            List<XRef> jumpTables = new List<XRef>();
 
-                // Analyze this procedure. Function calls made from this
-                // procedure will be appended to the 'calls' list.
-                AnalyzeProcedure(entry, calls);
+            int iJumpTable = 0;
+            int i = 0;
+            while (true)
+            {
+                // Analyze each procedure in the list of procedures.
+                for (; i < xrefs.Count; i++)
+                {
+                    XRef entry = xrefs[i];
 
-                // Mark the procedure as processed.
-                procedures[entry] = true;
+                    // If the target of this xref is dynamic, do nothing.
+                    if (entry.Target == Pointer.Invalid)
+                        continue;
 
-                if (!recursive)
+                    // If this xref refers to a jump table entry, add it to
+                    // the list of jump table entries to process later.
+                    if (entry.Type == XRefType.NearJumpTableEntry)
+                    {
+                        jumpTables.Add(entry);
+                        continue;
+                    }
+
+                    // If this xref is a function call, analyze the function
+                    // if the entry point has not yet analyzed yet.
+                    if (entry.Type == XRefType.FunctionCall)
+                    {
+                        if (!procedures.ContainsKey(entry.Target))
+                        {
+                            AnalyzeProcedure(entry.Target, xrefs);
+
+                            // Mark the procedure as processed.
+                            procedures[entry.Target] = true;
+                        }
+                        continue;
+                    }
+
+                    // If this xref is NearJumpTableTarget, process the
+                    // procedure again.
+                    if (entry.Type == XRefType.NearJumpTableTarget)
+                    {
+                        AnalyzeProcedure(entry.Target, xrefs);
+                    }
+                }
+
+                // Process any entries in the jump table.
+                if (iJumpTable >= jumpTables.Count)
                     break;
+
+                ProcessJumpTableEntry(jumpTables[iJumpTable], xrefs);
+                //System.Diagnostics.Debug.WriteLine("Processing jump table at " + entry.Source.ToString());
+                iJumpTable++;
             }
+
+            // Add the cross references to the global xref list.
+            globalXRefs.AddRange(xrefs);
 
 #if false
 #if false
     fprintf(stderr, "\n-- Statistics after initial analysis --\n");
     dasm_stat(d);
 #endif
-
-            /* Analyze any jump tables encountered in the above analysis. Since we
-     * may encounter more jump tables on the way, we do this recursively
-     * until there are no more jump tables.
-     */
-            for (; i < VECTOR_SIZE(d->jump_tables); i++)
-            {
-                /* Analyze each entry in the jump table by assuming that it contains
-                 * the address to a code block. Note that this is a rather
-                 * opportunistic assumption -- it is fairly easy to construct a jump
-                 * table that violates this logic. Nevertheless, for the moment we 
-                 * will assume that the code is "well-formed".
-                 */
-                dasm_farptr_t insn_pos = VECTOR_AT(d->jump_tables, i).insn_pos;
-                uint32_t table_offset = FARPTR_TO_OFFSET(VECTOR_AT(d->jump_tables, i).start);
-                uint32_t entry_offset = table_offset;
-                while (!(d->attr[entry_offset] & ATTR_PROCESSED) &&
-                     !(d->attr[entry_offset + 1] & ATTR_PROCESSED))
-                {
-                    uint16_t target = (uint16_t)d->image[entry_offset] |
-                        ((uint16_t)d->image[entry_offset + 1] << 8);
-
-                    /* Mark this entry as data. */
-                    d->attr[entry_offset] &= ~ATTR_TYPE;
-                    d->attr[entry_offset] |= TYPE_DATA;
-                    d->attr[entry_offset] |= ATTR_BOUNDARY;
-
-                    d->attr[entry_offset + 1] &= ~ATTR_TYPE;
-                    d->attr[entry_offset + 1] |= TYPE_DATA;
-                    d->attr[entry_offset + 1] &= ~ATTR_BOUNDARY;
-
-                    entry.target.seg = insn_pos.seg;
-                    entry.target.off = target;
-                    entry.source = insn_pos;
-                    entry.type = XREF_INDIRECT_JUMP;
-
-#if false
-            fprintf(stderr, "Processing jump entry %d, target %04X:%04X\n",
-                (entry_offset - table_offset) / 2, 
-                entry.start.seg, entry.start.off);
-#endif
-
-                    analyze_code_block(d, entry);
-
-                    /* Advance to the next jump entry. Each entry takes 2 bytes/ */
-                    entry_offset += 2;
-                }
-            }
-
             /* Sort the XREFs built from the above analyses by target address. 
              * After this is done, the client can easily list the disassembled
              * instructions with xrefs sequentially in physical order.
@@ -200,124 +193,121 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Analyzes a procedure starting from the given entry point.
+        /// Analyzes a procedure starting from the given location. This
+        /// location should be within the procedure, but is not necessarily
+        /// the entry point of the procedure.
+        /// 
+        /// The analysis does not recurse into procedures called by this
+        /// procedure.
         /// </summary>
-        /// <param name="start">Address of procedure entry point.</param>
-        /// <param name="calls">List of addresses called by this 
+        /// <param name="start">Address to start analysis.</param>
+        /// <param name="xrefs">List of procedures called by this 
         /// procedure.</param>
-        private void AnalyzeProcedure(Pointer start, List<Pointer> calls)
+        private void AnalyzeProcedure(Pointer start, List<XRef> xrefs)
         {
-            // Create a dummy code block.
-            XRef entry = new XRef
+            List<XRef> localXrefs = new List<XRef>();
+
+            // Create a dummy xref for the starting address.
+            localXrefs.Add(new XRef
             {
                 Target = start,
                 Source = Pointer.Invalid,
                 Type = XRefType.UserSpecified
-            };
-            entryPoints.Add(entry);
+            });
 
-            // Process each code block in the queue until there are no more
-            // left.
-            for (int i = entryPoints.Count - 1; i < entryPoints.Count; i++)
+            // Process each entry point in the queue until there are no more
+            // entry points left.
+            for (int i = 0; i < localXrefs.Count; i++)
             {
-                XRef xref = entryPoints[i];
-                Pointer target = xref.Target;
+                XRef entry = localXrefs[i];
 
-                // If we encounter a xref whose target we don't know, e.g.
-                // in an instruction 
-                //   jmp     word ptr [data_573] 
-                // Skip this xref.
-                if (target == Pointer.Invalid)
-                {
-                    Instruction insn = X86Codec.Decoder.Decode(image, xref.Source-baseAddress, xref.Source, CpuMode.RealAddressMode);
-                    errors.Add(new Error(xref.Source, string.Format(
-                        "Cannot determine target of {0} instruction.",
-                        insn.Operation.ToString().ToUpperInvariant())));
+                // Skip dynamic xrefs, function calls, and jump tables.
+                if (entry.Target == Pointer.Invalid ||
+                    entry.Type == XRefType.FunctionCall ||
+                    entry.Type == XRefType.NearJumpTableEntry)
                     continue;
-                }
 
-                //FarPointer16 from = entryPoints[i].Source;
-
-                // Legacy behavior: if the xref comes from a function call,
-                // we push it to the queue but does not process it here.
-                if (xref.Type == XRefType.FunctionCall)
-                {
-                    calls.Add(target);
-                    continue;
-                }
-
-                // If the target refers to a jump table entry, we delay its
-                // processing until we have processed all other types of
-                // cross-references. This reduces the chance that we process
-                // past the end of the jump table.
-                if (xref.Type == XRefType.NearJumpTableEntry)
-                {
-                    int iNonJumpTable = i + 1;
-                    for (; iNonJumpTable < entryPoints.Count; iNonJumpTable++)
-                    {
-                        if (entryPoints[iNonJumpTable].Type != XRefType.NearJumpTableEntry)
-                            break;
-                    }
-                    if (iNonJumpTable < entryPoints.Count)
-                    {
-                        XRef t = entryPoints[iNonJumpTable];
-                        entryPoints[iNonJumpTable] = xref;
-                        entryPoints[i] = t;
-                        i--;
-                        continue;
-                    }
-
-                    // Process this one.
-                    int b = target - baseAddress;
-                    if (!(attr[b].Type == ByteType.Unknown &&
-                        attr[b + 1].Type == ByteType.Unknown))
-                        continue;
-
-                    // Mark the jump table entry as data.
-                    attr[b].Type = ByteType.Data;
-                    attr[b].IsBoundary = true;
-                    attr[b + 1].Type = ByteType.Data;
-                    attr[b + 1].IsBoundary = false;
-
-                    // Read the jump offset.
-                    ushort jumpOffset = BitConverter.ToUInt16(image, b);
-
-                    // Add a xref from the jump table entry to the jump 
-                    // target.
-                    entryPoints.Add(new XRef
-                    {
-                        Source = target,
-                        Target = new Pointer(target.Segment, jumpOffset),
-                        Type = XRefType.NearJumpTableTarget
-                    });
-
-                    // Add a xref from the JMP instruction to the next jump
-                    // table entry.
-                    entryPoints.Add(new XRef
-                    {
-                        Source = xref.Source,
-                        Target = xref.Target + 2,
-                        Type = XRefType.NearJumpTableEntry
-                    });
-                    continue;
-                }
-
-                // Analyze this code block.
-                AnalyzeCodeBlock(xref, entryPoints);
+                // Process this code block assuming no jumps are taken and
+                // function calls and interrupts all return.
+                AnalyzeCodeBlock(entry, localXrefs);
             }
+
+                // If there are no more outstanding jump tables, we are done.
+                //iJumpTable++;
+                //if (iJumpTable >= jumpTables.Count)
+                //    break;
+
+                // Process the next jump table entry.
+                //ProcessJumpTableEntry(jumpTables[iJumpTable], codeBlocks, jumpTables);
+            
+            // Append the local XRef list to the global xref list.
+            localXrefs.RemoveAt(0);
+            xrefs.AddRange(localXrefs);
+        }
+
+        private void ProcessJumpTableEntry(XRef entry, ICollection<XRef> xrefs)
+        {
+            if (entry.Type != XRefType.NearJumpTableEntry)
+                throw new ArgumentException("xref type mismatch.");
+
+            // If the target refers to a jump table entry, we delay its
+            // processing until we have processed all other types of
+            // cross-references. This reduces the chance that we process
+            // past the end of the jump table.
+            if (entry.Source.ToString() == "3668:6516")
+            {
+                int kk = 1;
+            }
+
+            // Process this one.
+            int b = entry.Target - baseAddress;
+            if (attr[b].Type != ByteType.Unknown ||
+                attr[b + 1].Type != ByteType.Unknown)
+                return;
+
+            // Mark the memory location specified by the jump table
+            // entry as data.
+            attr[b].Type = ByteType.Data;
+            attr[b].IsBoundary = true;
+            attr[b + 1].Type = ByteType.Data;
+            attr[b + 1].IsBoundary = false;
+            byteSegment[b] = entry.Target.Segment;
+
+            // Read the jump offset.
+            ushort jumpOffset = BitConverter.ToUInt16(image, b);
+
+            // Add a xref from the dynamic JMP instruction to the jump 
+            // target.
+            xrefs.Add(new XRef
+            {
+                Source = entry.Source,
+                Target = new Pointer(entry.Source.Segment, jumpOffset),
+                Type = XRefType.NearJumpTableTarget
+            });
+
+            // Add a xref from the JMP instruction to the next jump
+            // table entry.
+            xrefs.Add(new XRef
+            {
+                Source = entry.Source,
+                Target = entry.Target + 2,
+                Type = XRefType.NearJumpTableEntry
+            });
         }
 
         /// <summary>
         /// Analyzes a continuous block of code until end-of-input, analyzed
         /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT. Conditional jumps and calls are stored recorded but they do
-        /// not terminate the block.
+        /// HLT. Conditional jumps and calls are stored but they do not
+        /// terminate the block.
         /// </summary>
         /// <param name="start">Address of first instruction in the block.
         /// </param>
         /// <param name="jumps">Jump instructions are added to this list.</param>
         /// <param name="calls">Call instructions are added to this list.</param>
-        private void AnalyzeCodeBlock(XRef start, List<XRef> xrefs) // jumps, List<XRef> calls)
+        /// <param name="dynamicJumps">Jump instructions with a dynamic target
+        /// are added to this list.</param>
+        private void AnalyzeCodeBlock(XRef start, ICollection<XRef> xrefs)
         {
             Pointer pos = start.Target;
             while (true)
@@ -361,11 +351,9 @@ namespace Disassembler
                     switch (xref.Type)
                     {
                         case XRefType.FunctionCall:
-                            break;
                         case XRefType.ConditionalJump:
                             break;
                         case XRefType.UnconditionalJump:
-                            return;
                         case XRefType.NearJumpTableEntry:
                             return;
                         default:
@@ -376,6 +364,8 @@ namespace Disassembler
                 // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
                 // if pos.off + count > 0xFFFF. This is probably not intended but
                 // technically allowed. So we allow for this for the moment.
+                if (pos.Offset + insn.EncodedLength > 0xFFFF)
+                    throw new InvalidOperationException("Instruction wrapped!");
                 pos += insn.EncodedLength;
             }
         }
@@ -607,6 +597,10 @@ namespace Disassembler
             }
 
             // Other jump/call targets that we cannot recognize.
+            errors.Add(new Error(start, string.Format(
+                "Cannot determine target of {0} instruction.",
+                instruction.Operation.ToString().ToUpperInvariant())));
+
             return new XRef
             {
                 Source = start,
@@ -633,80 +627,6 @@ namespace Disassembler
         }
     }
 
-    /* Represents a cross-referential link in the code and data. For a xref 
- * between code and code, it is equivalent to an edge in a Control Flow Graph.
- */
-    public class XRef
-    {
-        /// <summary>
-        /// Gets or sets the target address being referenced.
-        /// </summary>
-        public Pointer Target { get; set; }
-
-        /// <summary>
-        /// Gets or sets the source address that refers to target.
-        /// </summary>
-        public Pointer Source { get; set; }
-
-        /// <summary>
-        /// Gets or sets the type of cross-reference.
-        /// </summary>
-        public XRefType Type { get; set; }
-    }
-
-    /// <summary>
-    /// Defines types of cross-references.
-    /// </summary>
-    public enum XRefType
-    {
-        /// <summary>
-        /// user specified entry point (e.g. program start)
-        /// </summary>
-        UserSpecified,
-
-        /// <summary>
-        /// A CALL instruction refers to this location.
-        /// </summary>
-        FunctionCall,
-
-        /// <summary>
-        /// A Jcc instruction refers to this location.
-        /// </summary>
-        ConditionalJump,
-
-        /// <summary>
-        /// A JUMP instruction refers to this location.
-        /// </summary>
-        UnconditionalJump,
-
-        /// <summary>
-        /// A JUMP instruction where the jump target address is given by
-        /// a memory location (such as jump table). ??????
-        /// </summary>
-        //IndirectJump,
-
-#if false
-    XREF_RETURN_FROM_CALL      = 5,    
-    XREF_RETURN_FROM_INTERRUPT = 6,    
-#endif
-
-        /// <summary>
-        /// The word at the Target location appears to contain the relative
-        /// offset to a JMPN instruction that refers to a jump-table. The
-        /// location of the JMPN instruction is stored in Source.
-        /// </summary>
-        NearJumpTableEntry,
-
-        NearJumpTableTarget,
-
-#if false
-    ENTRY_FAR_JUMP_TABLE        = 8,    /* the dword at this location appears to represent
-                                         * an absolute address (seg:ptr) of a JUMP FAR
-                                         * instruction.
-                                         */
-#endif
-    }
-
     /// <summary>
     /// Defines the type of a byte in an executable image.
     /// </summary>
@@ -731,67 +651,6 @@ namespace Disassembler
         /// The byte is part of a data item.
         /// </summary>
         Data = 3,
-    }
-
-    public struct ByteAttribute
-    {
-        byte x;
-
-        const byte TypeMask = 3;
-        const byte BoundaryBit = 4;
-        const byte BlockStartBit = 8;
-
-        /// <summary>
-        /// Tests whether the byte has been analyzed.
-        /// </summary>
-        public bool IsProcessed
-        {
-            get { return Type == ByteType.Code || Type == ByteType.Data; }
-        }
-
-        /// <summary>
-        /// Gets or sets the type of the byte.
-        /// </summary>
-        public ByteType Type
-        {
-            get { return (ByteType)(x & TypeMask); }
-            set
-            {
-                x = (byte)(x & ~TypeMask | (byte)value);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a flag that indicates whether the byte is the first
-        /// byte of an instruction or a data item.
-        /// </summary>
-        public bool IsBoundary
-        {
-            get { return (x & BoundaryBit) != 0; }
-            set
-            {
-                if (value)
-                    x |= BoundaryBit;
-                else
-                    x = (byte)(x & ~BoundaryBit);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a flag that indicates whether the byte is the first
-        /// byte of an instruction that starts a basic block.
-        /// </summary>
-        public bool IsBlockStart
-        {
-            get { return (x & BlockStartBit) != 0; }
-            set
-            {
-                if (value)
-                    x |= BlockStartBit;
-                else
-                    x = (byte)(x & ~BlockStartBit);
-            }
-        }
     }
 }
 

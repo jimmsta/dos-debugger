@@ -49,7 +49,11 @@ namespace DosDebugger
                     while (attr[j].Type == ByteType.Data && !attr[j].IsBoundary)
                         j++;
 
-                    rows.Add(new DataListingRow(dasm.BaseAddress + i, ArraySlice(dasm.Image, i, j - i)));
+                    int baseSegment = dasm.BaseAddress.Segment;
+                    UInt16 seg = dasm.ByteSegments[i];
+                    Pointer location = new Pointer(seg, (UInt16)(i - (seg - baseSegment) * 16));
+
+                    rows.Add(new DataListingRow(location, ArraySlice(dasm.Image, i, j - i)));
                     i = j;
                     inCodeBlock = true;
                 }
