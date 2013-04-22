@@ -36,9 +36,12 @@ namespace DosDebugger
             mzFile = new MZFile(fileName);
             mzFile.Relocate(baseSegment);
             dasm = new Disassembler.Disassembler16(mzFile.Image, mzFile.BaseAddress);
+
             lvErrors.Items.Clear();
-            lvListing.Items.Clear();
             lvProcedures.Items.Clear();
+        
+            listingView = null;
+            lvListing.VirtualListSize = 0;
         }
 
         private void btnTest_Click(object sender, EventArgs e)
@@ -179,14 +182,19 @@ namespace DosDebugger
                 if (current != Pointer.Invalid &&
                     current.EffectiveAddress >= target.EffectiveAddress)
                 {
-                    ListViewItem item = lvListing.Items[i];
-                    lvListing.Focus();
-                    lvListing.TopItem = item;
-                    item.Selected = true;
+                    GoToRow(i);
                     return true;
                 }
             }
             return false;
+        }
+
+        private void GoToRow(int index)
+        {
+            ListViewItem item = lvListing.Items[index];
+            lvListing.Focus();
+            lvListing.TopItem = item;
+            item.Selected = true;
         }
 
         private void lvProcedures_SelectedIndexChanged(object sender, EventArgs e)

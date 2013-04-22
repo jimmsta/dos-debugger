@@ -159,7 +159,54 @@ namespace X86Codec
         XBEGIN,
 
         /* 8087 FPU instructions */
-        FCLEX,
-        FSTSW,
+
+        // 5.2.1 x87 FPU Data Transfer Instructions:
+        FLD, FST, FSTP,
+        FILD, FIST, FISTP, FISTTP,
+        FBLD, FBSTP,
+        FXCH,
+        FCMOVE, FCMOVNE, FCMOVB, FCMOVBE, FCMOVNB, FCMOVNBE, FCMOVU, FCMOVNU,
+
+        // x87 FPU Basic Arithmetic Instructions:
+        FADD, FADDP, FIADD,
+        FSUB, FSUBP, FISUB, FSUBR, FSUBRP, FISUBR,
+        FMUL, FMULP, FIMUL, FDIV,
+        FDIVP, FIDIV, FDIVR, FDIVRP, FIDIVR,
+        FPREM,
+        FPREM1,
+        FABS,
+        FCHS,
+        FRNDINT,
+        FSCALE,
+        FSQRT,
+        FXTRACT,
+
+        // 5.2.3 x87 FPU Comparison Instructions:
+        FCOM, FCOMP, FCOMPP,
+        FUCOM, FUCOMP, FUCOMPP,
+        FICOM, FICOMP,
+        FCOMI, FUCOMI, FCOMIP, FUCOMIP,
+        FTST,
+        FXAM,
+
+        // 5.2.4 x87 FPU Transcendental Instructions:
+        FSIN, FCOS, FSINCOS,
+        FPTAN, FPATAN,
+        F2XM1,
+        FYL2X,
+        FYL2XP1,
+
+        // 5.2.5 x87 FPU Load Constants Instructions:
+        FLD1, FLDZ, FLDPI, FLDL2E, FLDLN2, FLDL2T, FLDLG2,
+
+        // 5.2.6 x87 FPU Control Instructions:
+        FINCSTP, FDECSTP, FFREE,
+        FINIT, FNINIT,
+        FCLEX, FNCLEX,
+        FSTCW, FNSTCW, FLDCW,
+        FSTENV, FNSTENV, FLDENV,
+        FSAVE, FNSAVE, FRSTOR,
+        FSTSW, FNSTSW,
+        FNOP,
     }
 }

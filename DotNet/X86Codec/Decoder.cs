@@ -325,15 +325,218 @@ namespace X86Codec
             ModRM modrm = reader.GetModRM();
             int mod = modrm.MOD;
             int reg = modrm.REG;
+            int rm = modrm.RM;
+            Op x = Op.Empty;
+
             switch (firstByte)
             {
+                case 0xD8:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FADD, O.ST0, O.T80fp); break;
+                            case 1: x = new Op(Operation.FMUL, O.ST0, O.T80fp); break;
+                            case 2: x = new Op(Operation.FCOM, O.ST0, O.T80fp); break;
+                            case 3: x = new Op(Operation.FCOMP, O.ST0, O.T80fp); break;
+                            case 4: x = new Op(Operation.FSUB, O.ST0, O.T80fp); break;
+                            case 5: x = new Op(Operation.FSUBR, O.ST0, O.T80fp); break;
+                            case 6: x = new Op(Operation.FDIV, O.ST0, O.T80fp); break;
+                            case 7: x = new Op(Operation.FDIVR, O.ST0, O.T80fp); break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FADD, O.ST0, O.M32fp); break;
+                            case 1: x = new Op(Operation.FMUL, O.ST0, O.M32fp); break;
+                            case 2: x = new Op(Operation.FCOM, O.ST0, O.M32fp); break;
+                            case 3: x = new Op(Operation.FCOMP, O.ST0, O.M32fp); break;
+                            case 4: x = new Op(Operation.FSUB, O.ST0, O.M32fp); break;
+                            case 5: x = new Op(Operation.FSUBR, O.ST0, O.M32fp); break;
+                            case 6: x = new Op(Operation.FDIV, O.ST0, O.M32fp); break;
+                            case 7: x = new Op(Operation.FDIVR, O.ST0, O.M32fp); break;
+                        }
+                    }
+                    break;
+
+                case 0xD9:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FLD, O.ST0, O.T80fp); break;
+                            case 1: x = new Op(Operation.FXCH, O.ST0, O.T80fp); break;
+                            case 2:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.FNOP); break;
+                                }
+                                break;
+                            case 3: break;
+                            case 4:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.FCHS); break;
+                                    case 1: x = new Op(Operation.FABS); break;
+                                    case 4: x = new Op(Operation.FTST); break;
+                                    case 5: x = new Op(Operation.FXAM); break;
+                                }
+                                break;
+                            case 5:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.FLD1); break;
+                                    case 1: x = new Op(Operation.FLDL2T); break;
+                                    case 2: x = new Op(Operation.FLDL2E); break;
+                                    case 3: x = new Op(Operation.FLDPI); break;
+                                    case 4: x = new Op(Operation.FLDLG2); break;
+                                    case 5: x = new Op(Operation.FLDLN2); break;
+                                    case 6: x = new Op(Operation.FLDZ); break;
+                                }
+                                break;
+                            case 6:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.F2XM1); break;
+                                    case 1: x = new Op(Operation.FYL2X); break;
+                                    case 2: x = new Op(Operation.FPTAN); break;
+                                    case 3: x = new Op(Operation.FPATAN); break;
+                                    case 4: x = new Op(Operation.FXTRACT); break;
+                                    case 5: x = new Op(Operation.FPREM1); break;
+                                    case 6: x = new Op(Operation.FDECSTP); break;
+                                    case 7: x = new Op(Operation.FINCSTP); break;
+                                }
+                                break;
+                            case 7:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.FPREM); break;
+                                    case 1: x = new Op(Operation.FYL2XP1); break;
+                                    case 2: x = new Op(Operation.FSQRT); break;
+                                    case 3: x = new Op(Operation.FSINCOS); break;
+                                    case 4: x = new Op(Operation.FRNDINT); break;
+                                    case 5: x = new Op(Operation.FSCALE); break;
+                                    case 6: x = new Op(Operation.FSIN); break;
+                                    case 7: x = new Op(Operation.FCOS); break;
+                                }
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FLD, O.ST0, O.M32fp); break;
+                            case 1: break;
+                            case 2: x = new Op(Operation.FST, O.ST0, O.M32fp); break;
+                            case 3: x = new Op(Operation.FSTP, O.ST0, O.M32fp); break;
+                            case 4: x = new Op(Operation.FLDENV, O.M14or28b); break;
+                            case 5: x = new Op(Operation.FLDCW, O.Mw); break;
+                            case 6: x = new Op(Operation.FSTENV, O.M14or28b); break;
+                            case 7: x = new Op(Operation.FSTCW, O.Mw); break;
+                        }
+                    }
+                    break;
+
+                case 0xDA:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FCMOVB, O.ST0, O.T80fp); break;
+                            case 1: x = new Op(Operation.FCMOVE, O.ST0, O.T80fp); break;
+                            case 2: x = new Op(Operation.FCMOVBE, O.ST0, O.T80fp); break;
+                            case 3: x = new Op(Operation.FCMOVU, O.ST0, O.T80fp); break;
+                            case 6:
+                                switch (rm)
+                                {
+                                    case 1: x = new Op(Operation.FUCOMPP); break;
+                                }
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FIADD, O.ST0, O.Md); break;
+                            case 1: x = new Op(Operation.FIMUL, O.ST0, O.Md); break;
+                            case 2: x = new Op(Operation.FICOM, O.ST0, O.Md); break;
+                            case 3: x = new Op(Operation.FICOMP, O.ST0, O.Md); break;
+                            case 4: x = new Op(Operation.FISUB, O.ST0, O.Md); break;
+                            case 5: x = new Op(Operation.FISUBR, O.ST0, O.Md); break;
+                            case 6: x = new Op(Operation.FIDIV, O.ST0, O.Md); break;
+                            case 7: x = new Op(Operation.FIDIVR, O.ST0, O.Md); break;
+                        }
+                    }
+                    break;
+
                 case 0xDB:
                     if (mod == 3)
                     {
-                        switch (reader.GetModRM().Value)
+                        switch (reg)
                         {
-                            case 0xE2:
-                                return new Op(Operation.FCLEX);
+                            case 0: x = new Op(Operation.FCMOVNB, O.ST0, O.T80fp); break;
+                            case 1: x = new Op(Operation.FCMOVNE, O.ST0, O.T80fp); break;
+                            case 2: x = new Op(Operation.FCMOVNBE, O.ST0, O.T80fp); break;
+                            case 3: x = new Op(Operation.FCMOVNU, O.ST0, O.T80fp); break;
+                            case 4:
+                                switch (rm)
+                                {
+                                    case 2: x = new Op(Operation.FCLEX); break;
+                                    case 3: x = new Op(Operation.FINIT); break;
+                                }
+                                break;
+                            case 5: x = new Op(Operation.FUCOMI, O.ST0, O.T80fp); break;
+                            case 6: x = new Op(Operation.FCOMI, O.ST0, O.T80fp); break;
+                            case 7: break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FILD, O.Md); break;
+                            case 1: x = new Op(Operation.FISTTP, O.Md); break;
+                            case 2: x = new Op(Operation.FIST, O.Md); break;
+                            case 3: x = new Op(Operation.FISTP, O.Md); break;
+                            case 4: break;
+                            case 5: x = new Op(Operation.FLD, O.M80fp); break;
+                            case 6: break;
+                            case 7: x = new Op(Operation.FSTP, O.M80fp); break;
+                        }
+                    }
+                    break;
+
+                case 0xDC:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FADD,O.T80fp, O.ST0); break;
+                            case 1: x = new Op(Operation.FMUL, O.T80fp, O.ST0); break;
+                            case 2: break;
+                            case 3: break;
+                            case 4: x = new Op(Operation.FSUBR, O.T80fp, O.ST0); break;
+                            case 5: x = new Op(Operation.FSUB, O.T80fp, O.ST0); break;
+                            case 6: x = new Op(Operation.FDIVR, O.T80fp, O.ST0); break;
+                            case 7: x = new Op(Operation.FDIV, O.T80fp, O.ST0); break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FADD, O.ST0, O.M64fp); break;
+                            case 1: x = new Op(Operation.FMUL, O.ST0, O.M64fp); break;
+                            case 2: x = new Op(Operation.FCOM, O.ST0, O.M64fp); break;
+                            case 3: x = new Op(Operation.FCOMP, O.ST0, O.M64fp); break;
+                            case 4: x = new Op(Operation.FSUB, O.ST0, O.M64fp); break;
+                            case 5: x = new Op(Operation.FSUBR, O.ST0, O.M64fp); break;
+                            case 6: x = new Op(Operation.FDIV, O.ST0, O.M64fp); break;
+                            case 7: x = new Op(Operation.FDIVR, O.ST0, O.M64fp); break;
                         }
                     }
                     break;
@@ -341,20 +544,113 @@ namespace X86Codec
                 case 0xDD:
                     if (mod == 3)
                     {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FFREE, O.T80fp); break;
+                            case 1: break;
+                            case 2: x = new Op(Operation.FST, O.T80fp); break;
+                            case 3: x = new Op(Operation.FSTP, O.T80fp); break;
+                            case 4: x = new Op(Operation.FUCOM, O.T80fp, O.ST0); break;
+                            case 5: x = new Op(Operation.FUCOMP, O.T80fp, O.ST0); break;
+                            case 6: break;
+                            case 7: break;
+                        }
                     }
                     else
                     {
                         switch (reg)
                         {
-                            case 7:
-                                return new Op(Operation.FSTSW, O.Mw);
+                            case 0: x = new Op(Operation.FLD, O.M64fp); break;
+                            case 1: x = new Op(Operation.FISTTP, O.Mq); break;
+                            case 2: x = new Op(Operation.FST, O.M64fp); break;
+                            case 3: x = new Op(Operation.FSTP, O.M64fp); break;
+                            case 4: x = new Op(Operation.FRSTOR, O.Mb); break; // TODO: should be 98/108 bytes
+                            case 5: break;
+                            case 6: x = new Op(Operation.FSAVE, O.Mb); break; // TODO: should be 98/108 bytes
+                            case 7: x = new Op(Operation.FSTSW, O.Mw); break;
+                        }
+                    }
+                    break;
+
+                case 0xDE:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FADDP, O.T80fp, O.ST0); break;
+                            case 1: x = new Op(Operation.FMULP, O.T80fp, O.ST0); break;
+                            case 2: break;
+                            case 3:
+                                switch (rm)
+                                {
+                                    case 1: x = new Op(Operation.FCOMPP); break;
+                                }
+                                break;
+                            case 4: x = new Op(Operation.FSUBRP, O.T80fp, O.ST0); break;
+                            case 5: x = new Op(Operation.FSUBP, O.T80fp, O.ST0); break;
+                            case 6: x = new Op(Operation.FDIVRP, O.T80fp, O.ST0); break;
+                            case 7: x = new Op(Operation.FDIVP, O.T80fp, O.ST0); break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FIADD, O.ST0, O.Mw); break;
+                            case 1: x = new Op(Operation.FIMUL, O.ST0, O.Mw); break;
+                            case 2: x = new Op(Operation.FICOM, O.ST0, O.Mw); break;
+                            case 3: x = new Op(Operation.FICOMP, O.ST0, O.Mw); break;
+                            case 4: x = new Op(Operation.FISUB, O.ST0, O.Mw); break;
+                            case 5: x = new Op(Operation.FISUBR, O.ST0, O.Mw); break;
+                            case 6: x = new Op(Operation.FIDIV, O.ST0, O.Mw); break;
+                            case 7: x = new Op(Operation.FIDIVR, O.ST0, O.Mw); break;
+                        }
+                    }
+                    break;
+
+                case 0xDF:
+                    if (mod == 3)
+                    {
+                        switch (reg)
+                        {
+                            case 0: break;
+                            case 1: break;
+                            case 2: break;
+                            case 3: break;
+                            case 4:
+                                switch (rm)
+                                {
+                                    case 0: x = new Op(Operation.FSTSW, O.AX); break;
+                                }
+                                break;
+                            case 5: x = new Op(Operation.FUCOMIP, O.ST0, O.T80fp); break;
+                            case 6: x = new Op(Operation.FCOMIP, O.ST0, O.T80fp); break;
+                            case 7: break;
+                        }
+                    }
+                    else
+                    {
+                        switch (reg)
+                        {
+                            case 0: x = new Op(Operation.FILD, O.Mw); break;
+                            case 1: x = new Op(Operation.FISTTP, O.Mw); break;
+                            case 2: x = new Op(Operation.FIST, O.Mw); break;
+                            case 3: x = new Op(Operation.FISTP, O.Mw); break;
+                            case 4: x = new Op(Operation.FBLD, O.M80fp); break;
+                            case 5: x = new Op(Operation.FILD, O.Mq); break;
+                            case 6: x = new Op(Operation.FBSTP, O.M80fp); break;
+                            case 7: x = new Op(Operation.FISTP, O.Mq); break;
                         }
                     }
                     break;
             }
-            throw new InvalidInstructionException(string.Format(
-                "Invalid opcode: {0:X2} {1:X2}.",
-                firstByte, modrm.Value));
+            if (x.IsEmpty)
+            {
+                throw new InvalidInstructionException(string.Format(
+                    "Invalid opcode: {0:X2} {1:X2}.",
+                    firstByte, modrm.Value));
+            }
+            return x;
         }
 
         /// <summary>
@@ -704,6 +1000,9 @@ namespace X86Codec
                     number = spec - O.rAX;
                     return new RegisterOperand(RegisterType.General, number, context.OperandSize);
 
+                case O.ST0:
+                    return new RegisterOperand(Register.ST0);
+
                 case O.Ap: // off:seg encoded in the instruction
                     if (context.OperandSize != CpuSize.Use16Bit)
                     {
@@ -778,6 +1077,34 @@ namespace X86Codec
                         throw new NotSupportedException();
                     return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use16Bit, context);
 
+                case O.Mb: // r/m refers to memory; byte
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use8Bit, context);
+
+                case O.Mw: // r/m refers to memory; word
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use16Bit, context);
+
+                case O.Mq:
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use64Bit, context);
+
+                case O.M14or28b: // r/m refers to memory; 14 or 28 bytes
+                    // TODO: we actually need to check the CPU operation mode,
+                    // not the operand-size attribute.
+                    return DecodeMemoryOperand(
+                        reader,
+                        RegisterType.None,
+                        (context.OperandSize == CpuSize.Use16Bit) ? 
+                            CpuSize.Use14Bytes : CpuSize.Use28Bytes,
+                        context);
+
+                case O.M32fp: // r/m refers to memory; single-precision float
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use32Bit, context);
+
+                case O.M64fp: // r/m refers to memory; double-precision float
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use64Bit, context);
+
+                case O.M80fp: // r/m refers to memory; extended-precision float
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use80Bit, context);
+
                 case O.Ob: // absolute address (w/o segment); byte
                     // TODO: check 64-bit mode behavior
                     return new MemoryOperand
@@ -798,6 +1125,9 @@ namespace X86Codec
 
                 case O.Sw: // REG(modrm) selects segment register
                     return DecodeRegisterOperand(reader, RegisterType.Segment, CpuSize.Use16Bit, context);
+
+                case O.T80fp: // r/m selects x87 FPU register ST0-ST7
+                    return new RegisterOperand(RegisterType.Fpu, reader.GetModRM().RM, CpuSize.Use80Bit);
 
                 case O.Xb: // memory addressed by DS:rSI; byte
                     return new MemoryOperand
@@ -913,7 +1243,31 @@ namespace X86Codec
 
             Ib, Iv, Iw, Iz,
             Jb, Jz,
-            Ma, Mp, Mw,
+            Ma, Mb, Md, Mp, Mw, Mq,
+
+            /// <summary>
+            /// The ModR/M byte refers to a memory location containing 14 
+            /// bytes or 28 bytes, depending on operation mode of the CPU.
+            /// </summary>
+            M14or28b,
+
+            /// <summary>
+            /// The ModR/M byte refers to a memory location containing 32-bit
+            /// single-precision floating number.
+            /// </summary>
+            M32fp,
+
+            /// <summary>
+            /// The ModR/M byte refers to a memory location containing 64-bit
+            /// double-precision floating number.
+            /// </summary>
+            M64fp,
+
+            /// <summary>
+            /// The ModR/M byte refers to a memory location containing 80-bit
+            /// extended-precision floating number.
+            /// </summary>
+            M80fp,
 
             /// <summary>
             /// The instruction has no ModR/M byte. The offset of the operand
@@ -933,6 +1287,13 @@ namespace X86Codec
 
             Rv,
             Sw,
+
+            /// <summary>
+            /// The R/M field of the ModR/M byte selects an x87 FPU data
+            /// register ST(0)-ST(7).
+            /// </summary>
+            T80fp,
+
             Xb, Xv, Xz,
             Yb, Yv, Yz,
 
@@ -953,6 +1314,9 @@ namespace X86Codec
 
             /* XX in 16-bit mode, EXX in 32-bit mode, RXX in 64-bit mode */
             rAX, rCX, rDX, rBX, rSP, rBP, rSI, rDI,
+
+            /* x87 FPU registers */
+            ST0, // ST1, ST2, ST3, ST4, ST5, ST6, ST7,
         }
 
         /// <summary>

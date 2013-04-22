@@ -14,7 +14,10 @@ namespace X86Codec
         Use16Bit = 2,
         Use32Bit = 4,
         Use64Bit = 8,
+        Use80Bit = 10,
+        Use14Bytes = 14,
         Use128Bit = 16,
+        Use28Bytes = 28,
     }
     
     public enum CpuMode

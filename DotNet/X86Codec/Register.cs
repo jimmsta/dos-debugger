@@ -53,6 +53,7 @@ namespace X86Codec
         _SPECIAL = RegisterType.Special << 4,
         _GENERAL = RegisterType.General << 4,
         _SEGMENT = RegisterType.Segment << 4,
+        _ST = RegisterType.Fpu << 4,
 
         /// <summary>
         /// Specifies the bits that are used to represent the size (in bytes)
@@ -60,11 +61,12 @@ namespace X86Codec
         /// </summary>
         _SizeMask = 0x3f00,
         _SizeShift = 8,
-        _BYTE = 0x0100,
-        _WORD = 0x0200,
-        _DWORD = 0x0400,
-        _QWORD = 0x0800,
-        _DQWORD = 0x1000,
+        _BYTE = CpuSize.Use8Bit << 8,
+        _WORD = CpuSize.Use16Bit << 8,
+        _DWORD = CpuSize.Use32Bit << 8,
+        _QWORD = CpuSize.Use64Bit << 8,
+        _LNGDBL = CpuSize.Use80Bit << 8,
+        _DQWORD = CpuSize.Use128Bit << 8,
 
         /// <summary>
         /// Specifies the bits that are used to indicate the offset of a
@@ -171,6 +173,16 @@ namespace X86Codec
         FS = _SEGMENT | _WORD | 4,
         GS = _SEGMENT | _WORD | 5,
 
+        /* FPU */
+        ST0 = _ST | _LNGDBL | 0,
+        ST1 = _ST | _LNGDBL | 1,
+        ST2 = _ST | _LNGDBL | 2,
+        ST3 = _ST | _LNGDBL | 3,
+        ST4 = _ST | _LNGDBL | 4,
+        ST5 = _ST | _LNGDBL | 5,
+        ST6 = _ST | _LNGDBL | 6,
+        ST7 = _ST | _LNGDBL | 7,
+
 #if false
         /* Control registers (eee). See Volume 2, Appendix B, Table B-9. */
         R_CR0 = REG_MAKE_W(CONTROL, 0),
@@ -234,6 +246,9 @@ namespace X86Codec
 
         /// <summary>Segment registers, such as CS.</summary>
         Segment,
+
+        /// <summary>FPU registers ST(0) - ST(7).</summary>
+        Fpu,
 
         // <summary>Control registers.</summary>
         //Control,
