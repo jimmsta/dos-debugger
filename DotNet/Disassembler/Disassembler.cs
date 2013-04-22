@@ -310,12 +310,16 @@ namespace Disassembler
         /// <summary>
         /// Analyzes a continuous block of code until end-of-input, analyzed
         /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT. Conditional jumps and calls are recorded but they do not
-        /// terminate the block.
+        /// HLT. Conditional jumps and calls are stored recorded but they do
+        /// not terminate the block.
         /// </summary>
-        private void AnalyzeCodeBlock(XRef xrefStart, List<XRef> xrefs)
+        /// <param name="start">Address of first instruction in the block.
+        /// </param>
+        /// <param name="jumps">Jump instructions are added to this list.</param>
+        /// <param name="calls">Call instructions are added to this list.</param>
+        private void AnalyzeCodeBlock(XRef start, List<XRef> xrefs) // jumps, List<XRef> calls)
         {
-            Pointer pos = xrefStart.Target;
+            Pointer pos = start.Target;
             while (true)
             {
                 Instruction insn;
@@ -331,7 +335,7 @@ namespace Disassembler
                     case DecodeResult.UnexpectedCode:
                         errors.Add(new Error(pos, string.Format(
                             "Ran into {0} when processing block {1} referred from {2}",
-                            ret, xrefStart.Target, xrefStart.Source)));
+                            ret, start.Target, start.Source)));
                         return;
                     case DecodeResult.BadInstruction:
                         errors.Add(new Error(pos, "Bad instruction: " + errMsg));
@@ -350,7 +354,7 @@ namespace Disassembler
 
                 // Analyze BCJ (branch, jump, call) instructions. Such an
                 // instruction will create a cross reference.
-                XRef xref = AnalyzeFlowInstruction(pos, insn);
+                XRef xref = AnalyzeFlowInstruction(insn);
                 if (xref != null)
                 {
                     xrefs.Add(xref);
@@ -483,140 +487,30 @@ namespace Disassembler
             return DecodeResult.OK;
         }
 
-        enum FlowResult
+        /// <summary>
+        /// Analyzes a branch/call/jump instruction and returns a xref.
+        /// </summary>
+        /// <param name="instruction">The instruction to analyze.</param>
+        /// <returns>XRef if the instruction is a b/c/j instruction; 
+        /// null otherwise.</returns>
+        /// TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
+        private XRef AnalyzeFlowInstruction(Instruction instruction)
         {
-            Wrapped = -2,
-            Failed = -1,
-            Continue = 0,
-            FinishBlock = 1,
-            DynamicJump = 2,
-            DynamicCall = 3,
-        }
+            Pointer start = instruction.Location;
+            Operation op = instruction.Operation;
 
-        /* Analyze an instruction decoded from offset _start_ for _count_ bytes.
-         * TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
-         */
-        private XRef AnalyzeFlowInstruction(Pointer start, Instruction insn)
-        {
-            Operation op = insn.Operation;
-
-            // If this is an unconditional JMP instruction, return a xref
-            // from this instruction to the jump target.
-            if (op == Operation.JMP || op == Operation.JMPN)
-            {
-                if (insn.Operands[0] is RelativeOperand) // near jump to relative address
-                {
-                    RelativeOperand opr = (RelativeOperand)insn.Operands[0];
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = start + insn.EncodedLength + opr.Offset,
-                        Type = XRefType.UnconditionalJump,
-                    };
-                }
-
-                if (insn.Operands[0] is PointerOperand) // far jump to absolute address
-                {
-                    PointerOperand opr = (PointerOperand)insn.Operands[0];
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = new Pointer(opr.Segment, (UInt16)opr.Offset),
-                        Type = XRefType.UnconditionalJump
-                    };
-                }
-
-#if true
-                // Handle static near jump table. We recognize a jump table 
-                // heuristically if the instruction looks like the following:
-                //
-                //   jmpn word ptr cs:[bx+3782h] 
-                //
-                // That is, it meets the requirements that
-                //   - the instruction is JMPN
-                //   - the jump target is a word-ptr memory location
-                //   - the memory location has CS prefix
-                //   - a base register (e.g. bx) specifies the entry index
-                //
-                // Note that a malformed executable may create a jump table
-                // not conforming to the above rules, or create a non-jump 
-                // table that conforms to the above rules. We do not deal with
-                // these cases for the moment.
-                if (insn.Operands[0] is MemoryOperand)
-                {
-                    MemoryOperand opr = (MemoryOperand)insn.Operands[0];
-                    if (op == Operation.JMPN &&
-                        opr.Size == CpuSize.Use16Bit &&
-                        opr.Segment == Register.CS &&
-                        opr.Base != Register.None &&
-                        opr.Index == Register.None)
-                    {
-                        return new XRef
-                        {
-                            Source = start,
-                            Target = new Pointer(start.Segment, (UInt16)opr.Displacement),
-                            Type = XRefType.NearJumpTableEntry
-                        };
-                    }
-                }
-#endif
-
-                // Other jump targets we have no idea about.
-                return new XRef
-                {
-                    Source = start,
-                    Target = Pointer.Invalid,
-                    Type = XRefType.UnconditionalJump
-                };
-            }
-
-            // If this is a CALL instruction, return a cross reference from
-            // this instruction to the entry point of the procedure being 
-            // called.
+            // Find the type of branch/call/jump instruction being processed.
             //
-            // Note: We need to know whether the subroutine being called
-            // will ever return. For the moment we assume that it will.
-            if (op == Operation.CALL || op == Operation.CALLF)
-            {
-                if (insn.Operands[0] is RelativeOperand) // near relative call
-                {
-                    RelativeOperand opr = (RelativeOperand)insn.Operands[0];
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = start + insn.EncodedLength + opr.Offset,
-                        Type = XRefType.FunctionCall
-                    };
-                    //return FlowResult.Continue;
-                }
-                else if (insn.Operands[0] is PointerOperand) // far absolute call
-                {
-                    PointerOperand opr = (PointerOperand)insn.Operands[0];
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = new Pointer(opr.Segment, (UInt16)opr.Offset),
-                        Type = XRefType.FunctionCall
-                    };
-                    // return FlowResult.Continue;
-                }
-                else // Unknown CALL target.
-                {
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = Pointer.Invalid,
-                        Type = XRefType.FunctionCall
-                    };
-                }
-            }
-
-            // If this is a Jcc/JCXZ instruction, return a cross-reference
-            // from this instruction to the jump target.
+            // Note: If the instruction is a conditional jump, we assume that
+            // the condition may be true or false, so that both "jump" and 
+            // "no jump" is a reachable branch. If the code is malformed such
+            // that either branch will never be executed, the analysis may not
+            // work correctly.
             //
-            // Note: We assume that "no jump" is a reachable branch. If the
-            // code is ill-formed such that the "no jump" branch will never
-            // be executed, the analysis may not work correctly.
+            // Note: If the instruction is a function call, we assume that the
+            // subroutine being called will return. If the subroutine never
+            // returns the analysis may not work correctly.
+            XRefType bcjType;
             switch (op)
             {
                 case Operation.JO:
@@ -636,30 +530,89 @@ namespace Disassembler
                 case Operation.JLE:
                 case Operation.JNLE:
                 case Operation.JCXZ:
-                    if (insn.Operands[0] is RelativeOperand) // jump to relative position
-                    {
-                        RelativeOperand opr = (RelativeOperand)insn.Operands[0];
-                        return new XRef
-                        {
-                            Source = start,
-                            Target = start + insn.EncodedLength + opr.Offset,
-                            Type = XRefType.ConditionalJump
-                        };
-                        //return FlowResult.Continue;
-                    }
-                    else // unknown Jcc target
-                    {
-                        return new XRef
-                        {
-                            Source = start,
-                            Target = Pointer.Invalid,
-                            Type = XRefType.ConditionalJump
-                        };
-                    }
+                    bcjType = XRefType.ConditionalJump;
+                    break;
+
+                case Operation.JMP:
+                case Operation.JMPN:
+                    bcjType = XRefType.UnconditionalJump;
+                    break;
+
+                case Operation.CALL:
+                case Operation.CALLF:
+                case Operation.CALLN:
+                    bcjType = XRefType.FunctionCall;
+                    break;
+
+                default:
+                    // Not a b/c/j instruction; do nothing.
+                    return null;
             }
 
-            // This is not a BCJ instruction, so no xref will be returned.
-            return null;
+            // Create a cross-reference depending on the type of operand.
+            if (instruction.Operands[0] is RelativeOperand) // near jump/call to relative address
+            {
+                RelativeOperand opr = (RelativeOperand)instruction.Operands[0];
+                return new XRef
+                {
+                    Source = start,
+                    Target = start + instruction.EncodedLength + opr.Offset,
+                    Type = bcjType
+                };
+            }
+            
+            if (instruction.Operands[0] is PointerOperand) // far jump/call to absolute address
+            {
+                PointerOperand opr = (PointerOperand)instruction.Operands[0];
+                return new XRef
+                {
+                    Source = start,
+                    Target = opr.Value,
+                    Type = bcjType
+                };
+            }
+
+            if (instruction.Operands[0] is MemoryOperand) // indirect jump/call
+            {
+                MemoryOperand opr = (MemoryOperand)instruction.Operands[0];
+
+                // Handle static near jump table. We recognize a jump table 
+                // heuristically if the instruction looks like the following:
+                //
+                //   jmpn word ptr cs:[bx+3782h] 
+                //
+                // That is, it meets the requirements that
+                //   - the instruction is JMPN
+                //   - the jump target is a word-ptr memory location
+                //   - the memory location has CS prefix
+                //   - a base register (e.g. bx) specifies the entry index
+                //
+                // Note that a malformed executable may create a jump table
+                // not conforming to the above rules, or create a non-jump 
+                // table that conforms to the above rules. We do not deal with
+                // these cases for the moment.
+                if (op == Operation.JMPN &&
+                    opr.Size == CpuSize.Use16Bit &&
+                    opr.Segment == Register.CS &&
+                    opr.Base != Register.None &&
+                    opr.Index == Register.None)
+                {
+                    return new XRef
+                    {
+                        Source = start,
+                        Target = new Pointer(start.Segment, (UInt16)opr.Displacement),
+                        Type = XRefType.NearJumpTableEntry
+                    };
+                }
+            }
+
+            // Other jump/call targets that we cannot recognize.
+            return new XRef
+            {
+                Source = start,
+                Target = Pointer.Invalid,
+                Type = bcjType
+            };
         }
 
         private static void DebugPrint(string format, params object[] args)

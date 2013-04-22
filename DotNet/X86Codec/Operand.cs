@@ -303,5 +303,10 @@ namespace X86Codec
             return string.Format("{0:X4}:{1:X4}",
                 Segment, (UInt16)Offset);
         }
+
+        public Pointer Value
+        {
+            get { return new Pointer(this.Segment, (UInt16)this.Offset); }
+        }
     }
 }
