@@ -1,8 +1,10 @@
 ﻿using Disassembler;
 using System;
+using System.IO;
+using System.Text;
 using System.Windows.Forms;
-using X86Codec;
 using WeifenLuo.WinFormsUI.Docking;
+using X86Codec;
 
 namespace DosDebugger
 {
@@ -16,19 +18,82 @@ namespace DosDebugger
         public MainForm()
         {
             InitializeComponent();
+            InitializeToolWindows();
+            InitializeDockPanel();
 
+            this.navHistory.Changed += navHistory_Changed;
+        }
+
+        private void InitializeToolWindows()
+        {
             procWindow = new ProcedureWindow();
             procWindow.NavigationRequested += OnNavigationRequested;
 
             errorWindow = new ErrorWindow();
             errorWindow.NavigationRequested += OnNavigationRequested;
 
-            this.segmentWindow = new SegmentWindow();
+            segmentWindow = new SegmentWindow();
 
-            this.listingWindow = new ListingWindow();
+            listingWindow = new ListingWindow();
             listingWindow.NavigationRequested += OnNavigationRequested;
+        }
 
-            this.navHistory.Changed += navHistory_Changed;
+        private void InitializeDockPanel()
+        {
+            try
+            {
+                LoadDockPanelLayout();
+                return;
+            }
+            catch (Exception)
+            {
+                DetachToolWindowsFromDockPanel();
+            }
+
+            // Create dock panel with default layout.
+            procWindow.Show(dockPanel);
+            segmentWindow.Show(dockPanel);
+            errorWindow.Show(dockPanel);
+            listingWindow.Show(dockPanel);
+            //procWindow.DockState = DockState.DockLeft;
+            //segmentWindow.DockState = DockState.DockLeft;
+            //errorWindow.DockState = DockState.DockBottom;
+        }
+
+        private void SaveDockPanelLayout()
+        {
+            string fileName = "WorkspaceLayout.xml";
+            using (Stream stream = new FileStream(fileName,
+                FileMode.Create, FileAccess.Write, FileShare.Read))
+            {
+                dockPanel.SaveAsXml(stream, Encoding.UTF8);
+            }
+        }
+
+        private void LoadDockPanelLayout()
+        {
+            DeserializeDockContent context =
+                new DeserializeDockContent(GetContentFromPersistString);
+
+            string fileName = "WorkspaceLayout.xml";
+            using (Stream stream = File.OpenRead(fileName))
+            {
+                DetachToolWindowsFromDockPanel();
+                dockPanel.LoadFromXml(stream, context);
+            }
+        }
+
+        /// <summary>
+        /// Detaches tool windows from the dock panel. This is needed if
+        /// we want to reconstruct the dock panel's layout after the
+        /// tool windows have been added to the dock panel.
+        /// </summary>
+        private void DetachToolWindowsFromDockPanel()
+        {
+            this.segmentWindow.DockPanel = null;
+            this.listingWindow.DockPanel = null;
+            this.errorWindow.DockPanel = null;
+            this.procWindow.DockPanel = null;
         }
 
         Document document;
@@ -36,6 +101,9 @@ namespace DosDebugger
         UInt16 baseSegment = 0; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
+
+        // TODO: when we close the disassembly window, what do we do with
+        // the navigation history?
         NavigationHistory<Pointer> navHistory = new NavigationHistory<Pointer>();
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -45,14 +113,6 @@ namespace DosDebugger
             cbFind.SelectedIndex = 0;
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
-
-            procWindow.Show(dockPanel);
-            procWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockLeft;
-            errorWindow.Show(dockPanel);
-            errorWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockBottom;
-            segmentWindow.Show(dockPanel);
-            segmentWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockLeft;
-            listingWindow.Show(dockPanel);
         }
 
         private void navHistory_Changed(object sender, EventArgs e)
@@ -260,6 +320,55 @@ namespace DosDebugger
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+            // SaveDockPanelLayout();
+        }
+
+        /// <summary>
+        /// Gets the tool window object instance corresponding to each tool
+        /// window type. This is necessary so that we don't need to create
+        /// the instances repeatedly.
+        /// </summary>
+        /// <param name="persistString"></param>
+        /// <returns>The tool window instance, or null if not found.</returns>
+        private IDockContent GetContentFromPersistString(string persistString)
+        {
+            if (persistString == typeof(SegmentWindow).ToString())
+                return segmentWindow;
+            else if (persistString == typeof(ProcedureWindow).ToString())
+                return procWindow;
+            else if (persistString == typeof(ErrorWindow).ToString())
+                return errorWindow;
+            else if (persistString == typeof(ListingWindow).ToString())
+                return listingWindow;
+            else
+                return null;
+
+#if false
+            else
+            {
+                // DummyDoc overrides GetPersistString to add extra information into persistString.
+                // Any DockContent may override this value to add any needed information for deserialization.
+
+                string[] parsedStrings = persistString.Split(new char[] { ',' });
+                if (parsedStrings.Length != 3)
+                    return null;
+
+                if (parsedStrings[0] != typeof(DummyDoc).ToString())
+                    return null;
+
+                DummyDoc dummyDoc = new DummyDoc();
+                if (parsedStrings[1] != string.Empty)
+                    dummyDoc.FileName = parsedStrings[1];
+                if (parsedStrings[2] != string.Empty)
+                    dummyDoc.Text = parsedStrings[2];
+
+                return dummyDoc;
+            }
+#endif
+        }
+
+        private void ListInstructionsThatChangeSegmentRegisters()
+        {
             // Find all instructions that change segment registers.
             ByteAttribute[] attr = dasm.ByteAttributes;
             for (int i = 0; i < attr.Length; )
@@ -333,6 +442,17 @@ namespace DosDebugger
         private void mnuViewErrors_Click(object sender, EventArgs e)
         {
             errorWindow.Activate();
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            try
+            {
+                SaveDockPanelLayout();
+            }
+            catch (Exception)
+            {
+            }
         }
     }
 }
