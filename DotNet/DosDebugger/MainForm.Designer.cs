@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             WeifenLuo.WinFormsUI.Docking.DockPanelSkin dockPanelSkin1 = new WeifenLuo.WinFormsUI.Docking.DockPanelSkin();
             WeifenLuo.WinFormsUI.Docking.AutoHideStripSkin autoHideStripSkin1 = new WeifenLuo.WinFormsUI.Docking.AutoHideStripSkin();
             WeifenLuo.WinFormsUI.Docking.DockPanelGradient dockPanelGradient1 = new WeifenLuo.WinFormsUI.Docking.DockPanelGradient();
@@ -46,12 +45,6 @@
             WeifenLuo.WinFormsUI.Docking.TabGradient tabGradient7 = new WeifenLuo.WinFormsUI.Docking.TabGradient();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.dockPanel = new WeifenLuo.WinFormsUI.Docking.DockPanel();
-            this.lvListing = new Util.Forms.DoubleBufferedListView();
-            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.mnuFile = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuFileOpen = new System.Windows.Forms.ToolStripMenuItem();
@@ -92,7 +85,6 @@
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnTest = new System.Windows.Forms.ToolStripButton();
-            this.contextMenuListing.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -100,7 +92,6 @@
             // 
             // dockPanel
             // 
-            this.dockPanel.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.dockPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dockPanel.Location = new System.Drawing.Point(0, 58);
             this.dockPanel.Name = "dockPanel";
@@ -152,57 +143,6 @@
             dockPanelSkin1.DockPaneStripSkin = dockPaneStripSkin1;
             this.dockPanel.Skin = dockPanelSkin1;
             this.dockPanel.TabIndex = 1;
-            // 
-            // lvListing
-            // 
-            this.lvListing.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeader1,
-            this.columnHeader2,
-            this.columnHeader3});
-            this.lvListing.ContextMenuStrip = this.contextMenuListing;
-            this.lvListing.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lvListing.FullRowSelect = true;
-            this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
-            this.lvListing.HideSelection = false;
-            this.lvListing.Location = new System.Drawing.Point(527, 61);
-            this.lvListing.MultiSelect = false;
-            this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(386, 265);
-            this.lvListing.TabIndex = 0;
-            this.lvListing.UseCompatibleStateImageBehavior = false;
-            this.lvListing.View = System.Windows.Forms.View.Details;
-            this.lvListing.VirtualMode = true;
-            this.lvListing.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvListing_RetrieveVirtualItem);
-            this.lvListing.SelectedIndexChanged += new System.EventHandler(this.lvListing_SelectedIndexChanged);
-            // 
-            // columnHeader1
-            // 
-            this.columnHeader1.Text = "Address";
-            this.columnHeader1.Width = 90;
-            // 
-            // columnHeader2
-            // 
-            this.columnHeader2.Text = "Opcode";
-            this.columnHeader2.Width = 160;
-            // 
-            // columnHeader3
-            // 
-            this.columnHeader3.Text = "Disassembly";
-            this.columnHeader3.Width = 380;
-            // 
-            // contextMenuListing
-            // 
-            this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuListingGoToXRef});
-            this.contextMenuListing.Name = "contextMenuListing";
-            this.contextMenuListing.Size = new System.Drawing.Size(177, 28);
-            this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
-            // 
-            // mnuListingGoToXRef
-            // 
-            this.mnuListingGoToXRef.Name = "mnuListingGoToXRef";
-            this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
-            this.mnuListingGoToXRef.Text = "Go to Reference";
             // 
             // menuStrip1
             // 
@@ -539,18 +479,17 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(925, 499);
-            this.Controls.Add(this.lvListing);
             this.Controls.Add(this.dockPanel);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.menuStrip1);
             this.Controls.Add(this.statusStrip1);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.IsMdiContainer = true;
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "MainForm";
             this.Text = "DOS Disassembler";
             this.Load += new System.EventHandler(this.MainForm_Load);
-            this.contextMenuListing.ResumeLayout(false);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.statusStrip1.ResumeLayout(false);
@@ -565,10 +504,6 @@
         #endregion
 
         private WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel;
-        private Util.Forms.DoubleBufferedListView lvListing;
-        private System.Windows.Forms.ColumnHeader columnHeader1;
-        private System.Windows.Forms.ColumnHeader columnHeader2;
-        private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem mnuFile;
         private System.Windows.Forms.ToolStripMenuItem mnuFileOpen;
@@ -577,8 +512,6 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel txtStatus;
-        private System.Windows.Forms.ContextMenuStrip contextMenuListing;
-        private System.Windows.Forms.ToolStripMenuItem mnuListingGoToXRef;
         private System.Windows.Forms.ToolStripMenuItem mnuFileInfo;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
         private System.Windows.Forms.ToolStripMenuItem mnuEdit;

@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
-using System.Text;
+﻿using Disassembler;
+using System;
 using System.Windows.Forms;
-using Disassembler;
 using X86Codec;
-using Util.Forms;
 
 namespace DosDebugger
 {
@@ -15,18 +10,20 @@ namespace DosDebugger
         ProcedureWindow procWindow;
         ErrorWindow errorWindow;
         SegmentWindow segmentWindow;
+        ListingWindow listingWindow;
 
         public MainForm()
         {
             InitializeComponent();
 
             procWindow = new ProcedureWindow();
-            procWindow.ProcedureActivated += procedureWindow_ProcedureActivated;
+            procWindow.NavigationRequested += OnNavigationRequested;
 
             errorWindow = new ErrorWindow();
             errorWindow.NavigationRequested += OnNavigationRequested;
 
             this.segmentWindow = new SegmentWindow();
+            this.listingWindow = new ListingWindow();
         }
 
         Document document;
@@ -34,7 +31,6 @@ namespace DosDebugger
         UInt16 baseSegment = 0; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
-        ListingViewModel listingView;
 
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -50,6 +46,7 @@ namespace DosDebugger
             errorWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockBottom;
             segmentWindow.Show(dockPanel);
             segmentWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockLeft;
+            listingWindow.Show(dockPanel);
         }
 
         private void DoLoadFile(string fileName)
@@ -61,16 +58,13 @@ namespace DosDebugger
             document = new Document();
             document.Disassembler = dasm;
 
-            listingView = null;
-            lvListing.VirtualListSize = 0;
-
-            this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
-
             DoAnalyze();
 
             procWindow.Document = document;
             errorWindow.Document = document;
             segmentWindow.Document = document;
+            listingWindow.Document = document;
+            this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
         }
 
 #if false
@@ -137,15 +131,11 @@ namespace DosDebugger
             dasm.Analyze(mzFile.EntryPoint);
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
-            // Display analyzed code and data.
-            listingView = new ListingViewModel(dasm);
-            lvListing.VirtualListSize = listingView.Rows.Count;
-
             // Display status.
             txtStatus.Text = string.Format(
                 "{3} segments, {0} procedures, {1} instructions, {2} errors",
                 dasm.Procedures.Length,
-                lvListing.Items.Count,
+                "?", // lvListing.Items.Count,
                 dasm.Errors.Length,
                 0 /* segStat.Count */);
         }
@@ -170,30 +160,12 @@ namespace DosDebugger
 
         private bool GoToLocation(Pointer target)
         {
-            // Find the first entry that is greater than or equal to target.
-            for (int i = 0; i < listingView.Rows.Count; i++)
-            {
-                Pointer current = listingView.Rows[i].Location;
-                if (current != Pointer.Invalid &&
-                    current.EffectiveAddress >= target.EffectiveAddress)
-                {
-                    GoToRow(i, true);
-                    return true;
-                }
-            }
-            return false;
+            return listingWindow.NavigateTo(target);
         }
 
         private void GoToRow(int index, bool bringToTop = false)
         {
-            ListViewItem item = lvListing.Items[index];
-            lvListing.Focus();
-            if (bringToTop)
-                lvListing.TopItem = item;
-            else
-                item.EnsureVisible();
-            item.Focused = true;
-            item.Selected = true;
+            throw new NotImplementedException();
         }
 
         private void mnuFileExit_Click(object sender, EventArgs e)
@@ -210,94 +182,14 @@ namespace DosDebugger
             DoLoadFile(fileName);
         }
 
-        private void lvListing_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (lvListing.SelectedIndices.Count == 1)
-            {
-                int row = lvListing.SelectedIndices[0];
-                if (navCurrent == null)
-                {
-                    navCurrent = navHistory.AddFirst(row);
-                    return;
-                }
-
-                if (row == navCurrent.Value)
-                    return;
-                if (navCurrent.Next != null && row == navCurrent.Next.Value)
-                {
-                    navCurrent = navCurrent.Next;
-                    return;
-                }
-
-                while (navCurrent.Next != null)
-                {
-                    navHistory.RemoveLast();
-                }
-                navCurrent = navHistory.AddAfter(navCurrent, row);
-            }
-        }
-
-        private LinkedList<int> navHistory = new LinkedList<int>();
-        private LinkedListNode<int> navCurrent = null;
-
         private void btnNavigateBackward_Click(object sender, EventArgs e)
         {
-            if (navCurrent != null && navCurrent.Previous != null)
-            {
-                navCurrent = navCurrent.Previous;
-                GoToRow(navCurrent.Value);
-            }
+            listingWindow.NavigateBackward();
         }
 
         private void btnNavigateForward_Click(object sender, EventArgs e)
         {
-            if (navCurrent != null && navCurrent.Next != null)
-            {
-                navCurrent = navCurrent.Next;
-                GoToRow(navCurrent.Value);
-            }
-        }
-
-        private int CurrentListingIndex
-        {
-            get
-            {
-                if (lvListing.SelectedIndices.Count > 0)
-                    return lvListing.SelectedIndices[0];
-                else
-                    return -1;
-            }
-        }
-
-        private void contextMenuListing_Opening(object sender, CancelEventArgs e)
-        {
-            mnuListingGoToXRef.DropDownItems.Clear();
-            mnuListingGoToXRef.Enabled = false;
-
-            int index = CurrentListingIndex;
-            if (index == -1)
-                return;
-
-            Pointer location = listingView.Rows[index].Location;
-            if (location == Pointer.Invalid)
-                return;
-
-            foreach (XRef xref in dasm.GetReferencesTo(location))
-            {
-                ToolStripMenuItem item = new ToolStripMenuItem();
-                item.Text = xref.Source.ToString();
-                item.Click += mnuListingGoToXRefItem_Click;
-                item.Tag = xref.Source;
-                mnuListingGoToXRef.DropDownItems.Add(item);
-            }
-            mnuListingGoToXRef.Enabled = mnuListingGoToXRef.HasDropDownItems;
-        }
-
-        private void mnuListingGoToXRefItem_Click(object sender, EventArgs e)
-        {
-            ToolStripMenuItem item = (ToolStripMenuItem)sender;
-            Pointer source = (Pointer)item.Tag;
-            GoToLocation(source);
+            listingWindow.NavigateForward();
         }
 
         private void mnuFileInfo_Click(object sender, EventArgs e)
@@ -313,6 +205,7 @@ namespace DosDebugger
             if (s.Length == 0)
                 return;
 
+#if false
             int selection = CurrentListingIndex;
 
             int n = lvListing.Items.Count;
@@ -330,11 +223,7 @@ namespace DosDebugger
                 }
             }
             MessageBox.Show(this, "Cannot find " + cbFind.Text);
-        }
-
-        private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-            e.Item = listingView.CreateViewItem(e.ItemIndex);
+#endif
         }
 
         private void mnuAnalyzeExecutable_Click(object sender, EventArgs e)
@@ -378,14 +267,6 @@ namespace DosDebugger
                 {
                     i++;
                 }
-            }
-        }
-
-        public void procedureWindow_ProcedureActivated(object sender, ProcedureActivatedEventArgs e)
-        {
-            if (e.Procedure != null)
-            {
-                GoToLocation(e.Procedure.EntryPoint);
             }
         }
 

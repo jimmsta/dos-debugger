@@ -61,17 +61,20 @@ namespace DosDebugger
             {
                 Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
                 // viewModel.ActivateProcedure(proc);
-                if (ProcedureActivated != null)
+                if (NavigationRequested != null)
                 {
-                    ProcedureActivatedEventArgs args = new ProcedureActivatedEventArgs(proc);
-                    ProcedureActivated(this, args);
+                    NavigationRequestedEventArgs args = 
+                        new NavigationRequestedEventArgs(proc.EntryPoint);
+                    NavigationRequested(this, args);
                 }
             }
         }
 
-        public EventHandler<ProcedureActivatedEventArgs> ProcedureActivated;
+        //public EventHandler<ProcedureActivatedEventArgs> ProcedureActivated;
+        public EventHandler<NavigationRequestedEventArgs> NavigationRequested;
     }
 
+#if false
     public class ProcedureActivatedEventArgs : EventArgs
     {
         Procedure proc;
@@ -86,4 +89,5 @@ namespace DosDebugger
             get { return proc; }
         }
     }
+#endif
 }

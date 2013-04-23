@@ -57,6 +57,12 @@
       <DependentUpon>ExecutableInfoForm.cs</DependentUpon>
     </Compile>
     <Compile Include="ListingViewModel.cs" />
+    <Compile Include="ListingWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ListingWindow.Designer.cs">
+      <DependentUpon>ListingWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -89,6 +95,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="ExecutableInfoForm.resx">
       <DependentUpon>ExecutableInfoForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ListingWindow.resx">
+      <DependentUpon>ListingWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
