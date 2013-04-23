@@ -27,6 +27,7 @@ namespace DosDebugger
         {
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
+            cbFind.SelectedIndex = 0;
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
         }
@@ -47,12 +48,6 @@ namespace DosDebugger
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
 
             DoAnalyze();
-        }
-
-        private void btnTest_Click(object sender, EventArgs e)
-        {
-            //TestDecode(mzFile.Image, mzFile.EntryPoint, mzFile.BaseAddress);
-            //TestDecode(mzFile.Image, new FarPointer16(baseSegment, 0x17fc), mzFile.BaseAddress);
         }
 
 #if false
@@ -114,11 +109,6 @@ namespace DosDebugger
         }
 #endif
 
-        private void btnAnalyze_Click(object sender, EventArgs e)
-        {
-            DoAnalyze();
-        }
-
         private void DoAnalyze()
         {
             dasm.Analyze(mzFile.EntryPoint);
@@ -174,7 +164,7 @@ namespace DosDebugger
             }
         }
 
-        private void btnGoTo_Click(object sender, EventArgs e)
+        private void btnGoToBookmark_Click(object sender, EventArgs e)
         {
             // Find the address.
             Pointer target;
@@ -201,18 +191,22 @@ namespace DosDebugger
                 if (current != Pointer.Invalid &&
                     current.EffectiveAddress >= target.EffectiveAddress)
                 {
-                    GoToRow(i);
+                    GoToRow(i, true);
                     return true;
                 }
             }
             return false;
         }
 
-        private void GoToRow(int index)
+        private void GoToRow(int index, bool bringToTop = false)
         {
             ListViewItem item = lvListing.Items[index];
             lvListing.Focus();
-            lvListing.TopItem = item;
+            if (bringToTop)
+                lvListing.TopItem = item;
+            else
+                item.EnsureVisible();
+            item.Focused = true;
             item.Selected = true;
         }
 
@@ -281,25 +275,21 @@ namespace DosDebugger
         private LinkedList<int> navHistory = new LinkedList<int>();
         private LinkedListNode<int> navCurrent = null;
 
-        private void btnBack_Click(object sender, EventArgs e)
+        private void btnNavigateBackward_Click(object sender, EventArgs e)
         {
             if (navCurrent != null && navCurrent.Previous != null)
             {
                 navCurrent = navCurrent.Previous;
-                lvListing.Items[navCurrent.Value].Selected = true;
-                lvListing.Items[navCurrent.Value].EnsureVisible();
-                lvListing.Focus();
+                GoToRow(navCurrent.Value);
             }
         }
 
-        private void btnForward_Click(object sender, EventArgs e)
+        private void btnNavigateForward_Click(object sender, EventArgs e)
         {
             if (navCurrent != null && navCurrent.Next != null)
             {
                 navCurrent = navCurrent.Next;
-                lvListing.Items[navCurrent.Value].Selected = true;
-                lvListing.Items[navCurrent.Value].EnsureVisible();
-                lvListing.Focus();
+                GoToRow(navCurrent.Value);
             }
         }
 
@@ -354,7 +344,7 @@ namespace DosDebugger
 
         private void btnFind_Click(object sender, EventArgs e)
         {
-            string s = txtFind.Text.ToUpperInvariant();
+            string s = cbFind.Text.ToUpperInvariant();
             if (s.Length == 0)
                 return;
 
@@ -368,19 +358,22 @@ namespace DosDebugger
                 {
                     if (item.SubItems[j].Text.ToUpperInvariant().Contains(s))
                     {
-                        item.Selected = true;
-                        lvListing.TopItem = item;
-                        lvListing.Focus();
+                        GoToRow(i, true);
                         return;
                     }
                 }
             }
-            MessageBox.Show(this, "Cannot find " + txtFind.Text);
+            MessageBox.Show(this, "Cannot find " + cbFind.Text);
         }
 
         private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             e.Item = listingView.CreateViewItem(e.ItemIndex);
+        }
+
+        private void mnuAnalyzeExecutable_Click(object sender, EventArgs e)
+        {
+            DoAnalyze();
         }
     }
 }
