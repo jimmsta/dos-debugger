@@ -565,6 +565,9 @@ namespace Disassembler
                 case Operation.JLE:
                 case Operation.JG:
                 case Operation.JCXZ:
+                case Operation.LOOP:
+                case Operation.LOOPZ:
+                case Operation.LOOPNZ:
                     bcjType = XRefType.ConditionalJump;
                     break;
 

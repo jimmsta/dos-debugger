@@ -140,8 +140,6 @@ namespace X86Codec
         ENTER,
         LEAVE,
         XLAT,
-        LOOPNE,
-        LOOPE,
         JCXZ,
         CLI,
         STI,

@@ -1581,8 +1581,8 @@ namespace X86Codec
             /* DE */ new Op(OpcodeExtension.Fpu),
             /* DF */ new Op(OpcodeExtension.Fpu),
 
-            /* E0 */ new Op(Operation.LOOPNE, O.Jb), /* f64 */
-            /* E1 */ new Op(Operation.LOOPE, O.Jb), /* f64 */
+            /* E0 */ new Op(Operation.LOOPNZ, O.Jb), /* f64 */
+            /* E1 */ new Op(Operation.LOOPZ, O.Jb), /* f64 */
             /* E2 */ new Op(Operation.LOOP, O.Jb), /* f64 */
             /* E3 */ new Op(Operation.JCXZ, O.Jb), /* f64; JrCXZ */
             /* E4 */ new Op(Operation.IN, O.AL, O.Ib),

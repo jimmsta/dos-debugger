@@ -481,6 +481,7 @@
             // 
             this.cbBookmarks.Items.AddRange(new object[] {
             "2920:17FC useful routine",
+            "0000:6134 LOOP instruction",
             "0000:36DC proc with 5 parts",
             "3FE6:C830 single-entry jump table",
             "16C6:C830 single-entry jump table?",
