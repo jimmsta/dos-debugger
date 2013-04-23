@@ -13,6 +13,7 @@ namespace Disassembler
         private byte[] image;
         private ByteAttribute[] attr;
         private UInt16[] byteSegment;
+        private Procedure[] byteToProcedure;
 
         /// <summary>
         /// Maintains a queue of pending code entry points to analyze. At the
@@ -27,16 +28,11 @@ namespace Disassembler
 
         /// <summary>
         /// Maintains a dictionary that maps the entry point address of a
-        /// procedure to a boolean value that indicates whether the procedure
-        /// has been analyzed.
+        /// procedure (expressed in offset) to a Procedure object.
         /// </summary>
-        private Dictionary<Pointer, bool> procedures;
+        private Dictionary<int, Procedure> procedures = new Dictionary<int, Procedure>();
 
         private List<Error> errors = new List<Error>();
-
-        //  VECTOR(dasm_xref_t) entry_points; /* dasm_code_block_t code_blocks */
-        /* however, it is not exactly a block; it is more like an entry point */
-        //VECTOR(dasm_jump_table_t) jump_tables;
 
         public Disassembler16(byte[] image, Pointer baseAddress)
         {
@@ -44,8 +40,8 @@ namespace Disassembler
             this.baseAddress = baseAddress;
             this.attr = new ByteAttribute[image.Length];
             this.byteSegment = new ushort[image.Length]; // TBD
+            this.byteToProcedure = new Procedure[image.Length]; // TBD
             this.globalXRefs = new List<XRef>();
-            this.procedures = new Dictionary<Pointer, bool>();
         }
 
         /// <summary>
@@ -56,6 +52,10 @@ namespace Disassembler
             get { return image; }
         }
 
+        /// <summary>
+        /// Gets the base address of the executable image. This address 
+        /// always has zero offset.
+        /// </summary>
         public Pointer BaseAddress
         {
             get { return baseAddress; }
@@ -77,14 +77,14 @@ namespace Disassembler
         /// <summary>
         /// Gets the entry points of analyzed procedures.
         /// </summary>
-        public Pointer[] Procedures
+        public Procedure[] Procedures
         {
             get
             {
-                Pointer[] entries = new Pointer[procedures.Count];
-                procedures.Keys.CopyTo(entries, 0);
-                Array.Sort(entries);
-                return entries;
+                Procedure[] procs = new Procedure[procedures.Count];
+                procedures.Values.CopyTo(procs, 0);
+                Array.Sort(procs, new ProcedureEntryPointComparer());
+                return procs;
             }
         }
 
@@ -174,12 +174,16 @@ namespace Disassembler
                     // if the entry point has not yet analyzed yet.
                     if (entry.Type == XRefType.FunctionCall)
                     {
-                        if (!procedures.ContainsKey(entry.Target))
+                        if (!procedures.ContainsKey(PointerToOffset(entry.Target)))
                         {
-                            AnalyzeProcedure(entry, xrefs);
+                            // Create a procedure at this location.
+                            Procedure proc = new Procedure();
+                            proc.EntryPoint = entry.Target;
+
+                            AnalyzeProcedure(proc, entry, xrefs);
 
                             // Mark the procedure as processed.
-                            procedures[entry.Target] = true;
+                            procedures[PointerToOffset(entry.Target)] = proc;
                         }
                         continue;
                     }
@@ -188,7 +192,9 @@ namespace Disassembler
                     // procedure again.
                     if (entry.Type == XRefType.NearJumpTableTarget)
                     {
-                        AnalyzeProcedure(entry, xrefs);
+                        // Find out which procedure entry.Source belongs to.
+                        Procedure proc = byteToProcedure[PointerToOffset(entry.Source)];
+                        AnalyzeProcedure(proc, entry, xrefs);
                     }
                 }
 
@@ -228,7 +234,7 @@ namespace Disassembler
         /// <param name="start">Address to start analysis.</param>
         /// <param name="xrefs">List of procedures called by this 
         /// procedure.</param>
-        private void AnalyzeProcedure(XRef start, List<XRef> xrefs)
+        private void AnalyzeProcedure(Procedure proc, XRef start, List<XRef> xrefs)
         {
             List<XRef> localXrefs = new List<XRef>();
 
@@ -248,13 +254,26 @@ namespace Disassembler
 
                 // Skip dynamic xrefs, function calls, and jump tables.
                 if (entry.Target == Pointer.Invalid ||
-                    entry.Type == XRefType.FunctionCall ||
-                    entry.Type == XRefType.NearJumpTableEntry)
+                    entry.Type == XRefType.FunctionCall)
                     continue;
+                if (entry.Type == XRefType.NearJumpTableEntry)
+                {
+                    continue;
+                }
 
                 // Process this code block assuming no jumps are taken and
                 // function calls and interrupts all return.
-                AnalyzeCodeBlock(entry, localXrefs);
+                int count = AnalyzeCodeBlock(entry, localXrefs);
+                if (count > 0)
+                {
+                    int baseOffset = PointerToOffset(entry.Target);
+                    proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
+                    proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
+                    for (int j = 0; j < count; j++)
+                    {
+                        byteToProcedure[baseOffset + j] = proc;
+                    }
+                }
             }
 
             // Append the local XRef list to the global xref list.
@@ -290,6 +309,13 @@ namespace Disassembler
             attr[b + 1].IsBoundary = false;
             byteSegment[b] = entry.Target.Segment;
 
+            // Add this data item to its owning procedure's byte range.
+            Procedure proc = byteToProcedure[PointerToOffset(entry.Source)];
+            proc.DataRange.AddInterval(b, b + 2);
+            proc.ByteRange.AddInterval(b, b + 2);
+            byteToProcedure[b] = proc;
+            byteToProcedure[b + 1] = proc;
+
             // Read the jump offset.
             ushort jumpOffset = BitConverter.ToUInt16(image, b);
 
@@ -324,9 +350,11 @@ namespace Disassembler
         /// <param name="calls">Call instructions are added to this list.</param>
         /// <param name="dynamicJumps">Jump instructions with a dynamic target
         /// are added to this list.</param>
-        private void AnalyzeCodeBlock(XRef start, ICollection<XRef> xrefs)
+        /// <returns>The number of bytes successfully analyzed as code.</returns>
+        private int AnalyzeCodeBlock(XRef start, ICollection<XRef> xrefs)
         {
             Pointer pos = start.Target;
+            int count = 0;
             while (true)
             {
                 Instruction insn;
@@ -337,17 +365,18 @@ namespace Disassembler
                 switch (ret)
                 {
                     case DecodeResult.AlreadyAnalyzed:
-                        return;
+                        return count;
                     case DecodeResult.UnexpectedData:
                     case DecodeResult.UnexpectedCode:
                         errors.Add(new Error(pos, string.Format(
                             "Ran into {0} when processing block {1} referred from {2}",
                             ret, start.Target, start.Source)));
-                        return;
+                        return count;
                     case DecodeResult.BadInstruction:
                         errors.Add(new Error(pos, "Bad instruction: " + errMsg));
-                        return;
+                        return count;
                 }
+                count += insn.EncodedLength;
 
                 // Check if this instruction terminates the block.
                 switch (insn.Operation)
@@ -355,7 +384,7 @@ namespace Disassembler
                     case Operation.RET:
                     case Operation.RETF:
                     case Operation.HLT:
-                        return;
+                        return count;
                 }
 
                 // Analyze BCJ (branch, jump, call) instructions. Such an
@@ -371,7 +400,7 @@ namespace Disassembler
                             break;
                         case XRefType.UnconditionalJump:
                         case XRefType.NearJumpTableEntry:
-                            return;
+                            return count;
                         default:
                             throw new ArgumentException("Unexpected.");
                     }

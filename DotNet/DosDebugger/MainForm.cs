@@ -131,11 +131,16 @@ namespace DosDebugger
 
             // Display subroutines.
             Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
-            Pointer[] procEntries = dasm.Procedures;
-            foreach (Pointer ptr in procEntries)
+            Procedure[] procs = dasm.Procedures;
+            foreach (Procedure proc in procs)
             {
-                lvProcedures.Items.Add(ptr.ToString());
-                segStat[ptr.Segment] = 1;
+                ListViewItem item = new ListViewItem();
+                item.Text = proc.EntryPoint.ToString();
+                item.SubItems.Add(proc.ByteRange.IntervalCount.ToString());
+                item.SubItems.Add(proc.ByteRange.Length.ToString());
+                item.Tag = proc;
+                lvProcedures.Items.Add(item);
+                segStat[proc.EntryPoint.Segment] = 1;
             }
 
             // Display segments.
@@ -219,7 +224,8 @@ namespace DosDebugger
         {
             if (lvProcedures.SelectedIndices.Count == 1)
             {
-                GoToLocation(Pointer.Parse(lvProcedures.SelectedItems[0].Text));
+                Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
+                GoToLocation(proc.EntryPoint);
             }
         }
 

@@ -48,23 +48,18 @@
             this.mnuFileInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuFileExit = new System.Windows.Forms.ToolStripMenuItem();
-            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
-            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.lvSegments = new Util.Forms.DoubleBufferedListView();
-            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.mnuEdit = new System.Windows.Forms.ToolStripMenuItem();
             this.copyDisassemblyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyOpcodeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.copyAddressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
             this.mnuEditFind = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuEditGoTo = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
-            this.mnuEditBookmarks = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuEditFindNext = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuEditFindPrevious = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem5 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuEditGoTo = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuEditBookmarks = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuView = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuViewNavigateBackward = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuViewNavigateForward = new System.Windows.Forms.ToolStripMenuItem();
@@ -72,6 +67,11 @@
             this.mnuAnalyzeExecutable = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelpAbout = new System.Windows.Forms.ToolStripMenuItem();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lvSegments = new Util.Forms.DoubleBufferedListView();
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.btnNavigateBackward = new System.Windows.Forms.ToolStripButton();
             this.btnNavigateForward = new System.Windows.Forms.ToolStripButton();
@@ -83,6 +83,8 @@
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnTest = new System.Windows.Forms.ToolStripButton();
+            this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuListing.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -100,7 +102,7 @@
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lvListing.HideSelection = false;
-            this.lvListing.Location = new System.Drawing.Point(158, 61);
+            this.lvListing.Location = new System.Drawing.Point(243, 61);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
             this.lvListing.Size = new System.Drawing.Size(670, 265);
@@ -143,14 +145,16 @@
             // lvProcedures
             // 
             this.lvProcedures.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeader4});
+            this.columnHeader4,
+            this.columnHeader8,
+            this.columnHeader9});
             this.lvProcedures.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvProcedures.FullRowSelect = true;
             this.lvProcedures.HideSelection = false;
             this.lvProcedures.Location = new System.Drawing.Point(12, 61);
             this.lvProcedures.MultiSelect = false;
             this.lvProcedures.Name = "lvProcedures";
-            this.lvProcedures.Size = new System.Drawing.Size(140, 265);
+            this.lvProcedures.Size = new System.Drawing.Size(225, 265);
             this.lvProcedures.TabIndex = 4;
             this.lvProcedures.UseCompatibleStateImageBehavior = false;
             this.lvProcedures.View = System.Windows.Forms.View.Details;
@@ -170,7 +174,7 @@
             this.lvErrors.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvErrors.FullRowSelect = true;
             this.lvErrors.HideSelection = false;
-            this.lvErrors.Location = new System.Drawing.Point(158, 332);
+            this.lvErrors.Location = new System.Drawing.Point(243, 330);
             this.lvErrors.MultiSelect = false;
             this.lvErrors.Name = "lvErrors";
             this.lvErrors.Size = new System.Drawing.Size(670, 136);
@@ -199,7 +203,7 @@
             this.mnuHelp});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(840, 27);
+            this.menuStrip1.Size = new System.Drawing.Size(925, 27);
             this.menuStrip1.TabIndex = 9;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -246,47 +250,6 @@
             this.mnuFileExit.Size = new System.Drawing.Size(179, 24);
             this.mnuFileExit.Text = "E&xit";
             this.mnuFileExit.Click += new System.EventHandler(this.mnuFileExit_Click);
-            // 
-            // openFileDialog1
-            // 
-            this.openFileDialog1.Filter = "Executable file|*.exe";
-            this.openFileDialog1.Title = "Select DOS Executable File";
-            // 
-            // statusStrip1
-            // 
-            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.txtStatus});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 475);
-            this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(840, 24);
-            this.statusStrip1.TabIndex = 10;
-            this.statusStrip1.Text = "statusStrip1";
-            // 
-            // txtStatus
-            // 
-            this.txtStatus.Name = "txtStatus";
-            this.txtStatus.Size = new System.Drawing.Size(63, 19);
-            this.txtStatus.Text = "Message";
-            // 
-            // lvSegments
-            // 
-            this.lvSegments.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeader7});
-            this.lvSegments.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lvSegments.FullRowSelect = true;
-            this.lvSegments.HideSelection = false;
-            this.lvSegments.Location = new System.Drawing.Point(12, 332);
-            this.lvSegments.MultiSelect = false;
-            this.lvSegments.Name = "lvSegments";
-            this.lvSegments.Size = new System.Drawing.Size(140, 134);
-            this.lvSegments.TabIndex = 15;
-            this.lvSegments.UseCompatibleStateImageBehavior = false;
-            this.lvSegments.View = System.Windows.Forms.View.Details;
-            // 
-            // columnHeader7
-            // 
-            this.columnHeader7.Text = "Segment";
-            this.columnHeader7.Width = 100;
             // 
             // mnuEdit
             // 
@@ -339,24 +302,6 @@
             this.mnuEditFind.Size = new System.Drawing.Size(221, 24);
             this.mnuEditFind.Text = "&Find...";
             // 
-            // mnuEditGoTo
-            // 
-            this.mnuEditGoTo.Name = "mnuEditGoTo";
-            this.mnuEditGoTo.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G)));
-            this.mnuEditGoTo.Size = new System.Drawing.Size(221, 24);
-            this.mnuEditGoTo.Text = "&Go To...";
-            // 
-            // toolStripMenuItem4
-            // 
-            this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(218, 6);
-            // 
-            // mnuEditBookmarks
-            // 
-            this.mnuEditBookmarks.Name = "mnuEditBookmarks";
-            this.mnuEditBookmarks.Size = new System.Drawing.Size(221, 24);
-            this.mnuEditBookmarks.Text = "Boo&kmarks";
-            // 
             // mnuEditFindNext
             // 
             this.mnuEditFindNext.Name = "mnuEditFindNext";
@@ -375,6 +320,24 @@
             // 
             this.toolStripMenuItem5.Name = "toolStripMenuItem5";
             this.toolStripMenuItem5.Size = new System.Drawing.Size(218, 6);
+            // 
+            // mnuEditGoTo
+            // 
+            this.mnuEditGoTo.Name = "mnuEditGoTo";
+            this.mnuEditGoTo.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.G)));
+            this.mnuEditGoTo.Size = new System.Drawing.Size(221, 24);
+            this.mnuEditGoTo.Text = "&Go To...";
+            // 
+            // toolStripMenuItem4
+            // 
+            this.toolStripMenuItem4.Name = "toolStripMenuItem4";
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(218, 6);
+            // 
+            // mnuEditBookmarks
+            // 
+            this.mnuEditBookmarks.Name = "mnuEditBookmarks";
+            this.mnuEditBookmarks.Size = new System.Drawing.Size(221, 24);
+            this.mnuEditBookmarks.Text = "Boo&kmarks";
             // 
             // mnuView
             // 
@@ -423,9 +386,50 @@
             // mnuHelpAbout
             // 
             this.mnuHelpAbout.Name = "mnuHelpAbout";
-            this.mnuHelpAbout.Size = new System.Drawing.Size(152, 24);
+            this.mnuHelpAbout.Size = new System.Drawing.Size(116, 24);
             this.mnuHelpAbout.Text = "&About";
             this.mnuHelpAbout.Click += new System.EventHandler(this.mnuHelpAbout_Click);
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.Filter = "Executable file|*.exe";
+            this.openFileDialog1.Title = "Select DOS Executable File";
+            // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.txtStatus});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 475);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(925, 24);
+            this.statusStrip1.TabIndex = 10;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // txtStatus
+            // 
+            this.txtStatus.Name = "txtStatus";
+            this.txtStatus.Size = new System.Drawing.Size(63, 19);
+            this.txtStatus.Text = "Message";
+            // 
+            // lvSegments
+            // 
+            this.lvSegments.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader7});
+            this.lvSegments.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvSegments.FullRowSelect = true;
+            this.lvSegments.HideSelection = false;
+            this.lvSegments.Location = new System.Drawing.Point(12, 332);
+            this.lvSegments.MultiSelect = false;
+            this.lvSegments.Name = "lvSegments";
+            this.lvSegments.Size = new System.Drawing.Size(225, 134);
+            this.lvSegments.TabIndex = 15;
+            this.lvSegments.UseCompatibleStateImageBehavior = false;
+            this.lvSegments.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Segment";
+            this.columnHeader7.Width = 100;
             // 
             // toolStrip1
             // 
@@ -444,7 +448,7 @@
             this.toolStrip1.Location = new System.Drawing.Point(0, 27);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Padding = new System.Windows.Forms.Padding(4, 2, 2, 2);
-            this.toolStrip1.Size = new System.Drawing.Size(840, 31);
+            this.toolStrip1.Size = new System.Drawing.Size(925, 31);
             this.toolStrip1.TabIndex = 16;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -477,6 +481,7 @@
             // 
             this.cbBookmarks.Items.AddRange(new object[] {
             "2920:17FC useful routine",
+            "0000:36DC proc with 5 parts",
             "3FE6:C830 single-entry jump table",
             "16C6:C830 single-entry jump table?",
             "2920:264A es?",
@@ -537,11 +542,19 @@
             this.btnTest.Text = "Test";
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
+            // columnHeader8
+            // 
+            this.columnHeader8.Text = "Intervals";
+            // 
+            // columnHeader9
+            // 
+            this.columnHeader9.Text = "Size";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(840, 499);
+            this.ClientSize = new System.Drawing.Size(925, 499);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.lvSegments);
             this.Controls.Add(this.statusStrip1);
@@ -622,6 +635,8 @@
         private System.Windows.Forms.ToolStripButton toolStripButton1;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripButton btnTest;
+        private System.Windows.Forms.ColumnHeader columnHeader8;
+        private System.Windows.Forms.ColumnHeader columnHeader9;
     }
 }
 

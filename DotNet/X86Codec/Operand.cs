@@ -8,18 +8,6 @@ namespace X86Codec
     /// </summary>
     public abstract class Operand
     {
-        //public OperandType Type;
-
-        /// <summary>
-        /// Gets or sets the size of the operand in bytes.
-        /// </summary>
-        // public int Size;
-
-        //protected Operand(int size)
-        //{
-        //    this.Size = size;
-        //}
-
         /// <summary>
         /// Converts an unsigned integer to hexidecimal string of the form
         /// "0f43h" or "5".
