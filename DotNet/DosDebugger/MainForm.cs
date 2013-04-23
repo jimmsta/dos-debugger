@@ -12,11 +12,24 @@ namespace DosDebugger
 {
     public partial class MainForm : Form
     {
+        ProcedureWindow procWindow;
+        ErrorWindow errorWindow;
+        SegmentWindow segmentWindow;
+
         public MainForm()
         {
             InitializeComponent();
+
+            procWindow = new ProcedureWindow();
+            procWindow.ProcedureActivated += procedureWindow_ProcedureActivated;
+
+            errorWindow = new ErrorWindow();
+            errorWindow.NavigationRequested += OnNavigationRequested;
+
+            this.segmentWindow = new SegmentWindow();
         }
 
+        Document document;
         MZFile mzFile;
         UInt16 baseSegment = 0; // 0x2920;
 
@@ -30,6 +43,13 @@ namespace DosDebugger
             cbFind.SelectedIndex = 0;
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
+
+            procWindow.Show(dockPanel);
+            procWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockLeft;
+            errorWindow.Show(dockPanel);
+            errorWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockBottom;
+            segmentWindow.Show(dockPanel);
+            segmentWindow.DockState = WeifenLuo.WinFormsUI.Docking.DockState.DockLeft;
         }
 
         private void DoLoadFile(string fileName)
@@ -38,9 +58,8 @@ namespace DosDebugger
             mzFile.Relocate(baseSegment);
             dasm = new Disassembler.Disassembler16(mzFile.Image, mzFile.BaseAddress);
 
-            lvErrors.Items.Clear();
-            lvProcedures.Items.Clear();
-            lvSegments.Items.Clear();
+            document = new Document();
+            document.Disassembler = dasm;
 
             listingView = null;
             lvListing.VirtualListSize = 0;
@@ -48,6 +67,10 @@ namespace DosDebugger
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
 
             DoAnalyze();
+
+            procWindow.Document = document;
+            errorWindow.Document = document;
+            segmentWindow.Document = document;
         }
 
 #if false
@@ -114,59 +137,17 @@ namespace DosDebugger
             dasm.Analyze(mzFile.EntryPoint);
             X86Codec.Decoder decoder = new X86Codec.Decoder();
 
-            // Display analysis errors.
-            Error[] errors = dasm.Errors;
-            Array.Sort(errors, new ErrorLocationComparer());
-            foreach (Error error in errors)
-            {
-                ListViewItem item = new ListViewItem();
-                item.Text = error.Location.ToString();
-                item.SubItems.Add(error.Message);
-                lvErrors.Items.Add(item);
-            }
-
             // Display analyzed code and data.
             listingView = new ListingViewModel(dasm);
             lvListing.VirtualListSize = listingView.Rows.Count;
 
-            // Display subroutines.
-            Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
-            Procedure[] procs = dasm.Procedures;
-            foreach (Procedure proc in procs)
-            {
-                ListViewItem item = new ListViewItem();
-                item.Text = proc.EntryPoint.ToString();
-                item.SubItems.Add(proc.ByteRange.IntervalCount.ToString());
-                item.SubItems.Add(proc.ByteRange.Length.ToString());
-                item.Tag = proc;
-                lvProcedures.Items.Add(item);
-                segStat[proc.EntryPoint.Segment] = 1;
-            }
-
-            // Display segments.
-            ushort[] segs = new ushort[segStat.Count];
-            segStat.Keys.CopyTo(segs, 0);
-            Array.Sort(segs);
-            foreach (ushort s in segs)
-            {
-                lvSegments.Items.Add(s.ToString("X4"));
-            }
-
             // Display status.
             txtStatus.Text = string.Format(
                 "{3} segments, {0} procedures, {1} instructions, {2} errors",
-                lvProcedures.Items.Count,
+                dasm.Procedures.Length,
                 lvListing.Items.Count,
-                lvErrors.Items.Count,
-                segStat.Count);
-        }
-
-        private class ErrorLocationComparer : IComparer<Error>
-        {
-            public int Compare(Error x, Error y)
-            {
-                return x.Location.ToString().CompareTo(y.Location.ToString());
-            }
+                dasm.Errors.Length,
+                0 /* segStat.Count */);
         }
 
         private void btnGoToBookmark_Click(object sender, EventArgs e)
@@ -213,28 +194,6 @@ namespace DosDebugger
                 item.EnsureVisible();
             item.Focused = true;
             item.Selected = true;
-        }
-
-        private void lvProcedures_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void lvProcedures_DoubleClick(object sender, EventArgs e)
-        {
-            if (lvProcedures.SelectedIndices.Count == 1)
-            {
-                Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
-                GoToLocation(proc.EntryPoint);
-            }
-        }
-
-        private void lvErrors_DoubleClick(object sender, EventArgs e)
-        {
-            if (lvErrors.SelectedIndices.Count == 1)
-            {
-                GoToLocation(Pointer.Parse(lvErrors.SelectedItems[0].Text));
-            }
         }
 
         private void mnuFileExit_Click(object sender, EventArgs e)
@@ -420,6 +379,19 @@ namespace DosDebugger
                     i++;
                 }
             }
+        }
+
+        public void procedureWindow_ProcedureActivated(object sender, ProcedureActivatedEventArgs e)
+        {
+            if (e.Procedure != null)
+            {
+                GoToLocation(e.Procedure.EntryPoint);
+            }
+        }
+
+        public void OnNavigationRequested(object sender, NavigationRequestedEventArgs e)
+        {
+            GoToLocation(e.Location);
         }
     }
 }

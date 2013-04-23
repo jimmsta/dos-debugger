@@ -674,6 +674,14 @@ namespace Disassembler
         }
     }
 
+    public class ErrorLocationComparer : IComparer<Error>
+    {
+        public int Compare(Error x, Error y)
+        {
+            return x.Location.ToString().CompareTo(y.Location.ToString());
+        }
+    }
+
     /// <summary>
     /// Defines the type of a byte in an executable image.
     /// </summary>
