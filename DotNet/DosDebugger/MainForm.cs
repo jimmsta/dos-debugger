@@ -14,6 +14,7 @@ namespace DosDebugger
         ErrorWindow errorWindow;
         SegmentWindow segmentWindow;
         ListingWindow listingWindow;
+        PropertiesWindow propertiesWindow;
 
         public MainForm()
         {
@@ -36,6 +37,8 @@ namespace DosDebugger
 
             listingWindow = new ListingWindow();
             listingWindow.NavigationRequested += OnNavigationRequested;
+
+            propertiesWindow = new PropertiesWindow();
         }
 
         private void InitializeDockPanel()
@@ -55,6 +58,7 @@ namespace DosDebugger
             segmentWindow.Show(dockPanel);
             errorWindow.Show(dockPanel);
             listingWindow.Show(dockPanel);
+            propertiesWindow.Show(dockPanel);
             //procWindow.DockState = DockState.DockLeft;
             //segmentWindow.DockState = DockState.DockLeft;
             //errorWindow.DockState = DockState.DockBottom;
@@ -94,6 +98,7 @@ namespace DosDebugger
             this.listingWindow.DockPanel = null;
             this.errorWindow.DockPanel = null;
             this.procWindow.DockPanel = null;
+            this.propertiesWindow.DockPanel = null;
         }
 
         Document document;
@@ -140,6 +145,7 @@ namespace DosDebugger
             errorWindow.Document = document;
             segmentWindow.Document = document;
             listingWindow.Document = document;
+            propertiesWindow.SelectedObject = mzFile;
 
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
 
@@ -275,9 +281,7 @@ namespace DosDebugger
 
         private void mnuFileInfo_Click(object sender, EventArgs e)
         {
-            ExecutableInfoForm f = new ExecutableInfoForm();
-            f.MzFile = mzFile;
-            f.Show(this);
+           
         }
 
         private void btnFind_Click(object sender, EventArgs e)
@@ -340,6 +344,8 @@ namespace DosDebugger
                 return errorWindow;
             else if (persistString == typeof(ListingWindow).ToString())
                 return listingWindow;
+            else if (persistString == typeof(PropertiesWindow).ToString())
+                return propertiesWindow;
             else
                 return null;
 
@@ -405,13 +411,6 @@ namespace DosDebugger
             GoToLocation(e.Location);
         }
 
-        private void mnuView_DropDownOpening(object sender, EventArgs e)
-        {
-            mnuViewSegments.Checked = segmentWindow.Visible;
-            mnuViewProcedures.Checked = procWindow.Visible;
-            mnuViewErrors.Checked = errorWindow.Visible;
-        }
-
         private void mnuViewDisassembly_Click(object sender, EventArgs e)
         {
 
@@ -431,17 +430,29 @@ namespace DosDebugger
             }
             segmentWindow.Focus();
 #endif
-            segmentWindow.Activate();
+            ActivateToolWindow(segmentWindow);
         }
 
         private void mnuViewProcedures_Click(object sender, EventArgs e)
         {
-            procWindow.Activate();
+            ActivateToolWindow(procWindow);
         }
 
         private void mnuViewErrors_Click(object sender, EventArgs e)
         {
-            errorWindow.Activate();
+            ActivateToolWindow(errorWindow);
+        }
+
+        private void mnuViewProperties_Click(object sender, EventArgs e)
+        {
+            ActivateToolWindow(propertiesWindow);
+        }
+
+        private void ActivateToolWindow(ToolWindow window)
+        {
+            if (window.DockPanel == null)
+                window.Show(dockPanel);
+            window.Activate();
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)

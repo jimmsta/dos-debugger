@@ -9,22 +9,17 @@ using Disassembler;
 
 namespace DosDebugger
 {
-    public partial class ExecutableInfoForm : Form
+    public partial class PropertiesWindow : ToolWindow
     {
-        public ExecutableInfoForm()
+        public PropertiesWindow()
         {
             InitializeComponent();
         }
 
-        public MZFile MzFile
+        public object SelectedObject
         {
-            get { return (MZFile)propertyGrid1.SelectedObject; }
+            get { return propertyGrid1.SelectedObject; }
             set { propertyGrid1.SelectedObject = value; }
-        }
-
-        private void ExecutableInfoForm_Load(object sender, EventArgs e)
-        {
-
         }
     }
 }

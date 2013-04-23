@@ -5,6 +5,7 @@ using Disassembler;
 
 namespace DosDebugger
 {
+#if false
     class ViewModel
     {
         private Disassembler16 dasm;
@@ -19,4 +20,5 @@ namespace DosDebugger
         {
         }
     }
+#endif
 }
