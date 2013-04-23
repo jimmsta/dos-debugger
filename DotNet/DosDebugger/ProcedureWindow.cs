@@ -71,7 +71,7 @@ namespace DosDebugger
         }
 
         //public EventHandler<ProcedureActivatedEventArgs> ProcedureActivated;
-        public EventHandler<NavigationRequestedEventArgs> NavigationRequested;
+        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
     }
 
 #if false

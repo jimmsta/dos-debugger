@@ -23,7 +23,11 @@ namespace DosDebugger
             errorWindow.NavigationRequested += OnNavigationRequested;
 
             this.segmentWindow = new SegmentWindow();
+
             this.listingWindow = new ListingWindow();
+            listingWindow.NavigationRequested += OnNavigationRequested;
+
+            this.navHistory.Changed += navHistory_Changed;
         }
 
         Document document;
@@ -31,6 +35,7 @@ namespace DosDebugger
         UInt16 baseSegment = 0; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
+        NavigationHistory<Pointer> navHistory = new NavigationHistory<Pointer>();
 
         private void MainForm_Load(object sender, EventArgs e)
         {
@@ -49,6 +54,15 @@ namespace DosDebugger
             listingWindow.Show(dockPanel);
         }
 
+        private void navHistory_Changed(object sender, EventArgs e)
+        {
+            btnNavigateBackward.Enabled = navHistory.CanGoBackward;
+            mnuViewNavigateBackward.Enabled = navHistory.CanGoBackward;
+
+            btnNavigateForward.Enabled = navHistory.CanGoForward;
+            mnuViewNavigateForward.Enabled = navHistory.CanGoForward;
+        }
+
         private void DoLoadFile(string fileName)
         {
             mzFile = new MZFile(fileName);
@@ -57,6 +71,7 @@ namespace DosDebugger
 
             document = new Document();
             document.Disassembler = dasm;
+            navHistory.Clear();
 
             DoAnalyze();
 
@@ -64,7 +79,10 @@ namespace DosDebugger
             errorWindow.Document = document;
             segmentWindow.Document = document;
             listingWindow.Document = document;
+
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
+
+            GoToLocation(new Pointer(0, 0));
         }
 
 #if false
@@ -160,12 +178,8 @@ namespace DosDebugger
 
         private bool GoToLocation(Pointer target)
         {
-            return listingWindow.NavigateTo(target);
-        }
-
-        private void GoToRow(int index, bool bringToTop = false)
-        {
-            throw new NotImplementedException();
+            navHistory.GoTo(target);
+            return listingWindow.Navigate(target);
         }
 
         private void mnuFileExit_Click(object sender, EventArgs e)
@@ -184,12 +198,18 @@ namespace DosDebugger
 
         private void btnNavigateBackward_Click(object sender, EventArgs e)
         {
-            listingWindow.NavigateBackward();
+            if (navHistory.CanGoBackward)
+            {
+                listingWindow.Navigate(navHistory.GoBackward());
+            }
         }
 
         private void btnNavigateForward_Click(object sender, EventArgs e)
         {
-            listingWindow.NavigateForward();
+            if (navHistory.CanGoForward)
+            {
+                listingWindow.Navigate(navHistory.GoForward());
+            }
         }
 
         private void mnuFileInfo_Click(object sender, EventArgs e)

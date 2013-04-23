@@ -84,35 +84,15 @@ namespace DosDebugger
         {
             ToolStripMenuItem item = (ToolStripMenuItem)sender;
             Pointer source = (Pointer)item.Tag;
-            NavigateTo(source);
-        }
-
-        private LinkedList<int> navHistory = new LinkedList<int>();
-        private LinkedListNode<int> navCurrent = null;
-
-        public bool NavigateBackward()
-        {
-             if (navCurrent != null && navCurrent.Previous != null)
+            if (NavigationRequested != null)
             {
-                navCurrent = navCurrent.Previous;
-                GoToRow(navCurrent.Value);
-                 return true;
+                NavigationRequestedEventArgs args =
+                    new NavigationRequestedEventArgs(source);
+                NavigationRequested(this, args);
             }
-            return false;
         }
 
-        public bool NavigateForward()
-        {
-            if (navCurrent != null && navCurrent.Next != null)
-            {
-                navCurrent = navCurrent.Next;
-                GoToRow(navCurrent.Value);
-                return true;
-            }
-            return false;
-        }
-
-        public bool NavigateTo(Pointer target)
+        public bool Navigate(Pointer target)
         {
             // Find the first entry that is greater than or equal to target.
             for (int i = 0; i < listingView.Rows.Count; i++)
@@ -138,29 +118,8 @@ namespace DosDebugger
                 item.EnsureVisible();
             item.Focused = true;
             item.Selected = true;
-
-            // Update navigation history.
-                if (navCurrent == null)
-                {
-                    navCurrent = navHistory.AddFirst(index);
-                    return;
-                }
-
-            if (index == navCurrent.Value)
-                return;
-            if (navCurrent.Next != null && index == navCurrent.Next.Value)
-            {
-                navCurrent = navCurrent.Next;
-                return;
-            }
-
-            while (navCurrent.Next != null)
-            {
-                navHistory.RemoveLast();
-            }
-            navCurrent = navHistory.AddAfter(navCurrent, index);
         }
 
-        
+        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
     }
 }

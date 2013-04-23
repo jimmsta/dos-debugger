@@ -301,12 +301,14 @@
             // 
             // mnuViewNavigateBackward
             // 
+            this.mnuViewNavigateBackward.Enabled = false;
             this.mnuViewNavigateBackward.Name = "mnuViewNavigateBackward";
             this.mnuViewNavigateBackward.Size = new System.Drawing.Size(194, 24);
             this.mnuViewNavigateBackward.Text = "Navigate &Backward";
             // 
             // mnuViewNavigateForward
             // 
+            this.mnuViewNavigateForward.Enabled = false;
             this.mnuViewNavigateForward.Name = "mnuViewNavigateForward";
             this.mnuViewNavigateForward.Size = new System.Drawing.Size(194, 24);
             this.mnuViewNavigateForward.Text = "Navigate &Forward";
@@ -386,21 +388,25 @@
             // btnNavigateBackward
             // 
             this.btnNavigateBackward.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnNavigateBackward.Enabled = false;
             this.btnNavigateBackward.Image = ((System.Drawing.Image)(resources.GetObject("btnNavigateBackward.Image")));
             this.btnNavigateBackward.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnNavigateBackward.Name = "btnNavigateBackward";
             this.btnNavigateBackward.Size = new System.Drawing.Size(23, 24);
             this.btnNavigateBackward.Text = "<";
+            this.btnNavigateBackward.ToolTipText = "Navigate Backward";
             this.btnNavigateBackward.Click += new System.EventHandler(this.btnNavigateBackward_Click);
             // 
             // btnNavigateForward
             // 
             this.btnNavigateForward.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnNavigateForward.Enabled = false;
             this.btnNavigateForward.Image = ((System.Drawing.Image)(resources.GetObject("btnNavigateForward.Image")));
             this.btnNavigateForward.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnNavigateForward.Name = "btnNavigateForward";
             this.btnNavigateForward.Size = new System.Drawing.Size(23, 24);
             this.btnNavigateForward.Text = ">";
+            this.btnNavigateForward.ToolTipText = "Navigate Forward";
             this.btnNavigateForward.Click += new System.EventHandler(this.btnNavigateForward_Click);
             // 
             // toolStripSeparator1

@@ -69,6 +69,7 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="NavigationHistory.cs" />
     <Compile Include="ProcedureWindow.cs">
       <SubType>Form</SubType>
     </Compile>
