@@ -81,6 +81,8 @@
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.cbFind = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnTest = new System.Windows.Forms.ToolStripButton();
             this.contextMenuListing.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -247,7 +249,6 @@
             // 
             // openFileDialog1
             // 
-            this.openFileDialog1.FileName = "openFileDialog1";
             this.openFileDialog1.Filter = "Executable file|*.exe";
             this.openFileDialog1.Title = "Select DOS Executable File";
             // 
@@ -424,6 +425,7 @@
             this.mnuHelpAbout.Name = "mnuHelpAbout";
             this.mnuHelpAbout.Size = new System.Drawing.Size(152, 24);
             this.mnuHelpAbout.Text = "&About";
+            this.mnuHelpAbout.Click += new System.EventHandler(this.mnuHelpAbout_Click);
             // 
             // toolStrip1
             // 
@@ -436,7 +438,9 @@
             this.btnGoToBookmark,
             this.toolStripSeparator2,
             this.cbFind,
-            this.toolStripButton1});
+            this.toolStripButton1,
+            this.toolStripSeparator3,
+            this.btnTest});
             this.toolStrip1.Location = new System.Drawing.Point(0, 27);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Padding = new System.Windows.Forms.Padding(4, 2, 2, 2);
@@ -517,6 +521,21 @@
             this.toolStripButton1.Size = new System.Drawing.Size(39, 24);
             this.toolStripButton1.Text = "Find";
             this.toolStripButton1.Click += new System.EventHandler(this.btnFind_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 27);
+            // 
+            // btnTest
+            // 
+            this.btnTest.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnTest.Image = ((System.Drawing.Image)(resources.GetObject("btnTest.Image")));
+            this.btnTest.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnTest.Name = "btnTest";
+            this.btnTest.Size = new System.Drawing.Size(38, 24);
+            this.btnTest.Text = "Test";
+            this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
             // MainForm
             // 
@@ -601,6 +620,8 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripComboBox cbFind;
         private System.Windows.Forms.ToolStripButton toolStripButton1;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripButton btnTest;
     }
 }
 

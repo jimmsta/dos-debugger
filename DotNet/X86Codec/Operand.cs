@@ -19,20 +19,38 @@ namespace X86Codec
         //{
         //    this.Size = size;
         //}
+
+        /// <summary>
+        /// Converts an unsigned integer to hexidecimal string of the form
+        /// "0f43h" or "5".
+        /// </summary>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        internal static string FormatImmediate(UInt64 number)
+        {
+            if (number < 10)
+            {
+                return number.ToString();
+            }
+            else
+            {
+                string s = string.Format("0{0:x}h", number);
+                if (s[1] > '9')
+                    return s;
+                else
+                    return s.Substring(1);
+            }
+        }
     }
 
     /// <summary>
-    /// Represents an immediate operand.
+    /// Represents an immediate operand. An immediate may take 8, 16, or 32
+    /// bits, and is always sign-extended to 32 bits and stored internally.
     /// </summary>
     public class ImmediateOperand : Operand
     {
         private int value;
         public CpuSize Size;
-
-        public ImmediateOperand(int value)
-            : this(value, CpuSize.Use32Bit)
-        {
-        }
 
         public ImmediateOperand(int value, CpuSize size)
         {
@@ -53,17 +71,16 @@ namespace X86Codec
         public override string ToString()
         {
             // Encode in decimal if the value is a single digit.
-            if (value < 10)
+            if (value > -10 && value < 10)
                 return value.ToString();
 
-            // Convert the value into hexidecimal and append 'h'.
-            string s = value.ToString("x") + 'h';
-
-            // Prepend '0' if the string starts with an alpha.
-            if (s[0] > '9')
-                s = '0' + s;
-
-            return s;
+            // Encode in hexidecimal format such as 0f34h.
+            switch (Size)
+            {
+                case CpuSize.Use8Bit: return FormatImmediate((byte)value);
+                case CpuSize.Use16Bit: return FormatImmediate((ushort)value);
+                default: return FormatImmediate((uint)value);
+            }
         }
     }
 
@@ -216,7 +233,7 @@ namespace X86Codec
             s.Append('[');
             if (Base == Register.None) // only displacement
             {
-                s.Append(Displacement.ToString());
+                s.Append(FormatImmediate((UInt32)Displacement));
             }
             else // base+index*scale+displacement
             {
@@ -234,12 +251,12 @@ namespace X86Codec
                 if (Displacement > 0) // e.g. [BX+1]
                 {
                     s.Append('+');
-                    s.Append(new ImmediateOperand(Displacement).ToString());
+                    s.Append(FormatImmediate((uint)Displacement));
                 }
                 else if (Displacement < 0) // e.g. [BP-2]
                 {
                     s.Append('-');
-                    s.Append(new ImmediateOperand(-Displacement).ToString());
+                    s.Append(FormatImmediate((uint)(-Displacement)));
                 }
             }
             s.Append(']');

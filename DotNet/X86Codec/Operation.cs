@@ -57,7 +57,6 @@ namespace X86Codec
         /* Comparison and basic control flow */
         CMP,
         TEST,
-        JMP,
         LOOP,
         LOOPZ,
         LOOPNZ,
@@ -93,7 +92,11 @@ namespace X86Codec
 
         /* Calls and interrupts */
         CALL,
+        CALLF,
+        JMP,
+        JMPF,
         RET,
+        RETF,
         INT,
         INTO,
         IRET,
@@ -134,8 +137,6 @@ namespace X86Codec
         MOVS,
         LODS,
         FWAIT,
-        RETN,
-        RETF,
         ENTER,
         LEAVE,
         XLAT,
@@ -151,10 +152,7 @@ namespace X86Codec
         VERW,
         LLDT,
         LTR,
-        CALLN,
-        CALLF,
-        JMPN,
-        JMPF,
+        
         XABORT,
         XBEGIN,
 

@@ -103,6 +103,31 @@ namespace Disassembler
         }
 
         /// <summary>
+        /// Converts a CS:IP pointer to its offset within the executable
+        /// image. Note that different CS:IP pointers may correspond to the
+        /// same offset.
+        /// </summary>
+        /// <param name="location">A pointer to convert.</param>
+        /// <returns>The offset within the executable image.</returns>
+        public int PointerToOffset(Pointer location)
+        {
+            return location - baseAddress;
+        }
+
+        public Pointer OffsetToPointer(int offset)
+        {
+            if (offset < 0 || offset >= attr.Length)
+                throw new ArgumentOutOfRangeException("offset");
+
+            if (!attr[offset].IsBoundary)
+                return Pointer.Invalid;
+
+            int baseSegment = this.baseAddress.Segment;
+            UInt16 seg = byteSegment[offset];
+            return new Pointer(seg, (UInt16)(offset - (seg - baseSegment) * 16));
+        }
+
+        /// <summary>
         /// Analyzes code starting from the given location. That location
         /// must be the entry point of a procedure, or otherwise the analysis
         /// may not work correctly.
@@ -327,9 +352,8 @@ namespace Disassembler
                 // Check if this instruction terminates the block.
                 switch (insn.Operation)
                 {
-                    case Operation.RETN:
-                    case Operation.RETF:
                     case Operation.RET:
+                    case Operation.RETF:
                     case Operation.HLT:
                         return;
                 }
@@ -516,13 +540,12 @@ namespace Disassembler
                     break;
 
                 case Operation.JMP:
-                case Operation.JMPN:
+                case Operation.JMPF:
                     bcjType = XRefType.UnconditionalJump;
                     break;
 
                 case Operation.CALL:
                 case Operation.CALLF:
-                case Operation.CALLN:
                     bcjType = XRefType.FunctionCall;
                     break;
 
@@ -573,7 +596,7 @@ namespace Disassembler
                 // not conforming to the above rules, or create a non-jump 
                 // table that conforms to the above rules. We do not deal with
                 // these cases for the moment.
-                if (op == Operation.JMPN &&
+                if (op == Operation.JMP &&
                     opr.Size == CpuSize.Use16Bit &&
                     opr.Segment == Register.CS &&
                     opr.Base != Register.None &&

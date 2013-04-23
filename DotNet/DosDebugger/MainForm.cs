@@ -353,12 +353,13 @@ namespace DosDebugger
             int n = lvListing.Items.Count;
             for (int i = 0; i < n; i++)
             {
-                ListViewItem item = lvListing.Items[(selection + 1 + i) % n];
+                int k = (selection + 1 + i) % n;
+                ListViewItem item = lvListing.Items[k];
                 for (int j = 0; j < item.SubItems.Count; j++)
                 {
                     if (item.SubItems[j].Text.ToUpperInvariant().Contains(s))
                     {
-                        GoToRow(i, true);
+                        GoToRow(k, true);
                         return;
                     }
                 }
@@ -374,6 +375,45 @@ namespace DosDebugger
         private void mnuAnalyzeExecutable_Click(object sender, EventArgs e)
         {
             DoAnalyze();
+        }
+
+        private void mnuHelpAbout_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(this, "DOS Disassembler\r\nCopyright fanci 2012-2013\r\n",
+                "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnTest_Click(object sender, EventArgs e)
+        {
+            // Find all instructions that change segment registers.
+            ByteAttribute[] attr = dasm.ByteAttributes;
+            for (int i = 0; i < attr.Length; )
+            {
+                if (attr[i].IsBoundary && attr[i].Type == ByteType.Code)
+                {
+                    Pointer location = dasm.OffsetToPointer(i);
+
+                    Instruction insn = X86Codec.Decoder.Decode(dasm.Image,
+                        i, location, CpuMode.RealAddressMode);
+
+                    if (insn.Operands.Length >= 1 && insn.Operands[0] is RegisterOperand)
+                    {
+                        RegisterOperand opr = (RegisterOperand)insn.Operands[0];
+                        if (opr.Type == RegisterType.Segment &&
+                            opr.Register != Register.ES &&
+                            insn.Operation != Operation.PUSH)
+                        {
+                            System.Diagnostics.Debug.WriteLine(string.Format(
+                                "{0} {1}", location, insn));
+                        }
+                    }
+                    i += insn.EncodedLength;
+                }
+                else
+                {
+                    i++;
+                }
+            }
         }
     }
 }

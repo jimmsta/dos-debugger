@@ -28,7 +28,6 @@ namespace DosDebugger
 
             // Display analyzed code and data.
             ByteAttribute[] attr = dasm.ByteAttributes;
-            bool inCodeBlock = false;
             for (int i = 0; i < attr.Length; )
             {
                 if (attr[i].IsBoundary && attr[i].Type == ByteType.Code)
@@ -41,12 +40,11 @@ namespace DosDebugger
                     Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, location, CpuMode.RealAddressMode);
                     rows.Add(new CodeListingRow(insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
                     i += insn.EncodedLength;
-                    inCodeBlock = true;
                 }
                 else if (attr[i].IsBoundary && attr[i].Type == ByteType.Data)
                 {
                     int j = i + 1;
-                    while (attr[j].Type == ByteType.Data && !attr[j].IsBoundary)
+                    while (j < attr.Length && attr[j].Type == ByteType.Data && !attr[j].IsBoundary)
                         j++;
 
                     int baseSegment = dasm.BaseAddress.Segment;
@@ -55,7 +53,6 @@ namespace DosDebugger
 
                     rows.Add(new DataListingRow(location, ArraySlice(dasm.Image, i, j - i)));
                     i = j;
-                    inCodeBlock = true;
                 }
                 else
                 {
@@ -63,13 +60,12 @@ namespace DosDebugger
                     {
                         rows.Add(new ErrorListingRow(errorMap[i]));
                     }
+                    int j = i + 1;
+                    while (j < attr.Length && !attr[j].IsBoundary)
+                        j++;
 
-                    if (inCodeBlock)
-                    {
-                        rows.Add(new BlankListingRow());
-                    }
-                    inCodeBlock = false;
-                    i++;
+                    rows.Add(new BlankListingRow(Pointer.Invalid, j - i));
+                    i = j;
                 }
             }
         }
@@ -114,18 +110,32 @@ namespace DosDebugger
         }
     }
 
+    /// <summary>
+    /// Represents a continuous range of unanalyzed bytes.
+    /// </summary>
     class BlankListingRow : ListingRow
     {
+        private Pointer location;
+        private int length;
+
+        public BlankListingRow(Pointer location, int length)
+        {
+            this.location = location;
+            this.length = length;
+        }
+
         public override Pointer Location
         {
-            get { return Pointer.Invalid; }
+            get { return location; }
         }
 
         public override ListViewItem CreateViewItem()
         {
             ListViewItem item = new ListViewItem();
+            item.Text = location.ToString();
             item.SubItems.Add("");
-            item.SubItems.Add("");
+            item.SubItems.Add(string.Format("{0} unanalyzed bytes.", length));
+            item.BackColor = Color.LightGray;
             return item;
         }
     }

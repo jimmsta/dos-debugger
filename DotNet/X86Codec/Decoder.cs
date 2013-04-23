@@ -260,9 +260,9 @@ namespace X86Codec
                         {
                             case 0: x = new Op(Operation.INC, O.Ev); break;
                             case 1: x = new Op(Operation.DEC, O.Ev); break;
-                            case 2: x = new Op(Operation.CALLN, O.Ev); break;
+                            case 2: x = new Op(Operation.CALL, O.Ev); break;
                             case 3: x = new Op(Operation.CALLF, O.Ep); break;
-                            case 4: x = new Op(Operation.JMPN, O.Ev); break;
+                            case 4: x = new Op(Operation.JMP, O.Ev); break;
                             case 5: x = new Op(Operation.JMPF, O.Mp); break;
                             case 6: x = new Op(Operation.PUSH, O.Ev); break;
                             case 7: break;
@@ -933,7 +933,7 @@ namespace X86Codec
                 case O.Imm1:
                 case O.Imm2:
                 case O.Imm3:
-                    return new ImmediateOperand(spec - O.Imm0);
+                    return new ImmediateOperand(spec - O.Imm0, CpuSize.Use8Bit);
 
                 case O.ES:
                 case O.CS:
@@ -1549,8 +1549,8 @@ namespace X86Codec
 
             /* C0 */ new Op(OpcodeExtension.Ext2,  O.Eb, O.Ib),
             /* C1 */ new Op(OpcodeExtension.Ext2,  O.Ev, O.Ib),
-            /* C2 */ new Op(Operation.RETN, O.Iw), /* f64 */
-            /* C3 */ new Op(Operation.RETN),       /* f64 */
+            /* C2 */ new Op(Operation.RET, O.Iw), /* f64 */
+            /* C3 */ new Op(Operation.RET),       /* f64 */
             /* C4 */ new Op(Operation.LES, O.Gz, O.Mp), /* i64; VEX+2byte */
             /* C5 */ new Op(Operation.LDS, O.Gz, O.Mp), /* i64; VEX+1byte */
             /* C6 */ new Op(OpcodeExtension.Ext11, O.Eb, O.Ib),
@@ -1591,7 +1591,7 @@ namespace X86Codec
             /* E7 */ new Op(Operation.OUT, O.Ib, O.eAX),
             /* E8 */ new Op(Operation.CALL, O.Jz), /* f64 */
             /* E9 */ new Op(Operation.JMP, O.Jz), /* near, O.f64 */
-            /* EA */ new Op(Operation.JMP, O.Ap), /* far, O.i64 */
+            /* EA */ new Op(Operation.JMPF, O.Ap), /* far, O.i64 */
             /* EB */ new Op(Operation.JMP, O.Jb), /* short, O.f64 */
             /* EC */ new Op(Operation.IN, O.AL, O.DX),
             /* ED */ new Op(Operation.IN, O.eAX, O.DX),
