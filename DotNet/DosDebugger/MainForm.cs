@@ -2,6 +2,7 @@
 using System;
 using System.Windows.Forms;
 using X86Codec;
+using WeifenLuo.WinFormsUI.Docking;
 
 namespace DosDebugger
 {
@@ -293,6 +294,45 @@ namespace DosDebugger
         public void OnNavigationRequested(object sender, NavigationRequestedEventArgs e)
         {
             GoToLocation(e.Location);
+        }
+
+        private void mnuView_DropDownOpening(object sender, EventArgs e)
+        {
+            mnuViewSegments.Checked = segmentWindow.Visible;
+            mnuViewProcedures.Checked = procWindow.Visible;
+            mnuViewErrors.Checked = errorWindow.Visible;
+        }
+
+        private void mnuViewDisassembly_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void mnuViewSegments_Click(object sender, EventArgs e)
+        {
+            //DockState ds = segmentWindow.DockState;
+#if false
+            segmentWindow.Activate();
+            if (!segmentWindow.Visible)
+            {
+                if (segmentWindow.DockState == WeifenLuo.WinFormsUI.Docking.DockState.Hidden)
+                {
+                    MessageBox.Show("Hidden");
+                }
+            }
+            segmentWindow.Focus();
+#endif
+            segmentWindow.Activate();
+        }
+
+        private void mnuViewProcedures_Click(object sender, EventArgs e)
+        {
+            procWindow.Activate();
+        }
+
+        private void mnuViewErrors_Click(object sender, EventArgs e)
+        {
+            errorWindow.Activate();
         }
     }
 }
