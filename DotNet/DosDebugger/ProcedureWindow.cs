@@ -47,7 +47,7 @@ namespace DosDebugger
             {
                 ListViewItem item = new ListViewItem();
                 item.Text = proc.EntryPoint.ToString();
-                item.SubItems.Add(proc.ByteRange.IntervalCount.ToString());
+                item.SubItems.Add(proc.ByteRange.Intervals.Count.ToString());
                 item.SubItems.Add(proc.ByteRange.Length.ToString());
                 item.Tag = proc;
                 lvProcedures.Items.Add(item);

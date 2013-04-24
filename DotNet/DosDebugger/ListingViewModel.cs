@@ -98,8 +98,9 @@ namespace DosDebugger
                 if (!proc.ByteRange.IsEmpty)
                 {
                     ProcedureItem item = new ProcedureItem(proc);
-                    item.BeginRowIndex = FindRowIndex(proc.ByteRange.LowerBound);
-                    item.EndRowIndex = FindRowIndex(proc.ByteRange.UpperBound);
+                    Range range = proc.ByteRange.BoundingRange;
+                    item.BeginRowIndex = range.Begin;
+                    item.EndRowIndex = range.End;
                     // TBD: need to check broken instruction conditions
                     // as well as leading/trailing unanalyzed bytes.
                     procItems.Add(item);

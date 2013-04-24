@@ -121,6 +121,14 @@ namespace DosDebugger
         }
 
         // TODO: what should we do if the navigation target is out of the current sub?
+        /// <summary>
+        /// Navigates to the given address. This also updates the current
+        /// segment and procedure displayed at the top of the window.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <param name="scrollToTop"></param>
+        /// <param name="setFocus"></param>
+        /// <returns></returns>
         private bool Navigate(Pointer target, bool scrollToTop, bool setFocus)
         {
             if (viewModel.Rows.Count == 0)
@@ -133,6 +141,7 @@ namespace DosDebugger
             }
 
             ListViewItem item = lvListing.Items[rowIndex - viewportBeginIndex];
+
             item.Selected = true;
             item.Focused = true;
 
@@ -146,23 +155,6 @@ namespace DosDebugger
 
             return true;
         }
-
-#if false
-        private void GoToRow(int index, bool bringToTop = false)
-        {
-            if (index < 0 || index > lvListing.Items.Count)
-                throw new ArgumentOutOfRangeException("index");
-
-            ListViewItem item = lvListing.Items[index];
-            lvListing.Focus();
-            if (bringToTop)
-                lvListing.TopItem = item;
-            else
-                item.EnsureVisible();
-            item.Focused = true;
-            item.Selected = true;
-        }
-#endif
 
         public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
 
@@ -233,7 +225,7 @@ namespace DosDebugger
             // Navigate to the entry point of the procedure. Note that
             // this may not be the first instruction in the procedure's
             // range, though it usually is.
-            Navigate(item.Procedure.EntryPoint, true, false);
+            Navigate(item.Procedure.EntryPoint, false, true);
         }
     }
 

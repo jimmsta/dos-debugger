@@ -11,9 +11,9 @@ namespace Disassembler
     public class Procedure
     {
         private Pointer entryPoint;
-        private Range codeRange = new Range();
-        private Range dataRange = new Range();
-        private Range byteRange = new Range();
+        private MultiRange codeRange = new MultiRange();
+        private MultiRange dataRange = new MultiRange();
+        private MultiRange byteRange = new MultiRange();
 
         /// <summary>
         /// Gets or sets the entry point address of the procedure.
@@ -24,17 +24,17 @@ namespace Disassembler
             set { this.entryPoint = value; }
         }
 
-        public Range CodeRange
+        public MultiRange CodeRange
         {
             get { return codeRange; }
         }
 
-        public Range DataRange
+        public MultiRange DataRange
         {
             get { return dataRange; }
         }
 
-        public Range ByteRange
+        public MultiRange ByteRange
         {
             get { return byteRange; }
         }

@@ -1,78 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a collection of disjoint integer intervals.
+    /// Represents a collection of disjoint ranges.
     /// </summary>
-    public class Range
+    public class MultiRange
     {
-        private LinkedList<Interval> intervals = new LinkedList<Interval>();
+        private LinkedList<Range> ranges = new LinkedList<Range>();
 
-        public Range()
+        public MultiRange()
         {
         }
 
+        /// <summary>
+        /// Returns true if this multi-range is empty.
+        /// </summary>
         public bool IsEmpty
         {
-            get { return intervals.Count == 0; }
-        }
-
-        public int LowerBound
-        {
-            get
-            {
-                if (this.IsEmpty)
-                    throw new InvalidOperationException("The range is empty.");
-                return intervals.First.Value.Begin;
-            }
-        }
-
-        public int UpperBound
-        {
-            get
-            {
-                if (this.IsEmpty)
-                    throw new InvalidOperationException("The range is empty.");
-                return intervals.Last.Value.End;
-            }
+            get { return ranges.Count == 0; }
         }
 
         /// <summary>
-        /// Gets the disjoint intervals that constitute this range. The
-        /// intervals are returned in order.
+        /// Gets the smallest range that covers this multi-range.
         /// </summary>
-        public IEnumerable<Interval> Intervals
+        /// <exception cref="InvalidOperationException">If the multi-range
+        /// is empty.</exception>
+        public Range BoundingRange
         {
-            get { return intervals; }
+            get
+            {
+                if (this.IsEmpty)
+                {
+                    throw new InvalidOperationException(
+                        "Cannot get BoundingRange of an empty multi-range.");
+                }
+                return new Range(ranges.First.Value.Begin, ranges.Last.Value.End);
+            }
         }
 
         /// <summary>
-        /// Gets the total size, in bytes, of the range.
+        /// Gets the disjoint ranges that constitute this multi-range. The
+        /// ranges are stored in acsending order.
+        /// </summary>
+        /// TODO: we need to change to something like ReadOnlyCollection.
+        public LinkedList<Range> Intervals
+        {
+            get { return ranges; }
+        }
+
+        /// <summary>
+        /// Gets the total number of elements in the range.
         /// </summary>
         public int Length
         {
             get
             {
                 int size = 0;
-                foreach (Interval interval in intervals)
+                foreach (Range range in ranges)
                 {
-                    size += interval.Length;
+                    size += range.Length;
                 }
                 return size;
             }
         }
 
-        /// <summary>
-        /// Gets the number of disjoint intervals in the range.
-        /// </summary>
-        public int IntervalCount
-        {
-            get { return intervals.Count; }
-        }
-
+        // TODO: we need to improve this signature and its implementation.
         public void AddInterval(int begin, int end)
         {
             if (end < begin)
@@ -85,33 +81,33 @@ namespace Disassembler
                 int kk = 1;
             }
 
-            if (intervals.Count == 0)
+            if (ranges.Count == 0)
             {
-                intervals.AddFirst(new Interval(begin, end));
+                ranges.AddFirst(new Range(begin, end));
             }
-            else if (intervals.Last.Value.End == begin)
+            else if (ranges.Last.Value.End == begin)
             {
-                intervals.Last.Value = new Interval(intervals.Last.Value.Begin, end);
+                ranges.Last.Value = new Range(ranges.Last.Value.Begin, end);
             }
-            else if (intervals.Last.Value.End < begin)
+            else if (ranges.Last.Value.End < begin)
             {
-                intervals.AddLast(new Interval(begin, end));
+                ranges.AddLast(new Range(begin, end));
             }
-            else if (intervals.First.Value.Begin == end)
+            else if (ranges.First.Value.Begin == end)
             {
-                intervals.First.Value = new Interval(begin, intervals.First.Value.End);
+                ranges.First.Value = new Range(begin, ranges.First.Value.End);
             }
-            else if (intervals.First.Value.Begin > end)
+            else if (ranges.First.Value.Begin > end)
             {
-                intervals.AddFirst(new Interval(begin, end));
+                ranges.AddFirst(new Range(begin, end));
             }
             else
             {
-                LinkedListNode<Interval> node;
+                LinkedListNode<Range> node;
 
                 // Find the first interval where begin <= Interval.End.
                 // This interval will be extended to include end-1.
-                node = intervals.First;
+                node = ranges.First;
                 while (!(begin <= node.Value.End))
                     node = node.Next;
 
@@ -120,11 +116,11 @@ namespace Disassembler
                 {
                     if (end < node.Value.Begin)
                     {
-                        intervals.AddBefore(node, new Interval(begin, end));
+                        ranges.AddBefore(node, new Range(begin, end));
                     }
                     else if (end == node.Value.Begin)
                     {
-                        node.Value = new Interval(begin, node.Value.End);
+                        node.Value = new Range(begin, node.Value.End);
                     }
                 }
                 while (node.Value.End < end)
@@ -133,14 +129,14 @@ namespace Disassembler
                         node.Next.Value.Begin > end)
                     {
                         // Extend this interval and exit.
-                        node.Value = new Interval(node.Value.Begin, end);
+                        node.Value = new Range(node.Value.Begin, end);
                         break;
                     }
                     else
                     {
                         // Merge this interval and the next interval.
-                        node.Value = new Interval(node.Value.Begin, node.Next.Value.End);
-                        intervals.Remove(node.Next);
+                        node.Value = new Range(node.Value.Begin, node.Next.Value.End);
+                        ranges.Remove(node.Next);
                     }
                 }
             }
@@ -148,9 +144,10 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Represents a C++/STL-style interval [begin, end).
+    /// Represents a C++/STL-style range [begin, end) where 'begin' and 'end'
+    /// are of type T where T is comparable.
     /// </summary>
-    public struct Interval
+    public struct Range
     {
         private int begin;
         private int end;
@@ -174,7 +171,7 @@ namespace Disassembler
             get { return end - begin; }
         }
 
-        public Interval(int begin, int end)
+        public Range(int begin, int end)
             : this()
         {
             if (end < begin)
