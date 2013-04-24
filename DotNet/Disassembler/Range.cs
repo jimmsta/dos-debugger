@@ -15,6 +15,31 @@ namespace Disassembler
         {
         }
 
+        public bool IsEmpty
+        {
+            get { return intervals.Count == 0; }
+        }
+
+        public int LowerBound
+        {
+            get
+            {
+                if (this.IsEmpty)
+                    throw new InvalidOperationException("The range is empty.");
+                return intervals.First.Value.Begin;
+            }
+        }
+
+        public int UpperBound
+        {
+            get
+            {
+                if (this.IsEmpty)
+                    throw new InvalidOperationException("The range is empty.");
+                return intervals.Last.Value.End;
+            }
+        }
+
         /// <summary>
         /// Gets the disjoint intervals that constitute this range. The
         /// intervals are returned in order.

@@ -382,7 +382,7 @@ namespace DosDebugger
         private void ListInstructionsThatChangeSegmentRegisters()
         {
             // Find all instructions that change segment registers.
-            ByteProperties[] attr = dasm.ByteAttributes;
+            ByteProperties[] attr = dasm.ByteProperties;
             for (int i = 0; i < attr.Length; )
             {
                 if (attr[i] != null && attr[i].IsLeadByte && attr[i].Type == ByteType.Code)

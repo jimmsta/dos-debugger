@@ -67,12 +67,12 @@ namespace Disassembler
         /// <summary>
         /// Gets the attributes of each byte in the executable image.
         /// </summary>
-        public ByteProperties[] ByteAttributes
+        public ByteProperties[] ByteProperties
         {
             get { return attr; }
         }
 
-        private ByteProperties GetByteProperties(Pointer location)
+        public ByteProperties GetByteProperties(Pointer location)
         {
             return attr[PointerToOffset(location)];
         }

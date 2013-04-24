@@ -13,12 +13,11 @@ namespace DosDebugger
     /// </summary>
     class ListingViewModel
     {
-        private List<ListingRow> rows;
+        private List<ListingRow> rows = new List<ListingRow>();
+        private List<ProcedureItem> procItems = new List<ProcedureItem>();
 
         public ListingViewModel(Disassembler16 dasm)
         {
-            rows = new List<ListingRow>();
-
             // Make a dictionary from CS:IP to the error at that location.
             Dictionary<int, Error> errorMap = new Dictionary<int, Error>();
             foreach (Error error in dasm.Errors)
@@ -26,8 +25,13 @@ namespace DosDebugger
                 errorMap[error.Location - dasm.BaseAddress] = error;
             }
 
+            // Make a dictionary from byte offset to listing row index.
+            Dictionary<int, int> rowLookup = new Dictionary<int, int>();
+            //Dictionary<Procedure, ProcedureItem> procMap 
+            //    = new Dictionary<Procedure, ProcedureItem>();
+
             // Display analyzed code and data.
-            ByteProperties[] attr = dasm.ByteAttributes;
+            ByteProperties[] attr = dasm.ByteProperties;
             Pointer address = dasm.BaseAddress;
             for (int i = 0; i < attr.Length; )
             {
@@ -36,6 +40,7 @@ namespace DosDebugger
                 if (IsLeadByteOfCode(b))
                 {
                     Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, b.Address, CpuMode.RealAddressMode);
+                    rowLookup[i] = rows.Count;
                     rows.Add(new CodeListingRow(insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
@@ -49,6 +54,7 @@ namespace DosDebugger
                            !attr[j].IsLeadByte)
                         j++;
 
+                    rowLookup[i] = rows.Count;
                     rows.Add(new DataListingRow(b.Address, ArraySlice(dasm.Image, i, j - i)));
                     address = b.Address + (j - i);
                     i = j;
@@ -57,7 +63,7 @@ namespace DosDebugger
                 {
                     if (errorMap.ContainsKey(i))
                     {
-                        rows.Add(new ErrorListingRow(errorMap[i]));
+                    //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
                     int j = i + 1;
                     while (j < attr.Length &&
@@ -65,9 +71,22 @@ namespace DosDebugger
                            !IsLeadByteOfData(attr[j]))
                         j++;
 
+                    rowLookup[i] = rows.Count;
                     rows.Add(new BlankListingRow(address, ArraySlice(dasm.Image, i, j - i)));
                     address += (j - i);
                     i = j;
+                }
+            }
+
+            // Fill the BeginIndex and EndIndex of the procedures.
+            foreach (Procedure proc in dasm.Procedures)
+            {
+                if (!proc.ByteRange.IsEmpty)
+                {
+                    ProcedureItem item = new ProcedureItem(proc);
+                    item.BeginIndex = rowLookup[proc.ByteRange.LowerBound];
+                    item.EndIndex = rowLookup[proc.ByteRange.UpperBound];
+                    procItems.Add(item);
                 }
             }
         }
@@ -85,6 +104,11 @@ namespace DosDebugger
         public List<ListingRow> Rows
         {
             get { return rows; }
+        }
+
+        public List<ProcedureItem> ProcedureItems
+        {
+            get { return procItems; }
         }
 
         public ListViewItem CreateViewItem(int index)
@@ -279,28 +303,43 @@ namespace DosDebugger
         }
     }
 
-#if false
-    enum ListingRowType
+    class ProcedureItem
     {
-        /// <summary>
-        /// The row is a blank row used to improve readability.
-        /// </summary>
-        Blank,
+        public ProcedureItem(Procedure procedure)
+        {
+            this.Procedure = procedure;
+        }
 
-        /// <summary>
-        /// The row displays an instruction.
-        /// </summary>
-        Code,
+        public Procedure Procedure { get; private set; }
 
-        /// <summary>
-        /// The row displays a data item.
-        /// </summary>
-        Data,
+        // [begin,end) index of the listing rows that belong to
+        // this procedure.
+        public int BeginIndex;
+        public int EndIndex;
 
-        /// <summary>
-        /// The row displays an error.
-        /// </summary>
-        Error,
+        public override string ToString()
+        {
+            return Procedure.EntryPoint.ToString();
+        }
     }
-#endif
+
+    class SegmentListItem
+    {
+        public SegmentListItem(Pointer segmentStart)
+        {
+            this.SegmentStart = segmentStart;
+        }
+
+        public Pointer SegmentStart { get; private set; }
+
+        public UInt16 Segment
+        {
+            get { return SegmentStart.Segment; }
+        }
+
+        public override string ToString()
+        {
+            return SegmentStart.ToString();
+        }
+    }
 }

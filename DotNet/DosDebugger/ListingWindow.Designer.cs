@@ -65,6 +65,7 @@
             this.lvListing.View = System.Windows.Forms.View.Details;
             this.lvListing.VirtualMode = true;
             this.lvListing.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvListing_RetrieveVirtualItem);
+            this.lvListing.SelectedIndexChanged += new System.EventHandler(this.lvListing_SelectedIndexChanged);
             // 
             // columnHeader1
             // 
@@ -135,6 +136,7 @@
             this.cbProcedures.Name = "cbProcedures";
             this.cbProcedures.Size = new System.Drawing.Size(358, 27);
             this.cbProcedures.TabIndex = 2;
+            this.cbProcedures.SelectedIndexChanged += new System.EventHandler(this.cbProcedures_SelectedIndexChanged);
             // 
             // ListingWindow
             // 

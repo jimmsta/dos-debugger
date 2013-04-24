@@ -41,16 +41,17 @@ namespace DosDebugger
 
             // Fill the procedure window.
             cbProcedures.Items.Clear();
-            foreach (Procedure proc in document.Disassembler.Procedures)
-            {
-                cbProcedures.Items.Add(proc.EntryPoint.ToString());
-            }
+            //foreach (Procedure proc in document.Disassembler.Procedures)
+            //{
+                //cbProcedures.Items.Add(new ProcedureItem(proc));
+            //}
+            cbProcedures.Items.AddRange(listingView.ProcedureItems.ToArray());
 
             // Fill the segment window.
             cbSegments.Items.Clear();
             foreach (Pointer segStart in document.Disassembler.Segments)
             {
-                cbSegments.Items.Add(segStart);
+                cbSegments.Items.Add(new SegmentListItem(segStart));
             }
         }
 
@@ -67,7 +68,7 @@ namespace DosDebugger
 
         private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
-            e.Item = listingView.CreateViewItem(e.ItemIndex);
+            e.Item = listingView.CreateViewItem(viewportBeginIndex + e.ItemIndex);
         }
 
         private void contextMenuListing_Opening(object sender, CancelEventArgs e)
@@ -144,5 +145,69 @@ namespace DosDebugger
             tableLayoutPanel1.RowStyles[0].Height =
                 cbSegments.Height + cbSegments.Margin.Vertical;
         }
+
+        private void lvListing_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            int i = this.SelectedIndex;
+            if (i == -1)
+                return;
+
+            Pointer address = listingView.Rows[i].Location;
+            ByteProperties b = document.Disassembler.GetByteProperties(address);
+            if (b == null)
+                return;
+
+            this.ActiveSegment = address.Segment;
+        }
+
+        // Keeps track of the segment selected. If this value is different
+        // from what is displayed in the UI, then either the UI must be
+        // updated or an ActiveSegmentChanged event must be raised.
+        private ushort activeSegment;
+
+        /// <summary>
+        /// Gets or sets the active segment selected in the window. A value
+        /// of 0xFFFF indicates no segment is selected.
+        /// </summary>
+        public UInt16 ActiveSegment
+        {
+            get
+            {
+                if (cbSegments.SelectedIndex < 0)
+                    return 0xFFFF;
+                else
+                    return UInt16.Parse(cbSegments.SelectedText.Substring(0, 4));
+            }
+            set
+            {
+                int k = Array.BinarySearch(
+                    document.Disassembler.Segments,
+                    new Pointer(value, 0));
+                if (k < 0)
+                    k = ~k;
+                if (k < cbSegments.Items.Count &&
+                    UInt16.Parse(cbSegments.Items[k].ToString().Substring(0, 4)) == value)
+                {
+                    cbSegments.SelectedIndex = k;
+                }
+            }
+        }
+
+        private void cbProcedures_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cbProcedures.SelectedIndex < 0)
+                return;
+
+            ProcedureItem item = (ProcedureItem)cbProcedures.SelectedItem;
+            Navigate(item.Procedure.EntryPoint);
+
+            // Filter out only those rows we're interested in.
+            viewportBeginIndex = item.BeginIndex;
+            viewportEndIndex = item.EndIndex;
+            lvListing.VirtualListSize = viewportEndIndex - viewportBeginIndex;
+        }
+
+        int viewportBeginIndex;
+        int viewportEndIndex;
     }
 }
