@@ -105,9 +105,37 @@ namespace DosDebugger
     /// </summary>
     abstract class ListingRow
     {
-        //public ListingRowType Type { get; set; }
+        /// <summary>
+        /// Gets the address of the listing row.
+        /// </summary>
         public abstract Pointer Location { get; }
-        public abstract ListViewItem CreateViewItem();
+
+        /// <summary>
+        /// Gets the opcode bytes of this listing row. Must not be null.
+        /// </summary>
+        public abstract byte[] Opcode { get; }
+
+        /// <summary>
+        /// Gets the main text to display for this listing row.
+        /// </summary>
+        public abstract string Text { get; }
+
+        public virtual ListViewItem CreateViewItem()
+        {
+            ListViewItem item = new ListViewItem();
+            item.Text = this.Location.ToString();
+            byte[] data = this.Opcode;
+            if (data.Length > 6)
+            {
+                item.SubItems.Add(FormatBinary(data, 0, 6) + "...");
+            }
+            else
+            {
+                item.SubItems.Add(FormatBinary(data, 0, data.Length));
+            }
+            item.SubItems.Add(this.Text);
+            return item;
+        }
 
         public static string FormatBinary(byte[] data, int startIndex, int count)
         {
@@ -141,21 +169,14 @@ namespace DosDebugger
             get { return location; }
         }
 
-        public override ListViewItem CreateViewItem()
+        public override byte[] Opcode
         {
-            ListViewItem item = new ListViewItem();
-            item.Text = location.ToString();
-            if (data.Length > 6)
-            {
-                item.SubItems.Add(FormatBinary(data, 0, 6) + "...");
-            }
-            else
-            {
-                item.SubItems.Add(FormatBinary(data, 0, data.Length));
-            }
-            item.SubItems.Add(string.Format("{0} unanalyzed bytes.", data.Length));
-            item.BackColor = Color.LightGray;
-            return item;
+            get { return data; }
+        }
+
+        public override string Text
+        {
+            get { return string.Format("{0} unanalyzed bytes.", data.Length); }
         }
     }
 
@@ -175,17 +196,14 @@ namespace DosDebugger
             get { return instruction.Location; }
         }
 
-        public override ListViewItem CreateViewItem()
+        public override byte[] Opcode
         {
-            Pointer location = instruction.Location;
-            ListViewItem item = new ListViewItem();
-            item.Text = location.ToString();
-            item.SubItems.Add(FormatBinary(code, 0, code.Length));
-            item.SubItems.Add(instruction.ToString());
+            get { return code; }
+        }
 
-            //item.UseItemStyleForSubItems = false;
-            //item.SubItems[1].BackColor = Color.LightGray;
-            return item;
+        public override string Text
+        {
+            get { return instruction.ToString(); }
         }
     }
 
@@ -205,30 +223,27 @@ namespace DosDebugger
             get { return location; }
         }
 
-        public override ListViewItem CreateViewItem()
+        public override byte[] Opcode
         {
-            ListViewItem item = new ListViewItem();
-            item.Text = location.ToString();
-            item.SubItems.Add(FormatBinary(data, 0, data.Length));
+            get { return data; }
+        }
 
-            string s;
-            switch (data.Length)
+        public override string Text
+        {
+            get
             {
-                case 1:
-                    s = string.Format("db {0:x2}", data[0]);
-                    break;
-                case 2:
-                    s = string.Format("dw {0:x4}", BitConverter.ToUInt16(data, 0));
-                    break;
-                default:
-                    s = "** data **";
-                    break;
+                switch (data.Length)
+                {
+                    case 1:
+                        return string.Format("db {0:x2}", data[0]);
+                    case 2:
+                        return string.Format("dw {0:x4}", BitConverter.ToUInt16(data, 0));
+                    case 4:
+                        return string.Format("dd {0:x8}", BitConverter.ToUInt32(data, 0));
+                    default:
+                        return "** data **";
+                }
             }
-            item.SubItems.Add(s);
-
-            //item.UseItemStyleForSubItems = false;
-            //item.SubItems[1].BackColor = Color.LightGray;
-            return item;
         }
     }
 
@@ -246,16 +261,19 @@ namespace DosDebugger
             get { return error.Location; }
         }
 
+        public override byte[] Opcode
+        {
+            get { return new byte[0]; }
+        }
+
+        public override string Text
+        {
+            get { return error.Message; }
+        }
+
         public override ListViewItem CreateViewItem()
         {
-            Pointer start = error.Location;
-            ListViewItem item = new ListViewItem();
-            item.Text = start.ToString();
-            item.SubItems.Add("");
-            item.SubItems.Add(error.Message);
-
-            //item.UseItemStyleForSubItems = false;
-            //item.SubItems[1].BackColor = Color.LightGray;
+            ListViewItem item = base.CreateViewItem();
             item.ForeColor = Color.Red;
             return item;
         }

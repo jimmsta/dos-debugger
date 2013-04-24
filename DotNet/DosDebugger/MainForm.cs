@@ -15,6 +15,7 @@ namespace DosDebugger
         SegmentWindow segmentWindow;
         ListingWindow listingWindow;
         PropertiesWindow propertiesWindow;
+        HexWindow hexWindow;
 
         public MainForm()
         {
@@ -39,6 +40,8 @@ namespace DosDebugger
             listingWindow.NavigationRequested += OnNavigationRequested;
 
             propertiesWindow = new PropertiesWindow();
+
+            hexWindow = new HexWindow();
         }
 
         private void InitializeDockPanel()
@@ -46,22 +49,21 @@ namespace DosDebugger
             try
             {
                 LoadDockPanelLayout();
-                return;
             }
             catch (Exception)
             {
                 DetachToolWindowsFromDockPanel();
-            }
 
-            // Create dock panel with default layout.
-            procWindow.Show(dockPanel);
-            segmentWindow.Show(dockPanel);
-            errorWindow.Show(dockPanel);
-            listingWindow.Show(dockPanel);
-            propertiesWindow.Show(dockPanel);
-            //procWindow.DockState = DockState.DockLeft;
-            //segmentWindow.DockState = DockState.DockLeft;
-            //errorWindow.DockState = DockState.DockBottom;
+                // Create dock panel with default layout.
+                procWindow.Show(dockPanel);
+                segmentWindow.Show(dockPanel);
+                errorWindow.Show(dockPanel);
+                listingWindow.Show(dockPanel);
+                propertiesWindow.Show(dockPanel);
+                hexWindow.Show(dockPanel);
+            }
+            
+            // ActivateDockWindow(listingWindow);
         }
 
         private void SaveDockPanelLayout()
@@ -99,6 +101,7 @@ namespace DosDebugger
             this.errorWindow.DockPanel = null;
             this.procWindow.DockPanel = null;
             this.propertiesWindow.DockPanel = null;
+            this.hexWindow.DockPanel = null;
         }
 
         Document document;
@@ -145,6 +148,7 @@ namespace DosDebugger
             errorWindow.Document = document;
             segmentWindow.Document = document;
             listingWindow.Document = document;
+            hexWindow.Document = document;
             propertiesWindow.SelectedObject = mzFile;
 
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
@@ -346,6 +350,8 @@ namespace DosDebugger
                 return listingWindow;
             else if (persistString == typeof(PropertiesWindow).ToString())
                 return propertiesWindow;
+            else if (persistString == typeof(HexWindow).ToString())
+                return hexWindow;
             else
                 return null;
 
@@ -430,25 +436,30 @@ namespace DosDebugger
             }
             segmentWindow.Focus();
 #endif
-            ActivateToolWindow(segmentWindow);
+            ActivateDockWindow(segmentWindow);
         }
 
         private void mnuViewProcedures_Click(object sender, EventArgs e)
         {
-            ActivateToolWindow(procWindow);
+            ActivateDockWindow(procWindow);
         }
 
         private void mnuViewErrors_Click(object sender, EventArgs e)
         {
-            ActivateToolWindow(errorWindow);
+            ActivateDockWindow(errorWindow);
         }
 
         private void mnuViewProperties_Click(object sender, EventArgs e)
         {
-            ActivateToolWindow(propertiesWindow);
+            ActivateDockWindow(propertiesWindow);
         }
 
-        private void ActivateToolWindow(ToolWindow window)
+        private void mnuViewHex_Click(object sender, EventArgs e)
+        {
+            ActivateDockWindow(hexWindow);
+        }
+
+        private void ActivateDockWindow(DockContent window)
         {
             if (window.DockPanel == null)
                 window.Show(dockPanel);

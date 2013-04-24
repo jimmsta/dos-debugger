@@ -50,6 +50,12 @@
     <Compile Include="ErrorWindow.Designer.cs">
       <DependentUpon>ErrorWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="HexWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HexWindow.Designer.cs">
+      <DependentUpon>HexWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="ListingViewModel.cs" />
     <Compile Include="ListingWindow.cs">
       <SubType>Form</SubType>
@@ -93,6 +99,9 @@
     <Compile Include="ViewModel.cs" />
     <EmbeddedResource Include="ErrorWindow.resx">
       <DependentUpon>ErrorWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="HexWindow.resx">
+      <DependentUpon>HexWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ListingWindow.resx">
       <DependentUpon>ListingWindow.cs</DependentUpon>

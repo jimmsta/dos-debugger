@@ -54,7 +54,7 @@
             this.lvListing.Location = new System.Drawing.Point(0, 0);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(495, 270);
+            this.lvListing.Size = new System.Drawing.Size(670, 389);
             this.lvListing.TabIndex = 1;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
@@ -94,11 +94,12 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(495, 270);
+            this.ClientSize = new System.Drawing.Size(670, 389);
             this.Controls.Add(this.lvListing);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.071428F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.Name = "ListingWindow";
             this.Text = "Disassembly";
+            this.Load += new System.EventHandler(this.ListingWindow_Load);
             this.contextMenuListing.ResumeLayout(false);
             this.ResumeLayout(false);
 

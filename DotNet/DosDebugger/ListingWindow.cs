@@ -121,5 +121,10 @@ namespace DosDebugger
         }
 
         public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
+
+        private void ListingWindow_Load(object sender, EventArgs e)
+        {
+            
+        }
     }
 }
