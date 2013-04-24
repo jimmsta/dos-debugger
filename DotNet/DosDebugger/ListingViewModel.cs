@@ -27,31 +27,30 @@ namespace DosDebugger
             }
 
             // Display analyzed code and data.
-            ByteAttribute[] attr = dasm.ByteAttributes;
+            ByteProperties[] attr = dasm.ByteAttributes;
+            Pointer address = dasm.BaseAddress;
             for (int i = 0; i < attr.Length; )
             {
-                if (attr[i].IsBoundary && attr[i].Type == ByteType.Code)
-                {
-                    int baseSegment = dasm.BaseAddress.Segment;
-                    UInt16 seg = dasm.ByteSegments[i];
-                    Pointer location = new Pointer(seg, (UInt16)(i - (seg - baseSegment) * 16));
+                ByteProperties b = attr[i];
 
-                    // TBD: the location parameter is incorrect.
-                    Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, location, CpuMode.RealAddressMode);
+                if (IsLeadByteOfCode(b))
+                {
+                    Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, b.Address, CpuMode.RealAddressMode);
                     rows.Add(new CodeListingRow(insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
+                    address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
                 }
-                else if (attr[i].IsBoundary && attr[i].Type == ByteType.Data)
+                else if (IsLeadByteOfData(b))
                 {
                     int j = i + 1;
-                    while (j < attr.Length && attr[j].Type == ByteType.Data && !attr[j].IsBoundary)
+                    while (j < attr.Length &&
+                           attr[j] != null &&
+                           attr[j].Type == ByteType.Data &&
+                           !attr[j].IsLeadByte)
                         j++;
 
-                    int baseSegment = dasm.BaseAddress.Segment;
-                    UInt16 seg = dasm.ByteSegments[i];
-                    Pointer location = new Pointer(seg, (UInt16)(i - (seg - baseSegment) * 16));
-
-                    rows.Add(new DataListingRow(location, ArraySlice(dasm.Image, i, j - i)));
+                    rows.Add(new DataListingRow(b.Address, ArraySlice(dasm.Image, i, j - i)));
+                    address = b.Address + (j - i);
                     i = j;
                 }
                 else
@@ -61,13 +60,26 @@ namespace DosDebugger
                         rows.Add(new ErrorListingRow(errorMap[i]));
                     }
                     int j = i + 1;
-                    while (j < attr.Length && !attr[j].IsBoundary)
+                    while (j < attr.Length &&
+                           !IsLeadByteOfCode(attr[j]) &&
+                           !IsLeadByteOfData(attr[j]))
                         j++;
 
-                    rows.Add(new BlankListingRow(Pointer.Invalid, j - i));
+                    rows.Add(new BlankListingRow(address, ArraySlice(dasm.Image, i, j - i)));
+                    address += (j - i);
                     i = j;
                 }
             }
+        }
+
+        private static bool IsLeadByteOfCode(ByteProperties b)
+        {
+            return (b != null && b.Type == ByteType.Code && b.IsLeadByte);
+        }
+
+        private static bool IsLeadByteOfData(ByteProperties b)
+        {
+            return (b != null && b.Type == ByteType.Data && b.IsLeadByte);
         }
 
         public List<ListingRow> Rows
@@ -116,12 +128,12 @@ namespace DosDebugger
     class BlankListingRow : ListingRow
     {
         private Pointer location;
-        private int length;
+        private byte[] data;
 
-        public BlankListingRow(Pointer location, int length)
+        public BlankListingRow(Pointer location, byte[] data)
         {
             this.location = location;
-            this.length = length;
+            this.data = data;
         }
 
         public override Pointer Location
@@ -133,8 +145,15 @@ namespace DosDebugger
         {
             ListViewItem item = new ListViewItem();
             item.Text = location.ToString();
-            item.SubItems.Add("");
-            item.SubItems.Add(string.Format("{0} unanalyzed bytes.", length));
+            if (data.Length > 6)
+            {
+                item.SubItems.Add(FormatBinary(data, 0, 6) + "...");
+            }
+            else
+            {
+                item.SubItems.Add(FormatBinary(data, 0, data.Length));
+            }
+            item.SubItems.Add(string.Format("{0} unanalyzed bytes.", data.Length));
             item.BackColor = Color.LightGray;
             return item;
         }

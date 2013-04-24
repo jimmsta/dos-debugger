@@ -5,6 +5,7 @@ using X86Codec;
 
 namespace Disassembler
 {
+#if false
     public class BinaryImage
     {
         private byte[] image;
@@ -33,7 +34,36 @@ namespace Disassembler
             get { return baseAddress; }
         }
     }
+#endif
 
+    /// <summary>
+    /// Contains information about a byte in a binary image.
+    /// </summary>
+    public class ByteProperties
+    {
+        /// <summary>
+        /// Gets or sets the type of the byte.
+        /// </summary>
+        public ByteType Type { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a flag that indicates whether this byte is the first
+        /// byte of an instruction or data item.
+        /// </summary>
+        public bool IsLeadByte { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the CS:IP address that this byte is interpreted as.
+        /// </summary>
+        public Pointer Address { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the procedure that owns this byte.
+        /// </summary>
+        public Procedure OwnerProcedure { get; internal set; }
+    }
+
+#if false
     public struct ByteAttribute
     {
         byte x;
@@ -93,5 +123,27 @@ namespace Disassembler
                     x = (byte)(x & ~BlockStartBit);
             }
         }
+    }
+#endif
+
+    /// <summary>
+    /// Defines the type of a byte in an executable image.
+    /// </summary>
+    public enum ByteType
+    {
+        /// <summary>
+        /// The byte is not analyzed and its type is unknown.
+        /// </summary>
+        Unknown,
+
+        /// <summary>
+        /// The byte is part of an instruction.
+        /// </summary>
+        Code,
+
+        /// <summary>
+        /// The byte is part of a data item.
+        /// </summary>
+        Data,
     }
 }

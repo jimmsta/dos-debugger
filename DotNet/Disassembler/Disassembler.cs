@@ -11,9 +11,7 @@ namespace Disassembler
     public class Disassembler16
     {
         private byte[] image;
-        private ByteAttribute[] attr;
-        private UInt16[] byteSegment;
-        private Procedure[] byteToProcedure;
+        private ByteProperties[] attr;
 
         /// <summary>
         /// Maintains a queue of pending code entry points to analyze. At the
@@ -38,9 +36,7 @@ namespace Disassembler
         {
             this.image = image;
             this.baseAddress = baseAddress;
-            this.attr = new ByteAttribute[image.Length];
-            this.byteSegment = new ushort[image.Length]; // TBD
-            this.byteToProcedure = new Procedure[image.Length]; // TBD
+            this.attr = new ByteProperties[image.Length];
             this.globalXRefs = new List<XRef>();
         }
 
@@ -64,14 +60,14 @@ namespace Disassembler
         /// <summary>
         /// Gets the attributes of each byte in the executable image.
         /// </summary>
-        public ByteAttribute[] ByteAttributes
+        public ByteProperties[] ByteAttributes
         {
             get { return attr; }
         }
 
-        public UInt16[] ByteSegments
+        private ByteProperties GetByteProperties(Pointer location)
         {
-            get { return byteSegment; }
+            return attr[PointerToOffset(location)];
         }
 
         /// <summary>
@@ -119,12 +115,10 @@ namespace Disassembler
             if (offset < 0 || offset >= attr.Length)
                 throw new ArgumentOutOfRangeException("offset");
 
-            if (!attr[offset].IsBoundary)
+            if (attr[offset] == null || !attr[offset].IsLeadByte)
                 return Pointer.Invalid;
 
-            int baseSegment = this.baseAddress.Segment;
-            UInt16 seg = byteSegment[offset];
-            return new Pointer(seg, (UInt16)(offset - (seg - baseSegment) * 16));
+            return attr[offset].Address;
         }
 
         /// <summary>
@@ -193,7 +187,7 @@ namespace Disassembler
                     if (entry.Type == XRefType.NearJumpTableTarget)
                     {
                         // Find out which procedure entry.Source belongs to.
-                        Procedure proc = byteToProcedure[PointerToOffset(entry.Source)];
+                        Procedure proc = GetByteProperties(entry.Source).OwnerProcedure;
                         AnalyzeProcedure(proc, entry, xrefs);
                     }
                 }
@@ -271,7 +265,7 @@ namespace Disassembler
                     proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
                     for (int j = 0; j < count; j++)
                     {
-                        byteToProcedure[baseOffset + j] = proc;
+                        attr[baseOffset + j].OwnerProcedure = proc;
                     }
                 }
             }
@@ -290,6 +284,7 @@ namespace Disassembler
             // processing until we have processed all other types of
             // cross-references. This reduces the chance that we process
             // past the end of the jump table.
+
             //if (entry.Source.ToString() == "3668:6516")
             //{
             //    int kk = 1;
@@ -297,24 +292,30 @@ namespace Disassembler
 
             // Process this one.
             int b = entry.Target - baseAddress;
-            if (attr[b].Type != ByteType.Unknown ||
-                attr[b + 1].Type != ByteType.Unknown)
+            if (attr[b] != null || attr[b + 1] != null)
                 return;
+
+            // Add this data item to its owning procedure's byte range.
+            Procedure proc = GetByteProperties(entry.Source).OwnerProcedure;
+            proc.DataRange.AddInterval(b, b + 2);
+            proc.ByteRange.AddInterval(b, b + 2);
 
             // Mark the memory location specified by the jump table
             // entry as data.
-            attr[b].Type = ByteType.Data;
-            attr[b].IsBoundary = true;
-            attr[b + 1].Type = ByteType.Data;
-            attr[b + 1].IsBoundary = false;
-            byteSegment[b] = entry.Target.Segment;
-
-            // Add this data item to its owning procedure's byte range.
-            Procedure proc = byteToProcedure[PointerToOffset(entry.Source)];
-            proc.DataRange.AddInterval(b, b + 2);
-            proc.ByteRange.AddInterval(b, b + 2);
-            byteToProcedure[b] = proc;
-            byteToProcedure[b + 1] = proc;
+            attr[b] = new ByteProperties
+            {
+                Type = ByteType.Data,
+                IsLeadByte = true,
+                Address = entry.Target,
+                OwnerProcedure = proc,
+            };
+            attr[b + 1] = new ByteProperties
+            {
+                Type = ByteType.Data,
+                IsLeadByte = false,
+                Address = entry.Target + 1,
+                OwnerProcedure = proc,
+            };
 
             // Read the jump offset.
             ushort jumpOffset = BitConverter.ToUInt16(image, b);
@@ -470,20 +471,22 @@ namespace Disassembler
             if (b >= image.Length)
                 return DecodeResult.BadInstruction;
 
-            // If the byte to analyze is already marked as data, return a
-            // conflict status.
-            if (attr[b].Type == ByteType.Data)
-                return DecodeResult.UnexpectedData;
-
-            // If the byte to analyze is already marked as code, check that
-            // it was treated as the first byte of an instruction. Otherwise,
-            // return a conflict status.
-            if (attr[b].Type == ByteType.Code)
+            // If the byte is already analyzed, check if there's a conflict.
+            if (attr[b] != null)
             {
-                if (attr[b].IsBoundary)
-                    return DecodeResult.AlreadyAnalyzed;
-                else
-                    return DecodeResult.UnexpectedCode;
+                // If the byte to analyze is already marked as code, check 
+                // that it was marked as the lead byte of an instruction. 
+                // Otherwise, return code conflict.
+                if (attr[b].Type == ByteType.Code)
+                {
+                    if (attr[b].IsLeadByte)
+                        return DecodeResult.AlreadyAnalyzed;
+                    else
+                        return DecodeResult.UnexpectedCode;
+                }
+
+                // Return data conflict.
+                return DecodeResult.UnexpectedData;
             }
 
             // Try decode an instruction at this location.
@@ -497,11 +500,11 @@ namespace Disassembler
                 return DecodeResult.BadInstruction;
             }
 
-            // Check that the entire instruction covers unprocessed bytes.
+            // Check that the instruction covers only unprocessed bytes.
             // If any byte in the area is already processed, return an error.
             for (int j = 1; j < instruction.EncodedLength; j++)
             {
-                if (attr[b + j].IsProcessed)
+                if (attr[b + j] != null)
                 {
                     return attr[b + j].Type == ByteType.Code ?
                         DecodeResult.UnexpectedCode : DecodeResult.UnexpectedData;
@@ -511,13 +514,13 @@ namespace Disassembler
             // Mark the bytes covered by the instruction as code.
             for (int j = 0; j < instruction.EncodedLength; j++)
             {
-                attr[b + j].Type = ByteType.Code;
-                //d->attr[b + i] &= ~ATTR_BOUNDARY;
+                attr[b + j] = new ByteProperties
+                {
+                    Type = ByteType.Code,
+                    IsLeadByte = (j == 0),
+                    Address = start + j,
+                };
             }
-            attr[b].IsBoundary = true;
-
-            // Record the segment of the first byte.
-            byteSegment[b] = start.Segment;
 
             return DecodeResult.OK;
         }
@@ -680,32 +683,6 @@ namespace Disassembler
         {
             return x.Location.ToString().CompareTo(y.Location.ToString());
         }
-    }
-
-    /// <summary>
-    /// Defines the type of a byte in an executable image.
-    /// </summary>
-    public enum ByteType
-    {
-        /// <summary>
-        /// The byte is not yet analyzed and its attribute is unknown.
-        /// </summary>
-        Unknown,
-
-        /// <summary>
-        /// The byte is scheduled for analysis.
-        /// </summary>
-        Pending,
-
-        /// <summary>
-        /// The byte is part of an instruction.
-        /// </summary>
-        Code = 2,
-
-        /// <summary>
-        /// The byte is part of a data item.
-        /// </summary>
-        Data = 3,
     }
 }
 
