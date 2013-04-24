@@ -18,8 +18,14 @@ namespace DosDebugger
         }
 
         private Document document;
-        private ListingViewModel listingView;
+        private ListingViewModel viewModel;
+        private int viewportBeginIndex;
+        private int viewportEndIndex;
 
+        /// <summary>
+        /// Gets or sets the Document object being displayed. This value
+        /// may be null.
+        /// </summary>
         internal Document Document
         {
             get { return this.document; }
@@ -30,49 +36,49 @@ namespace DosDebugger
             }
         }
 
-        public void UpdateUI()
+        private void UpdateUI()
         {
             lvListing.VirtualListSize = 0;
+            viewModel = null;
             if (document == null)
                 return;
 
-            listingView = new ListingViewModel(document.Disassembler);
-            lvListing.VirtualListSize = listingView.Rows.Count;
+            // Create the view model.
+            viewModel = new ListingViewModel(document.Disassembler);
 
             // Fill the procedure window.
             cbProcedures.Items.Clear();
-            //foreach (Procedure proc in document.Disassembler.Procedures)
-            //{
-                //cbProcedures.Items.Add(new ProcedureItem(proc));
-            //}
-            cbProcedures.Items.AddRange(listingView.ProcedureItems.ToArray());
+            cbProcedures.Items.AddRange(viewModel.ProcedureItems.ToArray());
 
             // Fill the segment window.
             cbSegments.Items.Clear();
-            foreach (Pointer segStart in document.Disassembler.Segments)
-            {
-                cbSegments.Items.Add(new SegmentListItem(segStart));
-            }
+            cbSegments.Items.AddRange(viewModel.SegmentItems.ToArray());
+
+            // Display the listing rows.
+            DisplayViewport(0, viewModel.Rows.Count);
         }
 
-        public int SelectedIndex
+        private void DisplayViewport(int beginIndex, int endIndex)
         {
-            get
-            {
-                if (lvListing.SelectedIndices.Count > 0)
-                    return lvListing.SelectedIndices[0];
-                else
-                    return -1;
-            }
-        }
+            if (beginIndex < 0 || beginIndex > viewModel.Rows.Count)
+                throw new ArgumentOutOfRangeException("beginIndex");
+            if (endIndex < beginIndex || endIndex > viewModel.Rows.Count)
+                throw new ArgumentOutOfRangeException("endIndex");
 
+            this.viewportBeginIndex = beginIndex;
+            this.viewportEndIndex = endIndex;
+            lvListing.VirtualListSize = endIndex - beginIndex;
+        }
+        
         private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
-            e.Item = listingView.CreateViewItem(viewportBeginIndex + e.ItemIndex);
+            e.Item = viewModel.CreateViewItem(viewportBeginIndex + e.ItemIndex);
         }
 
         private void contextMenuListing_Opening(object sender, CancelEventArgs e)
         {
+            // TODO: need to dispose() unused items.
+#if false
             mnuListingGoToXRef.DropDownItems.Clear();
             mnuListingGoToXRef.Enabled = false;
 
@@ -80,7 +86,7 @@ namespace DosDebugger
             if (index == -1)
                 return;
 
-            Pointer location = listingView.Rows[index].Location;
+            Pointer location = viewModel.Rows[index].Location;
             if (location == Pointer.Invalid)
                 return;
 
@@ -93,6 +99,7 @@ namespace DosDebugger
                 mnuListingGoToXRef.DropDownItems.Add(item);
             }
             mnuListingGoToXRef.Enabled = mnuListingGoToXRef.HasDropDownItems;
+#endif
         }
 
         private void mnuListingGoToXRefItem_Click(object sender, EventArgs e)
@@ -107,27 +114,45 @@ namespace DosDebugger
             }
         }
 
+        // TODO: what should we do if the navigation target is out of the current sub?
         public bool Navigate(Pointer target)
         {
-            // Find the smallest entry that is greater than target.
-            for (int i = 0; i < listingView.Rows.Count; i++)
-            {
-                Pointer current = listingView.Rows[i].Location;
-                if (current != Pointer.Invalid &&
-                    current.EffectiveAddress > target.EffectiveAddress)
-                {
-                    if (i == 0)
-                        GoToRow(0, true);
-                    else
-                        GoToRow(i - 1, true);
-                    return true;
-                }
-            }
-            return false;
+            return Navigate(target, true, true);
         }
 
+        // TODO: what should we do if the navigation target is out of the current sub?
+        private bool Navigate(Pointer target, bool scrollToTop, bool setFocus)
+        {
+            if (viewModel.Rows.Count == 0)
+                return false;
+
+            int rowIndex = viewModel.FindRowIndex(target);
+            if (rowIndex < viewportBeginIndex || rowIndex >= viewportEndIndex)
+            {
+                throw new NotImplementedException();
+            }
+
+            ListViewItem item = lvListing.Items[rowIndex - viewportBeginIndex];
+            item.Selected = true;
+            item.Focused = true;
+
+            if (scrollToTop)
+                item.ScrollToTop();
+            else
+                item.EnsureVisible();
+
+            if (setFocus)
+                item.ListView.Focus();
+
+            return true;
+        }
+
+#if false
         private void GoToRow(int index, bool bringToTop = false)
         {
+            if (index < 0 || index > lvListing.Items.Count)
+                throw new ArgumentOutOfRangeException("index");
+
             ListViewItem item = lvListing.Items[index];
             lvListing.Focus();
             if (bringToTop)
@@ -137,9 +162,11 @@ namespace DosDebugger
             item.Focused = true;
             item.Selected = true;
         }
+#endif
 
         public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
 
+        // can we hard code it?
         private void ListingWindow_Load(object sender, EventArgs e)
         {
             tableLayoutPanel1.RowStyles[0].Height =
@@ -148,22 +175,22 @@ namespace DosDebugger
 
         private void lvListing_SelectedIndexChanged(object sender, EventArgs e)
         {
-            int i = this.SelectedIndex;
-            if (i == -1)
+            if (lvListing.SelectedIndices.Count == 0)
                 return;
+            int i = lvListing.SelectedIndices[0];
 
-            Pointer address = listingView.Rows[i].Location;
+            Pointer address = viewModel.Rows[viewportBeginIndex + i].Location;
             ByteProperties b = document.Disassembler.GetByteProperties(address);
-            if (b == null)
+            if (b == null) // TBD: we should also do something for an unanalyzed byte.
                 return;
 
-            this.ActiveSegment = address.Segment;
+            // this.ActiveSegment = address.Segment;
         }
 
         // Keeps track of the segment selected. If this value is different
         // from what is displayed in the UI, then either the UI must be
         // updated or an ActiveSegmentChanged event must be raised.
-        private ushort activeSegment;
+        // private ushort activeSegment;
 
         /// <summary>
         /// Gets or sets the active segment selected in the window. A value
@@ -199,15 +226,57 @@ namespace DosDebugger
                 return;
 
             ProcedureItem item = (ProcedureItem)cbProcedures.SelectedItem;
-            Navigate(item.Procedure.EntryPoint);
 
-            // Filter out only those rows we're interested in.
-            viewportBeginIndex = item.BeginIndex;
-            viewportEndIndex = item.EndIndex;
-            lvListing.VirtualListSize = viewportEndIndex - viewportBeginIndex;
+            // Display only the rows that belong to this procedure.
+            DisplayViewport(item.BeginRowIndex, item.EndRowIndex);
+
+            // Navigate to the entry point of the procedure. Note that
+            // this may not be the first instruction in the procedure's
+            // range, though it usually is.
+            Navigate(item.Procedure.EntryPoint, true, false);
+        }
+    }
+
+    static class ListViewItemExtensions
+    {
+        public static void ScrollToTop(this ListViewItem item)
+        {
+            if (item == null)
+                throw new ArgumentNullException("item");
+            if (item.ListView == null)
+                throw new InvalidOperationException("The ListViewItem is not part of a ListView.");
+
+            item.ListView.TopItem = item;
         }
 
-        int viewportBeginIndex;
-        int viewportEndIndex;
+#if false
+        public static void Activate(this ListViewItem item)
+        {   
+            //item.ListView.Focus();
+            //if (bringToTop)
+            //    lvListing.TopItem = item;
+            item.ListView.TopItem = item;
+            //else
+            //    item.EnsureVisible();
+            item.Focused = true;
+            item.Selected = true;
+        }
+#endif
     }
+
+#if false
+    [Flags]
+    enum ListViewItemActivationOptions
+    {
+        None = 0,
+        Default = Select | Focus | EnsureVisible ,
+
+        Select = 1,
+        Focus = 2,
+        FocusOwner = 4,
+
+        EnsureVisible = 8,
+        ScrollToTop = 16,
+    }
+#endif
 }

@@ -15,20 +15,30 @@ namespace DosDebugger
     {
         private List<ListingRow> rows = new List<ListingRow>();
         private List<ProcedureItem> procItems = new List<ProcedureItem>();
+        private List<SegmentItem> segmentItems = new List<SegmentItem>();
+        private Disassembler16 dasm;
+
+        /// <summary>
+        /// Array of the offsets or each row. This array is used to speed up
+        /// row lookup. While this information can be obtained from the rows
+        /// collection itself, using a separate array has two benefits:
+        /// 1, it utilizes BinarySearch() without the need to create a dummy
+        ///    ListingRow object or a custom comparer;
+        /// 2, it saves extra memory indirections and is thus faster.
+        /// The cost is of course a little extra memory footprint.
+        /// </summary>
+        private int[] rowOffsets;
 
         public ListingViewModel(Disassembler16 dasm)
         {
+            this.dasm = dasm;
+
             // Make a dictionary from CS:IP to the error at that location.
             Dictionary<int, Error> errorMap = new Dictionary<int, Error>();
             foreach (Error error in dasm.Errors)
             {
                 errorMap[error.Location - dasm.BaseAddress] = error;
             }
-
-            // Make a dictionary from byte offset to listing row index.
-            Dictionary<int, int> rowLookup = new Dictionary<int, int>();
-            //Dictionary<Procedure, ProcedureItem> procMap 
-            //    = new Dictionary<Procedure, ProcedureItem>();
 
             // Display analyzed code and data.
             ByteProperties[] attr = dasm.ByteProperties;
@@ -40,8 +50,7 @@ namespace DosDebugger
                 if (IsLeadByteOfCode(b))
                 {
                     Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, b.Address, CpuMode.RealAddressMode);
-                    rowLookup[i] = rows.Count;
-                    rows.Add(new CodeListingRow(insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
+                    rows.Add(new CodeListingRow(i, insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
                 }
@@ -54,8 +63,7 @@ namespace DosDebugger
                            !attr[j].IsLeadByte)
                         j++;
 
-                    rowLookup[i] = rows.Count;
-                    rows.Add(new DataListingRow(b.Address, ArraySlice(dasm.Image, i, j - i)));
+                    rows.Add(new DataListingRow(i, b.Address, ArraySlice(dasm.Image, i, j - i)));
                     address = b.Address + (j - i);
                     i = j;
                 }
@@ -71,11 +79,17 @@ namespace DosDebugger
                            !IsLeadByteOfData(attr[j]))
                         j++;
 
-                    rowLookup[i] = rows.Count;
-                    rows.Add(new BlankListingRow(address, ArraySlice(dasm.Image, i, j - i)));
+                    rows.Add(new BlankListingRow(i, address, ArraySlice(dasm.Image, i, j - i)));
                     address += (j - i);
                     i = j;
                 }
+            }
+
+            // Create a sorted array of the offsets or each row.
+            rowOffsets = new int[rows.Count];
+            for (int i = 0; i < rows.Count; i++)
+            {
+                rowOffsets[i] = dasm.PointerToOffset(rows[i].Location);
             }
 
             // Fill the BeginIndex and EndIndex of the procedures.
@@ -84,10 +98,18 @@ namespace DosDebugger
                 if (!proc.ByteRange.IsEmpty)
                 {
                     ProcedureItem item = new ProcedureItem(proc);
-                    item.BeginIndex = rowLookup[proc.ByteRange.LowerBound];
-                    item.EndIndex = rowLookup[proc.ByteRange.UpperBound];
+                    item.BeginRowIndex = FindRowIndex(proc.ByteRange.LowerBound);
+                    item.EndRowIndex = FindRowIndex(proc.ByteRange.UpperBound);
+                    // TBD: need to check broken instruction conditions
+                    // as well as leading/trailing unanalyzed bytes.
                     procItems.Add(item);
                 }
+            }
+
+            // Create segment items.
+            foreach (Pointer segStart in dasm.Segments)
+            {
+                segmentItems.Add(new SegmentItem(segStart));
             }
         }
 
@@ -106,9 +128,48 @@ namespace DosDebugger
             get { return rows; }
         }
 
+        /// <summary>
+        /// Finds the row that occupies the given address. If no row occupies
+        /// that address, finds the closest row.
+        /// </summary>
+        /// <param name="address">The address to find.</param>
+        /// <returns>ListingRow, or null if the view is empty.</returns>
+        public int FindRowIndex(Pointer address)
+        {
+            return FindRowIndex(dasm.PointerToOffset(address));
+        }
+
+        /// <summary>
+        /// Finds the row that occupies the given offset. If no row occupies
+        /// that offset, finds the closest row.
+        /// </summary>
+        /// <param name="offset">The offset to find.</param>
+        /// <returns>ListingRow, or -1 if the view is empty.</returns>
+        public int FindRowIndex(int offset)
+        {
+            if (rowOffsets.Length == 0)
+                return -1;
+
+            int k = Array.BinarySearch(rowOffsets, offset);
+            if (k >= 0) // found
+            {
+                return k;
+            }
+            else // not found, but would be inserted at ~k
+            {
+                k = ~k;
+                return k - 1;
+            }
+        }
+
         public List<ProcedureItem> ProcedureItems
         {
             get { return procItems; }
+        }
+
+        public List<SegmentItem> SegmentItems
+        {
+            get { return segmentItems; }
         }
 
         public ListViewItem CreateViewItem(int index)
@@ -129,6 +190,8 @@ namespace DosDebugger
     /// </summary>
     abstract class ListingRow
     {
+        public int Index { get; protected set; }
+
         /// <summary>
         /// Gets the address of the listing row.
         /// </summary>
@@ -143,6 +206,13 @@ namespace DosDebugger
         /// Gets the main text to display for this listing row.
         /// </summary>
         public abstract string Text { get; }
+
+        protected ListingRow(int index)
+        {
+            if (index < 0)
+                throw new ArgumentOutOfRangeException("index");
+            this.Index = index;
+        }
 
         public virtual ListViewItem CreateViewItem()
         {
@@ -174,6 +244,16 @@ namespace DosDebugger
         }
     }
 
+#if false
+    class ListingRowLocationComparer : IComparer<ListingRow>
+    {
+        public int Compare(ListingRow x, ListingRow y)
+        {
+            return x.Location.EffectiveAddress.CompareTo(y.Location.EffectiveAddress);
+        }
+    }
+#endif
+
     /// <summary>
     /// Represents a continuous range of unanalyzed bytes.
     /// </summary>
@@ -182,7 +262,8 @@ namespace DosDebugger
         private Pointer location;
         private byte[] data;
 
-        public BlankListingRow(Pointer location, byte[] data)
+        public BlankListingRow(int index, Pointer location, byte[] data)
+            : base(index)
         {
             this.location = location;
             this.data = data;
@@ -202,6 +283,13 @@ namespace DosDebugger
         {
             get { return string.Format("{0} unanalyzed bytes.", data.Length); }
         }
+
+        public override ListViewItem CreateViewItem()
+        {
+            ListViewItem item = base.CreateViewItem();
+            item.BackColor = Color.LightGray;
+            return item;
+        }
     }
 
     class CodeListingRow : ListingRow
@@ -209,7 +297,8 @@ namespace DosDebugger
         private Instruction instruction;
         private byte[] code;
 
-        public CodeListingRow(Instruction instruction, byte[] code)
+        public CodeListingRow(int index, Instruction instruction, byte[] code)
+            : base(index)
         {
             this.instruction = instruction;
             this.code = code;
@@ -236,7 +325,8 @@ namespace DosDebugger
         private Pointer location;
         private byte[] data;
 
-        public DataListingRow(Pointer location, byte[] data)
+        public DataListingRow(int index, Pointer location, byte[] data)
+            : base(index)
         {
             this.location = location;
             this.data = data;
@@ -275,7 +365,8 @@ namespace DosDebugger
     {
         private Error error;
 
-        public ErrorListingRow(Error error)
+        public ErrorListingRow(int index, Error error)
+            : base(index)
         {
             this.error = error;
         }
@@ -314,8 +405,8 @@ namespace DosDebugger
 
         // [begin,end) index of the listing rows that belong to
         // this procedure.
-        public int BeginIndex;
-        public int EndIndex;
+        public int BeginRowIndex;
+        public int EndRowIndex;
 
         public override string ToString()
         {
@@ -323,9 +414,9 @@ namespace DosDebugger
         }
     }
 
-    class SegmentListItem
+    class SegmentItem
     {
-        public SegmentListItem(Pointer segmentStart)
+        public SegmentItem(Pointer segmentStart)
         {
             this.SegmentStart = segmentStart;
         }
