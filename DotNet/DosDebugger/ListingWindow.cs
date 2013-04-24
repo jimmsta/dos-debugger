@@ -38,6 +38,20 @@ namespace DosDebugger
 
             listingView = new ListingViewModel(document.Disassembler);
             lvListing.VirtualListSize = listingView.Rows.Count;
+
+            // Fill the procedure window.
+            cbProcedures.Items.Clear();
+            foreach (Procedure proc in document.Disassembler.Procedures)
+            {
+                cbProcedures.Items.Add(proc.EntryPoint.ToString());
+            }
+
+            // Fill the segment window.
+            cbSegments.Items.Clear();
+            foreach (Pointer segStart in document.Disassembler.Segments)
+            {
+                cbSegments.Items.Add(segStart);
+            }
         }
 
         public int SelectedIndex
@@ -94,14 +108,17 @@ namespace DosDebugger
 
         public bool Navigate(Pointer target)
         {
-            // Find the first entry that is greater than or equal to target.
+            // Find the smallest entry that is greater than target.
             for (int i = 0; i < listingView.Rows.Count; i++)
             {
                 Pointer current = listingView.Rows[i].Location;
                 if (current != Pointer.Invalid &&
-                    current.EffectiveAddress >= target.EffectiveAddress)
+                    current.EffectiveAddress > target.EffectiveAddress)
                 {
-                    GoToRow(i, true);
+                    if (i == 0)
+                        GoToRow(0, true);
+                    else
+                        GoToRow(i - 1, true);
                     return true;
                 }
             }
@@ -124,7 +141,8 @@ namespace DosDebugger
 
         private void ListingWindow_Load(object sender, EventArgs e)
         {
-            
+            tableLayoutPanel1.RowStyles[0].Height =
+                cbSegments.Height + cbSegments.Margin.Vertical;
         }
     }
 }

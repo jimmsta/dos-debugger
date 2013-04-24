@@ -50,7 +50,7 @@ namespace DosDebugger
             rowStart[rowCount] = sb.Length;
             richTextBox1.Text = sb.ToString();
             return;
-
+#if false
 #if false
             //richTextBox1.Test();
 #else
@@ -77,6 +77,7 @@ namespace DosDebugger
             //richTextBox1.Visible = true;
             //textDocument.Unfreeze();
             //textDocument.EndEditCollection();
+#endif
 #endif
         }
 

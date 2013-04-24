@@ -30,6 +30,13 @@ namespace Disassembler
         /// </summary>
         private Dictionary<int, Procedure> procedures = new Dictionary<int, Procedure>();
 
+        /// <summary>
+        /// Maintains a map: segment => the smallest address in that segment.
+        /// Ideally we should have each segment starting at offset 0, but
+        /// this may not be the case in an executable.
+        /// </summary>
+        private Dictionary<UInt16, Pointer> segmentStart = new Dictionary<ushort, Pointer>();
+
         private List<Error> errors = new List<Error>();
 
         public Disassembler16(byte[] image, Pointer baseAddress)
@@ -68,6 +75,17 @@ namespace Disassembler
         private ByteProperties GetByteProperties(Pointer location)
         {
             return attr[PointerToOffset(location)];
+        }
+
+        public Pointer[] Segments
+        {
+            get
+            {
+                Pointer[] segs = new Pointer[segmentStart.Count];
+                segmentStart.Values.CopyTo(segs, 0);
+                Array.Sort(segs);
+                return segs;
+            }
         }
 
         /// <summary>
@@ -204,6 +222,9 @@ namespace Disassembler
             // Add the cross references to the global xref list.
             globalXRefs.AddRange(xrefs);
 
+            // Update the segment statistics.
+            UpdateSegmentInformation();
+
 #if false
 #if false
     fprintf(stderr, "\n-- Statistics after initial analysis --\n");
@@ -215,6 +236,20 @@ namespace Disassembler
              */
             VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
 #endif
+        }
+
+        private void UpdateSegmentInformation()
+        {
+            segmentStart.Clear();
+            for (int i = 0; i < image.Length; i++)
+            {
+                ByteProperties b = attr[i];
+                if (b != null)
+                {
+                    if (!segmentStart.ContainsKey(b.Address.Segment))
+                        segmentStart[b.Address.Segment] = b.Address;
+                }
+            }
         }
 
         /// <summary>

@@ -36,21 +36,9 @@ namespace DosDebugger
             if (document == null)
                 return;
 
-            Disassembler16 dasm = document.Disassembler;
-            Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
-            Procedure[] procs = dasm.Procedures;
-            foreach (Procedure proc in procs)
+            foreach (Pointer segStart in document.Disassembler.Segments)
             {
-                segStat[proc.EntryPoint.Segment] = 1;
-            }
-
-            // Display segments.
-            ushort[] segs = new ushort[segStat.Count];
-            segStat.Keys.CopyTo(segs, 0);
-            Array.Sort(segs);
-            foreach (ushort s in segs)
-            {
-                lvSegments.Items.Add(s.ToString("X4"));
+                lvSegments.Items.Add(segStart.ToString());
             }
         }
     }

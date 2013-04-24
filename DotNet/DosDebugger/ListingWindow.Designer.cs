@@ -35,27 +35,32 @@
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.cbSegments = new System.Windows.Forms.ComboBox();
+            this.cbProcedures = new System.Windows.Forms.ComboBox();
             this.contextMenuListing.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // lvListing
             // 
-            this.lvListing.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.lvListing.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2,
             this.columnHeader3});
+            this.tableLayoutPanel1.SetColumnSpan(this.lvListing, 2);
             this.lvListing.ContextMenuStrip = this.contextMenuListing;
             this.lvListing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvListing.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lvListing.HideSelection = false;
-            this.lvListing.Location = new System.Drawing.Point(0, 0);
+            this.lvListing.Location = new System.Drawing.Point(1, 51);
+            this.lvListing.Margin = new System.Windows.Forms.Padding(1);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
-            this.lvListing.Size = new System.Drawing.Size(670, 389);
-            this.lvListing.TabIndex = 1;
+            this.lvListing.Size = new System.Drawing.Size(717, 288);
+            this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
             this.lvListing.VirtualMode = true;
@@ -90,17 +95,60 @@
             this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
             this.mnuListingGoToXRef.Text = "Go to Reference";
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Controls.Add(this.cbSegments, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.lvListing, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.cbProcedures, 1, 0);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(719, 340);
+            this.tableLayoutPanel1.TabIndex = 4;
+            // 
+            // cbSegments
+            // 
+            this.cbSegments.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbSegments.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbSegments.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cbSegments.FormattingEnabled = true;
+            this.cbSegments.Location = new System.Drawing.Point(1, 1);
+            this.cbSegments.Margin = new System.Windows.Forms.Padding(1);
+            this.cbSegments.Name = "cbSegments";
+            this.cbSegments.Size = new System.Drawing.Size(357, 27);
+            this.cbSegments.TabIndex = 1;
+            // 
+            // cbProcedures
+            // 
+            this.cbProcedures.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbProcedures.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbProcedures.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cbProcedures.FormattingEnabled = true;
+            this.cbProcedures.Location = new System.Drawing.Point(360, 1);
+            this.cbProcedures.Margin = new System.Windows.Forms.Padding(1);
+            this.cbProcedures.Name = "cbProcedures";
+            this.cbProcedures.Size = new System.Drawing.Size(358, 27);
+            this.cbProcedures.TabIndex = 2;
+            // 
             // ListingWindow
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(670, 389);
-            this.Controls.Add(this.lvListing);
-            this.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.071428F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
+            this.ClientSize = new System.Drawing.Size(719, 340);
+            this.Controls.Add(this.tableLayoutPanel1);
+            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "ListingWindow";
             this.Text = "Disassembly";
             this.Load += new System.EventHandler(this.ListingWindow_Load);
             this.contextMenuListing.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -113,5 +161,8 @@
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ContextMenuStrip contextMenuListing;
         private System.Windows.Forms.ToolStripMenuItem mnuListingGoToXRef;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.ComboBox cbSegments;
+        private System.Windows.Forms.ComboBox cbProcedures;
     }
 }
