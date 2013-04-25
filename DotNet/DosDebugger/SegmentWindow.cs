@@ -36,9 +36,12 @@ namespace DosDebugger
             if (document == null)
                 return;
 
-            foreach (Pointer segStart in document.Disassembler.Segments)
+            foreach (Segment segment in document.Disassembler.Segments)
             {
-                lvSegments.Items.Add(segStart.ToString());
+                ListViewItem item = new ListViewItem();
+                item.Text = segment.StartAddress.ToString();
+                item.Tag = segment;
+                lvSegments.Items.Add(item);
             }
         }
     }

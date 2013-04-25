@@ -23,17 +23,20 @@ namespace Disassembler
         private List<XRef> globalXRefs;
 
         /// <summary>
-        /// Maintains a dictionary that maps the entry point address of a
-        /// procedure (expressed in offset) to a Procedure object.
+        /// Maintains a dictionary that maps the entry point offset of a
+        /// procedure to a Procedure object.
         /// </summary>
-        private Dictionary<int, Procedure> procedures = new Dictionary<int, Procedure>();
+        private SortedList<int, Procedure> procedures 
+            = new SortedList<int, Procedure>();
 
         /// <summary>
-        /// Maintains a map: segment => the smallest address in that segment.
+        /// Maintains a dictionary that maps a 16-bit segment number to a
+        /// Segment object. 
         /// Ideally we should have each segment starting at offset 0, but
         /// this may not be the case in an executable.
         /// </summary>
-        private Dictionary<UInt16, Pointer> segmentStart = new Dictionary<ushort, Pointer>();
+        private SortedList<UInt16, Segment> segments
+            = new SortedList<ushort, Segment>();
 
         private List<Error> errors = new List<Error>();
 
@@ -60,29 +63,22 @@ namespace Disassembler
             get { return image.BaseAddress; }
         }
 
-        public Pointer[] Segments
+        /// <summary>
+        /// Gets a collection of analyzed segments. The segments are returned
+        /// in order of their 16-bit segment number.
+        /// </summary>
+        public ICollection<Segment> Segments
         {
-            get
-            {
-                Pointer[] segs = new Pointer[segmentStart.Count];
-                segmentStart.Values.CopyTo(segs, 0);
-                Array.Sort(segs);
-                return segs;
-            }
+            get { return segments.Values; }
         }
 
         /// <summary>
-        /// Gets the entry points of analyzed procedures.
+        /// Gets a collection of analyzed procedures. The procedures are
+        /// returned in order of their entry point offset.
         /// </summary>
-        public Procedure[] Procedures
+        public ICollection<Procedure> Procedures
         {
-            get
-            {
-                Procedure[] procs = new Procedure[procedures.Count];
-                procedures.Values.CopyTo(procs, 0);
-                Array.Sort(procs, new ProcedureEntryPointComparer());
-                return procs;
-            }
+            get { return procedures.Values; }
         }
 
         public Error[] Errors
@@ -195,7 +191,7 @@ namespace Disassembler
             globalXRefs.AddRange(xrefs);
 
             // Update the segment statistics.
-            AnalyzeSegments();
+            UpdateSegments();
 
 #if false
 #if false
@@ -210,16 +206,27 @@ namespace Disassembler
 #endif
         }
 
-        private void AnalyzeSegments()
+        /// <summary>
+        /// Updates segment arrangement information. This method must be 
+        /// called AFTER all the procedures have been analyzed, because it
+        /// basically runs a byte-by-byte summary of the executable.
+        /// </summary>
+        private void UpdateSegments()
         {
-            segmentStart.Clear();
+            segments.Clear();
             for (int i = 0; i < image.Length; i++)
             {
                 ByteProperties b = image[i];
-                if (b.IsCode || b.IsData)
+                if (b.Type == ByteType.Code || b.Type == ByteType.Data)
                 {
-                    if (!segmentStart.ContainsKey(b.Address.Segment))
-                        segmentStart[b.Address.Segment] = b.Address;
+                    ushort seg = b.Address.Segment;
+                    if (!segments.ContainsKey(seg))
+                    {
+                        segments.Add(seg, new Segment
+                        {
+                            StartAddress = b.Address
+                        });
+                    }
                 }
             }
         }

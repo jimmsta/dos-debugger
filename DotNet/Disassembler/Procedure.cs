@@ -40,6 +40,7 @@ namespace Disassembler
         }
     }
 
+#if false
     public class ProcedureEntryPointComparer : IComparer<Procedure>
     {
         public int Compare(Procedure x, Procedure y)
@@ -47,4 +48,5 @@ namespace Disassembler
             return x.EntryPoint.CompareTo(y.EntryPoint);
         }
     }
+#endif
 }

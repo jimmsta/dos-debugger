@@ -224,7 +224,7 @@ namespace DosDebugger
             // Display status.
             txtStatus.Text = string.Format(
                 "{3} segments, {0} procedures, {1} instructions, {2} errors",
-                dasm.Procedures.Length,
+                dasm.Procedures.Count,
                 "?", // lvListing.Items.Count,
                 dasm.Errors.Length,
                 0 /* segStat.Count */);

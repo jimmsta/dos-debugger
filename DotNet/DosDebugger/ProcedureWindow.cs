@@ -42,8 +42,7 @@ namespace DosDebugger
 
             Disassembler16 dasm = document.Disassembler;
             Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
-            Procedure[] procs = dasm.Procedures;
-            foreach (Procedure proc in procs)
+            foreach (Procedure proc in dasm.Procedures)
             {
                 ListViewItem item = new ListViewItem();
                 item.Text = proc.EntryPoint.ToString();

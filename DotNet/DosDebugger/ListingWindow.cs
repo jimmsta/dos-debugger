@@ -199,6 +199,8 @@ namespace DosDebugger
             }
             set
             {
+                throw new NotImplementedException();
+#if false
                 int k = Array.BinarySearch(
                     document.Disassembler.Segments,
                     new Pointer(value, 0));
@@ -209,6 +211,7 @@ namespace DosDebugger
                 {
                     cbSegments.SelectedIndex = k;
                 }
+#endif
             }
         }
 

@@ -72,6 +72,9 @@ namespace Disassembler
             {
                 if (offset < 0 || offset >= attr.Length)
                     throw new ArgumentOutOfRangeException("index");
+                if (value == null)
+                    throw new ArgumentNullException("value");
+
                 attr[offset] = value;
             }
         }
@@ -84,6 +87,7 @@ namespace Disassembler
         public ByteProperties this[Pointer address]
         {
             get { return this[PointerToOffset(address)]; }
+            set { this[PointerToOffset(address)] = value; }
         }
 
         /// <summary>
@@ -162,9 +166,6 @@ namespace Disassembler
         /// Gets or sets the type of the byte.
         /// </summary>
         public ByteType Type { get; internal set; }
-
-        public bool IsCode { get { return Type == ByteType.Code; } }
-        public bool IsData { get { return Type == ByteType.Data; } }
 
         /// <summary>
         /// Gets or sets a flag that indicates whether this byte is the first
@@ -288,5 +289,10 @@ namespace Disassembler
         /// The byte is part of a data item.
         /// </summary>
         Data,
+    }
+
+    public class Segment
+    {
+        public Pointer StartAddress { get; set; }
     }
 }

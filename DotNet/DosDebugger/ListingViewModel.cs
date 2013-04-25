@@ -57,7 +57,9 @@ namespace DosDebugger
                 else if (IsLeadByteOfData(b))
                 {
                     int j = i + 1;
-                    while (j < image.Length && image[j].IsData && !image[j].IsLeadByte)
+                    while (j < image.Length && 
+                           image[j].Type == ByteType.Data &&
+                           !image[j].IsLeadByte)
                         j++;
 
                     rows.Add(new DataListingRow(i, b.Address, image.GetBytes(i, j - i)));
@@ -105,9 +107,9 @@ namespace DosDebugger
             }
 
             // Create segment items.
-            foreach (Pointer segStart in dasm.Segments)
+            foreach (Segment segment in dasm.Segments)
             {
-                segmentItems.Add(new SegmentItem(segStart));
+                segmentItems.Add(new SegmentItem(segment.StartAddress));
             }
         }
 
