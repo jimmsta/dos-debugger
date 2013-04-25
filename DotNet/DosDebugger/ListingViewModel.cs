@@ -297,6 +297,11 @@ namespace DosDebugger
             this.code = code;
         }
 
+        public Instruction Instruction
+        {
+            get { return this.instruction; }
+        }
+
         public override Pointer Location
         {
             get { return instruction.Location; }

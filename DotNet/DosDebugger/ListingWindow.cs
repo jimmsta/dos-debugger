@@ -171,9 +171,24 @@ namespace DosDebugger
 
         private void lvListing_SelectedIndexChanged(object sender, EventArgs e)
         {
+            txtStatus.Text = "";
             if (lvListing.SelectedIndices.Count == 0)
                 return;
+
             int i = lvListing.SelectedIndices[0];
+
+            // Display brief description of instruction.
+            ListingRow row = viewModel.Rows[viewportBeginIndex + i];
+            if (row is CodeListingRow)
+            {
+                Operation op = ((CodeListingRow)row).Instruction.Operation;
+                string desc = GetEnumMemberDescription(op);
+                if (desc != null)
+                {
+                    txtStatus.Text = string.Format("{0} - {1}",
+                        op.ToString().ToUpperInvariant(), desc);
+                }
+            }
 
             Pointer address = viewModel.Rows[viewportBeginIndex + i].Location;
             ByteProperties b = document.Disassembler.Image[address];
@@ -181,6 +196,20 @@ namespace DosDebugger
                 return;
 
             // this.ActiveSegment = address.Segment;
+        }
+
+        private string GetEnumMemberDescription<T>(T value)
+        {
+            var type = typeof(T);
+            var memInfo = type.GetMember(value.ToString());
+            if (memInfo != null && memInfo.Length > 0)
+            {
+                var attributes = memInfo[0].GetCustomAttributes(
+                    typeof(DescriptionAttribute), false);
+                if (attributes != null && attributes.Length > 0)
+                    return ((DescriptionAttribute)attributes[0]).Description;
+            }
+            return null;
         }
 
         // Keeps track of the segment selected. If this value is different

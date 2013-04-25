@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 
 namespace X86Codec
 {
@@ -9,59 +10,61 @@ namespace X86Codec
     {
         None = 0,
 
-        /* Basic instructions */
-        HLT,
-        NOP,
+        // ----------------------------------------------------------------
+        // The following instructions are compatible with 8086.
+        // See Intel Manual 20.1.3.
+        // ----------------------------------------------------------------
 
-        /* Bitwise logical operations */
-        AND,
-        OR,
-        XOR,
-        NOT,
+        // Data transfer instructions:
+        [Description("Moves data from second operand to first operand.")]
+        MOV,
+        [Description("Exchanges the contents of two operands.")]
+        XCHG,
+        [Description("Loads a far pointer from memory into DS and first operand.")]
+        LDS,
+        [Description("Loads a far pointer from memory into ES and first operand.")]
+        LES,
 
-        /* Bitwise shift */
-        SHL,
-        SHR,
-        SAL,
-        SAR,
-
-        /* Bitwise rotation */
-        ROL,
-        ROR,
-        RCL,
-        RCR,
-
-        /* Unary integer arithmetic */
-        INC,
-        DEC,
-        NEG,
-
-        /* Binary integer arithmetic */
+        // Arithmetic instructions
+        [Description("Adds second operand to first operand.")]
         ADD,
-        SUB,
+        [Description("Adds second operand and CF to first operand.")]
         ADC,
+        [Description("Subtracts second operand from first operand.")]
+        SUB,
+        [Description("Subtracts sum of second operand and CF from first operand.")]
         SBB,
-        MUL,
-        IMUL,
-        DIV,
-        IDIV,
+        [Description("Unsigned multiplication.")]
+        MUL, 
+        [Description("Signed multiplication.")]
+        IMUL, 
+        
+        DIV, IDIV, INC, DEC, CMP, NEG,
 
-        /* Decimal integer adjustment */
-        DAA,
-        DAS,
-        AAA,
-        AAS,
-        AAM,
-        AAD,
+        // Logical instructions
+        AND, OR, XOR, NOT,
 
-        /* Comparison and basic control flow */
-        CMP,
+        // Decimal instructions
+        DAA, DAS, AAA, AAS, AAM, AAD,
+
+        // Stack instructions:
+        PUSH, POP,
+
+        // Type conversion instructions:
+        [Description("Sets DX:AX to sign-extend of AX.")]
+        CWD, // same opcode as CDQ
+        [Description("Sets AX to sign-extend of AL.")]
+        CBW, // same opcode as CWDE
+
+        // Shift and rotate instructions:
+        SAL, SHL, SHR, SAR, ROL, ROR, RCL, RCR,
+
+        // TEST instruction:
+        [Description("Computes bit-wise AND of two operands and sets SF, ZF and PF accordingly.")]
         TEST,
-        LOOP,
-        LOOPZ,
-        LOOPNZ,
 
-        /* Conditional jump */
+        // Control instructions
+        JMP, JMPF, 
         JO,
         JNO,
         JB,
@@ -78,54 +81,72 @@ namespace X86Codec
         JGE,
         JLE,
         JG,
-
-        /* Manipulating FLAGS */
-        CMC,
-        CLC,
-        STC,
-        CLD,
-        STD,
-        LAHF,
-        SAHF,
-        PUSHF,
-        POPF,
-
-        /* Calls and interrupts */
-        CALL,
-        CALLF,
-        JMP,
-        JMPF,
+        [Description("Near call.")]
+        CALL, 
+        [Description("Far call.")]
+        CALLF, 
+        [Description("Near return.")]
         RET,
-        RETF,
-        INT,
+        [Description("Far return.")]
+        RETF, 
+        [Description("Decrements CX; then jump if CX<>0.")]
+        LOOP,
+        [Description("Decrements CX; then jump if CX <> 0 and ZF = 1.")]
+        LOOPZ,
+        [Description("Decrements CX; then jump if CX <> 0 and ZF = 0.")]
+        LOOPNZ,
+
+        // Interrupt instructions
+        [Description("Raises an interrupt.")]
+        INT, 
+        [Description("Raises interrupt 4 if OF = 1.")]
         INTO,
         IRET,
 
-        /* Data movement */
-        MOV,
-        XCHG,
-        PUSH,
-        POP,
+        // FLAGS control instructions:
+        [Description("Sets carry flag (CF = 1).")]
+        STC, 
+        [Description("Clears carry flag (CF = 0).")]
+        CLC,
+        [Description("Complements carry flag (CF = !CF).")]
+        CMC,
+        [Description("Sets direction flag (DF = 1).")]
+        STD, 
+        [Description("Clears direction flag (DF = 0).")]
+        CLD, 
+        [Description("Loads flags into AH: AH ← SF:ZF:0:AF:0:PF:1:CF.")]
+        LAHF,
+        [Description("Stores AH into flags: SF:ZF:0:AF:0:PF:1:CF ← AH.")]
+        SAHF, 
+        [Description("Decrements SP by 2 and pushes FLAGS onto the stack.")]
+        PUSHF, 
+        [Description("Pops a word from the stack and stores it in FLAGS.")]
+        POPF,
 
-        /* Address calculation */
-        LDS,
-        LES,
-        LEA,
+        // I/O instructions:
+        [Description("Inputs value from the I/O port.")]
+        IN, INS, OUT, OUTS,
+
+        // Special memory load:
+        [Description("Computes effective address of second operand and stores it into first operand.")]
+        LEA, 
+        [Description("Sets AL to memory byte DS:[BX + unsigned AL].")]
         XLATB,
 
-        /* Data extension */
-        CWD,
-        CDQ,
-        CBW,
-        CWDE,
+        // LOCK prefix.
+        // Repeat prefixes REP, REPE, REPZ, REPNE, and REPNZ.
 
-        /* IO */
-        IN,
-        INS,
-        OUT,
-        OUTS,
+        // Processor control:
+        [Description("Stops instruction execution and puts processor in HALT state.")]
+        HLT,
+        [Description("Performs no operation.")]
+        NOP,
 
-        /* Misc */
+        // ----------------------------------------------------------------
+        // The following instructions are not compatible with 8086.
+        // Therefore, we don't support them for the moment.
+        // ----------------------------------------------------------------
+
         PUSHA,
         POPA,
         BOUND,
@@ -150,7 +171,7 @@ namespace X86Codec
         VERW,
         LLDT,
         LTR,
-        
+
         XABORT,
         XBEGIN,
 
