@@ -1,6 +1,7 @@
 ﻿using Disassembler;
 using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 namespace DosDebugger
 {
@@ -23,15 +24,20 @@ namespace DosDebugger
             }
         }
 
+        Error[] errors;
+
         private void UpdateUI()
         {
             lvErrors.Items.Clear();
+            errors = null;
             if (document == null)
                 return;
 
             Disassembler16 dasm = document.Disassembler;
-            Error[] errors = dasm.Errors;
+            errors = dasm.Errors;
             Array.Sort(errors, new ErrorLocationComparer());
+            DisplayErrors();
+#if false
             foreach (Error error in errors)
             {
                 ListViewItem item = new ListViewItem();
@@ -40,6 +46,7 @@ namespace DosDebugger
                 item.Tag = error;
                 lvErrors.Items.Add(item);
             }
+#endif
         }
 
         private void lvErrors_DoubleClick(object sender, EventArgs e)
@@ -56,5 +63,56 @@ namespace DosDebugger
         }
 
         public EventHandler<NavigationRequestedEventArgs> NavigationRequested { get; set; }
+
+        private void DisplayErrors(ErrorCategory category)
+        {
+            lvErrors.Items.Clear();
+            if (errors == null)
+                return;
+
+            int errorCount = 0, warningCount = 0, messageCount = 0;
+            foreach (Error error in errors)
+            {
+                if ((error.Category & category) != 0)
+                {
+                    ListViewItem item = new ListViewItem();
+                    item.Text = error.Location.ToString();
+                    item.SubItems.Add(error.Message);
+                    item.Tag = error;
+                    lvErrors.Items.Add(item);
+                }
+                switch (error.Category)
+                {
+                    case ErrorCategory.Error: errorCount++; break;
+                    case ErrorCategory.Warning: warningCount++; break;
+                    case ErrorCategory.Message: messageCount++; break;
+                }
+            }
+
+            btnErrors.Text = errorCount + " Errors";
+            btnWarnings.Text = warningCount + " Warnings";
+            btnMessages.Text = messageCount + " Messages";
+
+            btnErrors.Enabled = (errorCount > 0);
+            btnWarnings.Enabled = (warningCount > 0);
+            btnMessages.Enabled = (messageCount > 0);
+        }
+
+        private void DisplayErrors()
+        {
+            ErrorCategory category = ErrorCategory.None;
+            if (btnErrors.Checked)
+                category |= ErrorCategory.Error;
+            if (btnWarnings.Checked)
+                category |= ErrorCategory.Warning;
+            if (btnMessages.Checked)
+                category |= ErrorCategory.Message;
+            DisplayErrors(category);
+        }
+
+        private void btnErrorCategory_CheckedChanged(object sender, EventArgs e)
+        {
+            DisplayErrors();
+        }
     }
 }

@@ -186,7 +186,7 @@ namespace Disassembler
                 if (iJumpTable >= jumpTables.Count)
                     break;
 
-                ProcessJumpTableEntry(jumpTables[iJumpTable], xrefs);
+                //ProcessJumpTableEntry(jumpTables[iJumpTable], xrefs);
                 //System.Diagnostics.Debug.WriteLine("Processing jump table at " + entry.Source.ToString());
                 iJumpTable++;
             }
@@ -326,16 +326,19 @@ namespace Disassembler
             // cross-references. This reduces the chance that we process
             // past the end of the jump table.
 
-            //if (entry.Source.ToString() == "3668:6516")
-            //{
-            //    int kk = 1;
-            //}
-
-            // Process this one.
+            // Process this one. If the jump target is already analyzed, it
+            // probably means the jump table entry is fake, i.e. the jump
+            // table ends one entry before.
             int b = PointerToOffset(entry.Target);
             if (image[b].Type != ByteType.Unknown ||
-                image[b + 1].Type != ByteType.Unknown)
+                image[b + 1].Type != ByteType.Unknown) 
                 return;
+
+            // If the jump target is outside the range of the current segment
+            // but inside the range of another segment, it likely indicates
+            // that the jump table entry is fake, i.e. the jump table ends on
+            // the previous entry.
+            // ...
 
             // Add this data item to its owning procedure's byte range.
             Procedure proc = image[entry.Source].Procedure;
@@ -362,17 +365,23 @@ namespace Disassembler
             // Read the jump offset.
             ushort jumpOffset = image.GetUInt16(b);
 
-            // Add a xref from the dynamic JMP instruction to the jump 
-            // target.
+            // BUG: We really do need to check that the destination
+            // is valid. If not, we should stop immediately.
+            // This whole jump table thing needs to be improved.
+
+            // Add a xref from the jump table entry to the jump target.
             xrefs.Add(new XRef
             {
-                Source = entry.Source,
+                Source = entry.Target,
                 Target = new Pointer(entry.Source.Segment, jumpOffset),
                 Type = XRefType.NearJumpTableTarget
             });
 
             // Add a xref from the JMP instruction to the next jump
             // table entry.
+            // BUG: We actually should do this in the handler for the
+            // NearJumpTableTarget xref, and only add this if that
+            // call succeeded.
             xrefs.Add(new XRef
             {
                 Source = entry.Source,
@@ -689,9 +698,12 @@ namespace Disassembler
             }
 
             // Other jump/call targets that we cannot recognize.
-            errors.Add(new Error(start, string.Format(
-                "Cannot determine target of {0} instruction.",
-                instruction.Operation.ToString().ToUpperInvariant())));
+            errors.Add(new Error(
+                start, 
+                string.Format(
+                    "Cannot determine target of {0} instruction.",
+                    instruction.Operation.ToString().ToUpperInvariant()),
+                ErrorCategory.Message));
 
             return new XRef
             {
@@ -709,14 +721,30 @@ namespace Disassembler
 
     public class Error
     {
-        public Pointer Location { get; set; }
-        public string Message { get; set; }
+        public ErrorCategory Category { get; private set; }
+        public Pointer Location { get; private set; }
+        public string Message { get; private set; }
 
-        public Error(Pointer location, string message)
+        public Error(Pointer location, string message, ErrorCategory category)
         {
+            this.Category = category;
             this.Location = location;
             this.Message = message;
         }
+
+        public Error(Pointer location, string message)
+            : this(location, message, ErrorCategory.Error)
+        {
+        }
+    }
+
+    [Flags]
+    public enum ErrorCategory
+    {
+        None = 0,
+        Error = 1,
+        Warning = 2,
+        Message = 4,
     }
 
     public class ErrorLocationComparer : IComparer<Error>

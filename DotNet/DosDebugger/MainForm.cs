@@ -118,7 +118,7 @@ namespace DosDebugger
         private void MainForm_Load(object sender, EventArgs e)
         {
             //lvListing.SetWindowTheme("explorer");
-            cbBookmarks.SelectedIndex = 1;
+            cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
             DoLoadFile(fileName);

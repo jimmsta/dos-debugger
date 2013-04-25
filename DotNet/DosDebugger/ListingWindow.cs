@@ -78,22 +78,26 @@ namespace DosDebugger
         private void contextMenuListing_Opening(object sender, CancelEventArgs e)
         {
             // TODO: need to dispose() unused items.
-#if false
+#if true
             mnuListingGoToXRef.DropDownItems.Clear();
             mnuListingGoToXRef.Enabled = false;
 
-            int index = SelectedIndex;
-            if (index == -1)
+            if (lvListing.SelectedIndices.Count == 0)
+            {
+                e.Cancel = true;
                 return;
+            }
+            int index = lvListing.SelectedIndices[0];
 
-            Pointer location = viewModel.Rows[index].Location;
+            Pointer location = viewModel.Rows[viewportBeginIndex + index].Location;
             if (location == Pointer.Invalid)
                 return;
 
             foreach (XRef xref in document.Disassembler.GetReferencesTo(location))
             {
                 ToolStripMenuItem item = new ToolStripMenuItem();
-                item.Text = xref.Source.ToString();
+                item.Text = string.Format(
+                    "{0} {1}", xref.Source, xref.Type);
                 item.Click += mnuListingGoToXRefItem_Click;
                 item.Tag = xref.Source;
                 mnuListingGoToXRef.DropDownItems.Add(item);
