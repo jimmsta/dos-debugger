@@ -34,7 +34,8 @@ namespace DosDebugger
             errorWindow = new ErrorWindow();
             errorWindow.NavigationRequested += OnNavigationRequested;
 
-            segmentWindow = new SegmentWindow();
+            segmentWindow = new SegmentWindow(); 
+            segmentWindow.NavigationRequested += OnNavigationRequested;
 
             listingWindow = new ListingWindow();
             listingWindow.NavigationRequested += OnNavigationRequested;
@@ -119,7 +120,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 1;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
         }

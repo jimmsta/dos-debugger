@@ -1083,6 +1083,9 @@ namespace X86Codec
                 case O.Mw: // r/m refers to memory; word
                     return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use16Bit, context);
 
+                case O.Md: // r/m refers to memory; dword
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use32Bit, context);
+
                 case O.Mq:
                     return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use64Bit, context);
 

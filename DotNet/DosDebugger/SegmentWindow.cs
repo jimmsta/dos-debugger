@@ -39,9 +39,30 @@ namespace DosDebugger
             foreach (Segment segment in document.Disassembler.Segments)
             {
                 ListViewItem item = new ListViewItem();
-                item.Text = segment.StartAddress.ToString();
+                item.Text = FormatAddress(segment.StartAddress);
+                item.SubItems.Add(FormatAddress(segment.EndAddress));
                 item.Tag = segment;
                 lvSegments.Items.Add(item);
+            }
+        }
+
+        private static string FormatAddress(Pointer address)
+        {
+            return string.Format("{0} ({1:X5})", address, address.EffectiveAddress);
+        }
+
+        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
+
+        private void lvSegments_DoubleClick(object sender, EventArgs e)
+        {
+            if (lvSegments.SelectedIndices.Count == 0)
+                return;
+
+            Segment segment = (Segment)lvSegments.SelectedItems[0].Tag;
+            if (NavigationRequested != null)
+            {
+                NavigationRequestedEventArgs args=new NavigationRequestedEventArgs(segment.StartAddress);
+                NavigationRequested(this, args);
             }
         }
     }

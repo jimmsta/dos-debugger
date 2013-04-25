@@ -182,6 +182,11 @@ namespace Disassembler
         /// Gets or sets the procedure that owns this byte.
         /// </summary>
         public Procedure Procedure { get; internal set; }
+
+        public ByteProperties()
+        {
+            this.Address = Pointer.Invalid;
+        }
     }
 
     /// <summary>
@@ -294,5 +299,26 @@ namespace Disassembler
     public class Segment
     {
         public Pointer StartAddress { get; set; }
+        public Pointer EndAddress { get; set; }
+
+        /// <summary>
+        /// Gets the smallest range that covers this segment. The indices
+        /// of the range are offsets within the binary image.
+        /// </summary>
+        // TBD: we need to subtract the BaseAddress!!
+        public Range Bounds
+        {
+            get
+            {
+                return new Range(
+                    StartAddress.EffectiveAddress,
+                    EndAddress.EffectiveAddress);
+            }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", StartAddress, EndAddress);
+        }
     }
 }

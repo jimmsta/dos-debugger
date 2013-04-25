@@ -38,6 +38,10 @@ namespace Disassembler
         private SortedList<UInt16, Segment> segments
             = new SortedList<ushort, Segment>();
 
+        /// <summary>
+        /// -Maintains a dictionary that maps an offset to an Error object
+        /// -where the error occurred at this offset.
+        /// </summary>
         private List<Error> errors = new List<Error>();
 
         public Disassembler16(byte[] image, Pointer baseAddress)
@@ -191,7 +195,7 @@ namespace Disassembler
             globalXRefs.AddRange(xrefs);
 
             // Update the segment statistics.
-            UpdateSegments();
+            UpdateSegmentInformation();
 
 #if false
 #if false
@@ -207,25 +211,48 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Updates segment arrangement information. This method must be 
-        /// called AFTER all the procedures have been analyzed, because it
-        /// basically runs a byte-by-byte summary of the executable.
+        /// Updates segmentation information of the executable. This method
+        /// must be called AFTER all the procedures have been analyzed, as
+        /// it simply performs a byte-by-byte review of the executable.
         /// </summary>
-        private void UpdateSegments()
+        private void UpdateSegmentInformation()
         {
             segments.Clear();
             for (int i = 0; i < image.Length; i++)
             {
                 ByteProperties b = image[i];
-                if (b.Type == ByteType.Code || b.Type == ByteType.Data)
+                if (b.Address != Pointer.Invalid)
                 {
                     ushort seg = b.Address.Segment;
                     if (!segments.ContainsKey(seg))
                     {
                         segments.Add(seg, new Segment
                         {
-                            StartAddress = b.Address
+                            StartAddress = b.Address,
+                            EndAddress = b.Address + 1,
                         });
+                    }
+                    else
+                    {
+                        segments[seg].EndAddress = b.Address + 1;
+                    }
+                }
+            }
+
+            // Check for segment overlaps.
+            for (int i = 0; i < segments.Count; i++)
+            {
+                Segment s1 = segments.Values[i];
+                for (int j = i + 1; j < segments.Count; j++)
+                {
+                    Segment s2 = segments.Values[j];
+                    if (s1.EndAddress.EffectiveAddress >
+                        s2.StartAddress.EffectiveAddress)
+                    {
+                        errors.Add(new Error(
+                            s2.StartAddress,
+                            string.Format("Segment {0:X4} overlaps with segment {1:X4}.",
+                            s1.StartAddress.Segment, s2.StartAddress.Segment)));
                     }
                 }
             }
