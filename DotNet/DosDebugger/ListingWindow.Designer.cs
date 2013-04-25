@@ -40,8 +40,11 @@
             this.cbSegments = new System.Windows.Forms.ComboBox();
             this.cbProcedures = new System.Windows.Forms.ComboBox();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
-            this.toolStripSplitButton1 = new System.Windows.Forms.ToolStripSplitButton();
+            this.btnViewScope = new System.Windows.Forms.ToolStripSplitButton();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.mnuScopeProcedure = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuScopeSegment = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuScopeExecutable = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuListing.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -147,7 +150,7 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripSplitButton1,
+            this.btnViewScope,
             this.txtStatus});
             this.statusStrip1.Location = new System.Drawing.Point(0, 315);
             this.statusStrip1.Name = "statusStrip1";
@@ -155,20 +158,46 @@
             this.statusStrip1.TabIndex = 5;
             this.statusStrip1.Text = "statusStrip1";
             // 
-            // toolStripSplitButton1
+            // btnViewScope
             // 
-            this.toolStripSplitButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripSplitButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripSplitButton1.Image")));
-            this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripSplitButton1.Name = "toolStripSplitButton1";
-            this.toolStripSplitButton1.Size = new System.Drawing.Size(97, 23);
-            this.toolStripSplitButton1.Text = "Split Button";
+            this.btnViewScope.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnViewScope.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuScopeProcedure,
+            this.mnuScopeSegment,
+            this.mnuScopeExecutable});
+            this.btnViewScope.Image = ((System.Drawing.Image)(resources.GetObject("btnViewScope.Image")));
+            this.btnViewScope.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnViewScope.Name = "btnViewScope";
+            this.btnViewScope.Size = new System.Drawing.Size(61, 23);
+            this.btnViewScope.Text = "Scope";
+            this.btnViewScope.DropDownOpening += new System.EventHandler(this.btnViewScope_DropDownOpening);
             // 
             // txtStatus
             // 
             this.txtStatus.Name = "txtStatus";
             this.txtStatus.Size = new System.Drawing.Size(71, 20);
             this.txtStatus.Text = "(Message)";
+            // 
+            // mnuScopeProcedure
+            // 
+            this.mnuScopeProcedure.Name = "mnuScopeProcedure";
+            this.mnuScopeProcedure.Size = new System.Drawing.Size(214, 24);
+            this.mnuScopeProcedure.Text = "View &Procedure";
+            this.mnuScopeProcedure.Click += new System.EventHandler(this.mnuScopeProcedure_Click);
+            // 
+            // mnuScopeSegment
+            // 
+            this.mnuScopeSegment.Name = "mnuScopeSegment";
+            this.mnuScopeSegment.Size = new System.Drawing.Size(214, 24);
+            this.mnuScopeSegment.Text = "View &Segment";
+            this.mnuScopeSegment.Click += new System.EventHandler(this.mnuScopeSegment_Click);
+            // 
+            // mnuScopeExecutable
+            // 
+            this.mnuScopeExecutable.Name = "mnuScopeExecutable";
+            this.mnuScopeExecutable.Size = new System.Drawing.Size(214, 24);
+            this.mnuScopeExecutable.Text = "View &Entire Executable";
+            this.mnuScopeExecutable.Click += new System.EventHandler(this.mnuScopeExecutable_Click);
             // 
             // ListingWindow
             // 
@@ -203,7 +232,10 @@
         private System.Windows.Forms.ComboBox cbSegments;
         private System.Windows.Forms.ComboBox cbProcedures;
         private System.Windows.Forms.StatusStrip statusStrip1;
-        private System.Windows.Forms.ToolStripSplitButton toolStripSplitButton1;
+        private System.Windows.Forms.ToolStripSplitButton btnViewScope;
         private System.Windows.Forms.ToolStripStatusLabel txtStatus;
+        private System.Windows.Forms.ToolStripMenuItem mnuScopeProcedure;
+        private System.Windows.Forms.ToolStripMenuItem mnuScopeSegment;
+        private System.Windows.Forms.ToolStripMenuItem mnuScopeExecutable;
     }
 }

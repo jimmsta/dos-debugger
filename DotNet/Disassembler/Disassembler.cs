@@ -76,6 +76,11 @@ namespace Disassembler
             get { return segments.Values; }
         }
 
+        public Segment FindSegment(ushort seg)
+        {
+            return segments[seg];
+        }
+
         /// <summary>
         /// Gets a collection of analyzed procedures. The procedures are
         /// returned in order of their entry point offset.

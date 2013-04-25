@@ -19,8 +19,12 @@ namespace DosDebugger
 
         private Document document;
         private ListingViewModel viewModel;
+
+        // viewport control
         private int viewportBeginIndex;
         private int viewportEndIndex;
+        private ListingScope scope;
+        private int activeRowIndex;
 
         /// <summary>
         /// Gets or sets the Document object being displayed. This value
@@ -55,7 +59,48 @@ namespace DosDebugger
             cbSegments.Items.AddRange(viewModel.SegmentItems.ToArray());
 
             // Display the listing rows.
-            DisplayViewport(0, viewModel.Rows.Count);
+            scope = ListingScope.Procedure;
+            UpdateScope();
+        }
+
+        private void UpdateScope()
+        {
+            if (viewModel.Rows.Count == 0)
+                return;
+
+            if (scope == ListingScope.Executable)
+            {
+                DisplayViewport(0, viewModel.Rows.Count);
+                return;
+            }
+            
+            if (scope == ListingScope.Segment)
+            {
+                UInt16 seg = viewModel.Rows[activeRowIndex].Location.Segment;
+                Segment s = document.Disassembler.FindSegment(seg);
+                int k1 = viewModel.FindRowIndex(s.StartAddress);
+                int k2 = viewModel.FindRowIndex(s.EndAddress);
+                DisplayViewport(k1, k2);
+                return;
+            }
+
+            if (scope == ListingScope.Procedure)
+            {
+                Pointer address = viewModel.Rows[activeRowIndex].Location;
+                Procedure proc = document.Disassembler.Image[address].Procedure;
+                if (proc == null)
+                {
+                    DisplayViewport(0, viewModel.Rows.Count);
+                }
+                else
+                {
+                    Range r = proc.ByteRange.BoundingRange;
+                    int k1 = viewModel.FindRowIndex(r.Begin);
+                    int k2 = viewModel.FindRowIndex(r.End);
+                    DisplayViewport(k1, k2);
+                }
+                return;
+            }
         }
 
         private void DisplayViewport(int beginIndex, int endIndex)
@@ -65,11 +110,29 @@ namespace DosDebugger
             if (endIndex < beginIndex || endIndex > viewModel.Rows.Count)
                 throw new ArgumentOutOfRangeException("endIndex");
 
+            // We should keep the selected item still selected.
+            // This is a bit complicated with our current implementation,
+            // but should be more straightforward if we use ObjectListView's
+            // filter functionality.
+            // activeRowIndex = this.viewportBeginIndex + activeRowIndex - beginIndex;
+
             this.viewportBeginIndex = beginIndex;
             this.viewportEndIndex = endIndex;
             lvListing.VirtualListSize = endIndex - beginIndex;
         }
-        
+
+        internal ListingScope ListingScope
+        {
+            get { return this.scope; }
+            set
+            {
+                if (scope == value)
+                    return;
+                scope = value;
+                UpdateScope();
+            }
+        }
+
         private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             e.Item = viewModel.CreateViewItem(viewportBeginIndex + e.ItemIndex);
@@ -139,6 +202,9 @@ namespace DosDebugger
                 return false;
 
             int rowIndex = viewModel.FindRowIndex(target);
+            activeRowIndex = rowIndex;
+            UpdateScope();
+
             if (rowIndex < viewportBeginIndex || rowIndex >= viewportEndIndex)
             {
                 throw new NotImplementedException();
@@ -176,6 +242,7 @@ namespace DosDebugger
                 return;
 
             int i = lvListing.SelectedIndices[0];
+            activeRowIndex = i;
 
             // Display brief description of instruction.
             ListingRow row = viewModel.Rows[viewportBeginIndex + i];
@@ -262,6 +329,28 @@ namespace DosDebugger
             // this may not be the first instruction in the procedure's
             // range, though it usually is.
             Navigate(item.Procedure.EntryPoint, false, true);
+        }
+
+        private void btnViewScope_DropDownOpening(object sender, EventArgs e)
+        {
+            mnuScopeExecutable.Checked = (scope == ListingScope.Executable);
+            mnuScopeSegment.Checked = (scope == ListingScope.Segment);
+            mnuScopeProcedure.Checked = (scope == ListingScope.Procedure);
+        }
+
+        private void mnuScopeProcedure_Click(object sender, EventArgs e)
+        {
+            this.ListingScope = ListingScope.Procedure;
+        }
+
+        private void mnuScopeSegment_Click(object sender, EventArgs e)
+        {
+            this.ListingScope = ListingScope.Segment;
+        }
+
+        private void mnuScopeExecutable_Click(object sender, EventArgs e)
+        {
+            this.ListingScope = ListingScope.Executable;
         }
     }
 

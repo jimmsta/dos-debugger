@@ -301,6 +301,7 @@ namespace Disassembler
         public Pointer StartAddress { get; set; }
         public Pointer EndAddress { get; set; }
 
+#if false
         /// <summary>
         /// Gets the smallest range that covers this segment. The indices
         /// of the range are offsets within the binary image.
@@ -315,6 +316,7 @@ namespace Disassembler
                     EndAddress.EffectiveAddress);
             }
         }
+#endif
 
         public override string ToString()
         {

@@ -431,4 +431,11 @@ namespace DosDebugger
             return SegmentStart.ToString();
         }
     }
+
+    enum ListingScope
+    {
+        Procedure,
+        Segment,
+        Executable,
+    }
 }
