@@ -5,33 +5,102 @@ using X86Codec;
 
 namespace Disassembler
 {
-#if false
+#if true
+    /// <summary>
+    /// Stores the analysis results of an executable image. This class only
+    /// takes care of book-keeping; it does not analyze the image. The 
+    /// analysis is done by Disassembler.
+    /// </summary>
     public class BinaryImage
     {
         private byte[] image;
-        private ByteAttribute[] attr;
-        private UInt16[] byteSegment;
         private Pointer baseAddress;
+        private ByteProperties[] attr;
 
+        /// <summary>
+        /// Creates a binary image with the given data and base address.
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="baseAddress"></param>
+        /// <exception cref="ArgumentNullException">If image is null.
+        /// </exception>
         public BinaryImage(byte[] image, Pointer baseAddress)
         {
+            if (image == null)
+                throw new ArgumentNullException("image");
+            
             this.image = image;
             this.baseAddress = baseAddress;
-            this.attr = new ByteAttribute[image.Length];
-            this.byteSegment = new ushort[image.Length]; // TBD
+            this.attr = new ByteProperties[image.Length];
         }
 
         /// <summary>
-        /// Gets the executable image being disassembled.
+        /// Gets the underlying executable image.
         /// </summary>
         public byte[] Image
         {
             get { return image; }
         }
 
+        /// <summary>
+        /// Gets the number of bytes in the image.
+        /// </summary>
+        public int Length
+        {
+            get { return image.Length; }
+        }
+
+        /// <summary>
+        /// Gets the CS:IP address of the first byte in the image.
+        /// </summary>
         public Pointer BaseAddress
         {
             get { return baseAddress; }
+        }
+
+        /// <summary>
+        /// Converts a CS:IP pointer to its offset within the executable
+        /// image. Note that different CS:IP pointers may correspond to the
+        /// same offset.
+        /// </summary>
+        /// <param name="address">The CS:IP address to convert.</param>
+        /// <returns>An offset that may be outside the image.</returns>
+        public int PointerToOffset(Pointer address)
+        {
+            return address - baseAddress;
+        }
+
+        /// <summary>
+        /// Decodes an instruction at the given address.
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <param name="address">The address to decode.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException">If address refers
+        /// outside the image.</exception>
+        public Instruction DecodeInstruction(Pointer address)
+        {
+            int offset = PointerToOffset(address);
+            if (offset < 0 || offset >= image.Length)
+                throw new ArgumentOutOfRangeException("address");
+
+            Instruction instruction = X86Codec.Decoder.Decode(
+                image, offset, address, CpuMode.RealAddressMode);
+            return instruction;
+        }
+
+        /// <summary>
+        /// Reads a 16-bit unsigned integer from the given offset.
+        /// </summary>
+        /// <param name="offset">Offset to read.</param>
+        /// <returns>A 16-bit unsigned integer in little endian.
+        /// </returns>
+        public UInt16 GetUInt16(int offset)
+        {
+            if (offset < 0 || offset + 1 >= image.Length)
+                throw new ArgumentOutOfRangeException("offset");
+
+            return (UInt16)(image[offset] | (image[offset + 1] << 8));
         }
     }
 #endif
@@ -60,7 +129,24 @@ namespace Disassembler
         /// <summary>
         /// Gets or sets the procedure that owns this byte.
         /// </summary>
-        public Procedure OwnerProcedure { get; internal set; }
+        public Procedure Procedure { get; internal set; }
+    }
+
+    /// <summary>
+    /// Represents a range of consecutive bytes that constitute a single
+    /// instruction or data item.
+    /// </summary>
+    public class ByteRange
+    {
+        /// <summary>
+        /// Gets or sets the type of the byte range.
+        /// </summary>
+        public ByteType Type { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the number of (consecutive) bytes in the range.
+        /// </summary>
+        public int Length { get; internal set; }
     }
 
 #if false
@@ -135,6 +221,12 @@ namespace Disassembler
         /// The byte is not analyzed and its type is unknown.
         /// </summary>
         Unknown,
+
+        /// <summary>
+        /// The byte is a padding byte (usually 0x90, NOP) used to align the
+        /// next instruction or data item on a word or dword boundary.
+        /// </summary>
+        Padding,
 
         /// <summary>
         /// The byte is part of an instruction.

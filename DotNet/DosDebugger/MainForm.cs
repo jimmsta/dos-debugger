@@ -388,7 +388,7 @@ namespace DosDebugger
             {
                 if (attr[i] != null && attr[i].IsLeadByte && attr[i].Type == ByteType.Code)
                 {
-                    Pointer location = dasm.OffsetToPointer(i);
+                    Pointer location = attr[i].Address;
 
                     Instruction insn = X86Codec.Decoder.Decode(dasm.Image,
                         i, location, CpuMode.RealAddressMode);

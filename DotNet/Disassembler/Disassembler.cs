@@ -10,7 +10,7 @@ namespace Disassembler
     /// </summary>
     public class Disassembler16
     {
-        private byte[] image;
+        private BinaryImage image;
         private ByteProperties[] attr;
 
         /// <summary>
@@ -22,7 +22,6 @@ namespace Disassembler
         /// analyzed later.
         /// </summary>
         private List<XRef> globalXRefs;
-        private Pointer baseAddress;
 
         /// <summary>
         /// Maintains a dictionary that maps the entry point address of a
@@ -41,10 +40,9 @@ namespace Disassembler
 
         public Disassembler16(byte[] image, Pointer baseAddress)
         {
-            this.image = image;
-            this.baseAddress = baseAddress;
             this.attr = new ByteProperties[image.Length];
             this.globalXRefs = new List<XRef>();
+            this.image = new BinaryImage(image, baseAddress);
         }
 
         /// <summary>
@@ -52,7 +50,7 @@ namespace Disassembler
         /// </summary>
         public byte[] Image
         {
-            get { return image; }
+            get { return image.Image; }
         }
 
         /// <summary>
@@ -61,7 +59,7 @@ namespace Disassembler
         /// </summary>
         public Pointer BaseAddress
         {
-            get { return baseAddress; }
+            get { return image.BaseAddress; }
         }
 
         /// <summary>
@@ -125,18 +123,7 @@ namespace Disassembler
         /// <returns>The offset within the executable image.</returns>
         public int PointerToOffset(Pointer location)
         {
-            return location - baseAddress;
-        }
-
-        public Pointer OffsetToPointer(int offset)
-        {
-            if (offset < 0 || offset >= attr.Length)
-                throw new ArgumentOutOfRangeException("offset");
-
-            if (attr[offset] == null || !attr[offset].IsLeadByte)
-                return Pointer.Invalid;
-
-            return attr[offset].Address;
+            return image.PointerToOffset(location);
         }
 
         /// <summary>
@@ -205,7 +192,7 @@ namespace Disassembler
                     if (entry.Type == XRefType.NearJumpTableTarget)
                     {
                         // Find out which procedure entry.Source belongs to.
-                        Procedure proc = GetByteProperties(entry.Source).OwnerProcedure;
+                        Procedure proc = GetByteProperties(entry.Source).Procedure;
                         AnalyzeProcedure(proc, entry, xrefs);
                     }
                 }
@@ -223,7 +210,7 @@ namespace Disassembler
             globalXRefs.AddRange(xrefs);
 
             // Update the segment statistics.
-            UpdateSegmentInformation();
+            AnalyzeSegments();
 
 #if false
 #if false
@@ -238,7 +225,7 @@ namespace Disassembler
 #endif
         }
 
-        private void UpdateSegmentInformation()
+        private void AnalyzeSegments()
         {
             segmentStart.Clear();
             for (int i = 0; i < image.Length; i++)
@@ -300,7 +287,7 @@ namespace Disassembler
                     proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
                     for (int j = 0; j < count; j++)
                     {
-                        attr[baseOffset + j].OwnerProcedure = proc;
+                        attr[baseOffset + j].Procedure = proc;
                     }
                 }
             }
@@ -326,12 +313,12 @@ namespace Disassembler
             //}
 
             // Process this one.
-            int b = entry.Target - baseAddress;
+            int b = PointerToOffset(entry.Target);
             if (attr[b] != null || attr[b + 1] != null)
                 return;
 
             // Add this data item to its owning procedure's byte range.
-            Procedure proc = GetByteProperties(entry.Source).OwnerProcedure;
+            Procedure proc = GetByteProperties(entry.Source).Procedure;
             proc.DataRange.AddInterval(b, b + 2);
             proc.ByteRange.AddInterval(b, b + 2);
 
@@ -342,18 +329,18 @@ namespace Disassembler
                 Type = ByteType.Data,
                 IsLeadByte = true,
                 Address = entry.Target,
-                OwnerProcedure = proc,
+                Procedure = proc,
             };
             attr[b + 1] = new ByteProperties
             {
                 Type = ByteType.Data,
                 IsLeadByte = false,
                 Address = entry.Target + 1,
-                OwnerProcedure = proc,
+                Procedure = proc,
             };
 
             // Read the jump offset.
-            ushort jumpOffset = BitConverter.ToUInt16(image, b);
+            ushort jumpOffset = image.GetUInt16(b);
 
             // Add a xref from the dynamic JMP instruction to the jump 
             // target.
@@ -499,7 +486,7 @@ namespace Disassembler
         {
             errMsg = null;
             instruction = null;
-            int b = start - baseAddress;
+            int b = PointerToOffset(start);
 
             // TODO: we actually need to make sure that the full instruction
             // is within bound, not just the first byte.
@@ -527,7 +514,7 @@ namespace Disassembler
             // Try decode an instruction at this location.
             try
             {
-                instruction = X86Codec.Decoder.Decode(image, b, start, CpuMode.RealAddressMode);
+                instruction = image.DecodeInstruction(start);
             }
             catch (Exception ex)
             {

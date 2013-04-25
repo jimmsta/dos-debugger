@@ -164,13 +164,20 @@ namespace Disassembler
         public int End { get { return end; } }
 
         /// <summary>
-        /// Gets the length of the interval.
+        /// Gets the length of the range, i.e. (end - begin).
         /// </summary>
         public int Length
         {
             get { return end - begin; }
         }
 
+        /// <summary>
+        /// Creates a range with the given begin and end indices.
+        /// </summary>
+        /// <param name="begin">Begin index, inclusive.</param>
+        /// <param name="end">End index, exclusive.</param>
+        /// <exception cref="ArgumentException">If begin is greater than end.
+        /// </exception>
         public Range(int begin, int end)
             : this()
         {
