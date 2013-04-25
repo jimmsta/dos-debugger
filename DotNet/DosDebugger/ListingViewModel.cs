@@ -41,29 +41,26 @@ namespace DosDebugger
             }
 
             // Display analyzed code and data.
-            ByteProperties[] attr = dasm.ByteProperties;
+            BinaryImage image = dasm.Image;
             Pointer address = dasm.BaseAddress;
-            for (int i = 0; i < attr.Length; )
+            for (int i = 0; i < image.Length; )
             {
-                ByteProperties b = attr[i];
+                ByteProperties b = image[i];
 
                 if (IsLeadByteOfCode(b))
                 {
-                    Instruction insn = X86Codec.Decoder.Decode(dasm.Image, i, b.Address, CpuMode.RealAddressMode);
-                    rows.Add(new CodeListingRow(i, insn, ArraySlice(dasm.Image, i, insn.EncodedLength)));
+                    Instruction insn = dasm.Image.DecodeInstruction(b.Address);
+                    rows.Add(new CodeListingRow(i, insn, dasm.Image.GetBytes(i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
                 {
                     int j = i + 1;
-                    while (j < attr.Length &&
-                           attr[j] != null &&
-                           attr[j].Type == ByteType.Data &&
-                           !attr[j].IsLeadByte)
+                    while (j < image.Length && image[j].IsData && !image[j].IsLeadByte)
                         j++;
 
-                    rows.Add(new DataListingRow(i, b.Address, ArraySlice(dasm.Image, i, j - i)));
+                    rows.Add(new DataListingRow(i, b.Address, image.GetBytes(i, j - i)));
                     address = b.Address + (j - i);
                     i = j;
                 }
@@ -74,12 +71,12 @@ namespace DosDebugger
                     //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
                     int j = i + 1;
-                    while (j < attr.Length &&
-                           !IsLeadByteOfCode(attr[j]) &&
-                           !IsLeadByteOfData(attr[j]))
+                    while (j < image.Length &&
+                           !IsLeadByteOfCode(image[j]) &&
+                           !IsLeadByteOfData(image[j]))
                         j++;
 
-                    rows.Add(new BlankListingRow(i, address, ArraySlice(dasm.Image, i, j - i)));
+                    rows.Add(new BlankListingRow(i, address, image.GetBytes(i, j - i)));
                     address += (j - i);
                     i = j;
                 }
@@ -116,12 +113,12 @@ namespace DosDebugger
 
         private static bool IsLeadByteOfCode(ByteProperties b)
         {
-            return (b != null && b.Type == ByteType.Code && b.IsLeadByte);
+            return (b.Type == ByteType.Code && b.IsLeadByte);
         }
 
         private static bool IsLeadByteOfData(ByteProperties b)
         {
-            return (b != null && b.Type == ByteType.Data && b.IsLeadByte);
+            return (b.Type == ByteType.Data && b.IsLeadByte);
         }
 
         public List<ListingRow> Rows
@@ -176,13 +173,6 @@ namespace DosDebugger
         public ListViewItem CreateViewItem(int index)
         {
             return rows[index].CreateViewItem();
-        }
-
-        private static byte[] ArraySlice(byte[] array, int offset, int count)
-        {
-            byte[] result = new byte[count];
-            Array.Copy(array, offset, result, 0, count);
-            return result;
         }
     }
 

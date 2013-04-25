@@ -31,7 +31,12 @@ namespace Disassembler
             
             this.image = image;
             this.baseAddress = baseAddress;
+
             this.attr = new ByteProperties[image.Length];
+            for (int i = 0; i < attr.Length; i++)
+            {
+                attr[i] = new ByteProperties();
+            }
         }
 
         /// <summary>
@@ -48,6 +53,37 @@ namespace Disassembler
         public int Length
         {
             get { return image.Length; }
+        }
+
+        /// <summary>
+        /// Returns an object that wraps the byte at the given offset.
+        /// </summary>
+        /// <param name="offset">Offset of the byte to return.</param>
+        /// <returns></returns>
+        public ByteProperties this[int offset]
+        {
+            get
+            {
+                if (offset < 0 || offset >= attr.Length)
+                    throw new ArgumentOutOfRangeException("index");
+                return attr[offset];
+            }
+            set
+            {
+                if (offset < 0 || offset >= attr.Length)
+                    throw new ArgumentOutOfRangeException("index");
+                attr[offset] = value;
+            }
+        }
+
+        /// <summary>
+        /// Returns an object that wraps the byte at the given address.
+        /// </summary>
+        /// <param name="address">Address of the byte to return.</param>
+        /// <returns></returns>
+        public ByteProperties this[Pointer address]
+        {
+            get { return this[PointerToOffset(address)]; }
         }
 
         /// <summary>
@@ -89,6 +125,18 @@ namespace Disassembler
             return instruction;
         }
 
+        public byte[] GetBytes(int offset, int count)
+        {
+            if (offset < 0 || offset > image.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            if (count < 0 || offset + count > image.Length)
+                throw new ArgumentOutOfRangeException("count");
+
+            byte[] result = new byte[count];
+            Array.Copy(image, offset, result, 0, count);
+            return result;
+        }
+
         /// <summary>
         /// Reads a 16-bit unsigned integer from the given offset.
         /// </summary>
@@ -114,6 +162,9 @@ namespace Disassembler
         /// Gets or sets the type of the byte.
         /// </summary>
         public ByteType Type { get; internal set; }
+
+        public bool IsCode { get { return Type == ByteType.Code; } }
+        public bool IsData { get { return Type == ByteType.Data; } }
 
         /// <summary>
         /// Gets or sets a flag that indicates whether this byte is the first

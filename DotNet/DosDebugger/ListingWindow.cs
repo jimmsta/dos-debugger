@@ -172,7 +172,7 @@ namespace DosDebugger
             int i = lvListing.SelectedIndices[0];
 
             Pointer address = viewModel.Rows[viewportBeginIndex + i].Location;
-            ByteProperties b = document.Disassembler.GetByteProperties(address);
+            ByteProperties b = document.Disassembler.Image[address];
             if (b == null) // TBD: we should also do something for an unanalyzed byte.
                 return;
 

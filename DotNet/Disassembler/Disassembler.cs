@@ -11,7 +11,6 @@ namespace Disassembler
     public class Disassembler16
     {
         private BinaryImage image;
-        private ByteProperties[] attr;
 
         /// <summary>
         /// Maintains a queue of pending code entry points to analyze. At the
@@ -40,17 +39,16 @@ namespace Disassembler
 
         public Disassembler16(byte[] image, Pointer baseAddress)
         {
-            this.attr = new ByteProperties[image.Length];
-            this.globalXRefs = new List<XRef>();
             this.image = new BinaryImage(image, baseAddress);
+            this.globalXRefs = new List<XRef>();
         }
 
         /// <summary>
         /// Gets the executable image being disassembled.
         /// </summary>
-        public byte[] Image
+        public BinaryImage Image
         {
-            get { return image.Image; }
+            get { return image; }
         }
 
         /// <summary>
@@ -60,19 +58,6 @@ namespace Disassembler
         public Pointer BaseAddress
         {
             get { return image.BaseAddress; }
-        }
-
-        /// <summary>
-        /// Gets the attributes of each byte in the executable image.
-        /// </summary>
-        public ByteProperties[] ByteProperties
-        {
-            get { return attr; }
-        }
-
-        public ByteProperties GetByteProperties(Pointer location)
-        {
-            return attr[PointerToOffset(location)];
         }
 
         public Pointer[] Segments
@@ -192,7 +177,7 @@ namespace Disassembler
                     if (entry.Type == XRefType.NearJumpTableTarget)
                     {
                         // Find out which procedure entry.Source belongs to.
-                        Procedure proc = GetByteProperties(entry.Source).Procedure;
+                        Procedure proc = image[entry.Source].Procedure;
                         AnalyzeProcedure(proc, entry, xrefs);
                     }
                 }
@@ -230,8 +215,8 @@ namespace Disassembler
             segmentStart.Clear();
             for (int i = 0; i < image.Length; i++)
             {
-                ByteProperties b = attr[i];
-                if (b != null)
+                ByteProperties b = image[i];
+                if (b.IsCode || b.IsData)
                 {
                     if (!segmentStart.ContainsKey(b.Address.Segment))
                         segmentStart[b.Address.Segment] = b.Address;
@@ -287,7 +272,7 @@ namespace Disassembler
                     proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
                     for (int j = 0; j < count; j++)
                     {
-                        attr[baseOffset + j].Procedure = proc;
+                        image[baseOffset + j].Procedure = proc;
                     }
                 }
             }
@@ -314,24 +299,25 @@ namespace Disassembler
 
             // Process this one.
             int b = PointerToOffset(entry.Target);
-            if (attr[b] != null || attr[b + 1] != null)
+            if (image[b].Type != ByteType.Unknown ||
+                image[b + 1].Type != ByteType.Unknown)
                 return;
 
             // Add this data item to its owning procedure's byte range.
-            Procedure proc = GetByteProperties(entry.Source).Procedure;
+            Procedure proc = image[entry.Source].Procedure;
             proc.DataRange.AddInterval(b, b + 2);
             proc.ByteRange.AddInterval(b, b + 2);
 
             // Mark the memory location specified by the jump table
             // entry as data.
-            attr[b] = new ByteProperties
+            image[b] = new ByteProperties
             {
                 Type = ByteType.Data,
                 IsLeadByte = true,
                 Address = entry.Target,
                 Procedure = proc,
             };
-            attr[b + 1] = new ByteProperties
+            image[b + 1] = new ByteProperties
             {
                 Type = ByteType.Data,
                 IsLeadByte = false,
@@ -494,14 +480,14 @@ namespace Disassembler
                 return DecodeResult.BadInstruction;
 
             // If the byte is already analyzed, check if there's a conflict.
-            if (attr[b] != null)
+            if (image[b].Type != ByteType.Unknown)
             {
                 // If the byte to analyze is already marked as code, check 
                 // that it was marked as the lead byte of an instruction. 
                 // Otherwise, return code conflict.
-                if (attr[b].Type == ByteType.Code)
+                if (image[b].Type == ByteType.Code)
                 {
-                    if (attr[b].IsLeadByte)
+                    if (image[b].IsLeadByte)
                         return DecodeResult.AlreadyAnalyzed;
                     else
                         return DecodeResult.UnexpectedCode;
@@ -526,9 +512,9 @@ namespace Disassembler
             // If any byte in the area is already processed, return an error.
             for (int j = 1; j < instruction.EncodedLength; j++)
             {
-                if (attr[b + j] != null)
+                if (image[b + j].Type != ByteType.Unknown)
                 {
-                    return attr[b + j].Type == ByteType.Code ?
+                    return image[b + j].Type == ByteType.Code ?
                         DecodeResult.UnexpectedCode : DecodeResult.UnexpectedData;
                 }
             }
@@ -536,7 +522,7 @@ namespace Disassembler
             // Mark the bytes covered by the instruction as code.
             for (int j = 0; j < instruction.EncodedLength; j++)
             {
-                attr[b + j] = new ByteProperties
+                image[b + j] = new ByteProperties
                 {
                     Type = ByteType.Code,
                     IsLeadByte = (j == 0),

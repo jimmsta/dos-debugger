@@ -383,15 +383,14 @@ namespace DosDebugger
         private void ListInstructionsThatChangeSegmentRegisters()
         {
             // Find all instructions that change segment registers.
-            ByteProperties[] attr = dasm.ByteProperties;
+            var attr = dasm.Image;
             for (int i = 0; i < attr.Length; )
             {
-                if (attr[i] != null && attr[i].IsLeadByte && attr[i].Type == ByteType.Code)
+                if (attr[i].IsLeadByte && attr[i].Type == ByteType.Code)
                 {
                     Pointer location = attr[i].Address;
 
-                    Instruction insn = X86Codec.Decoder.Decode(dasm.Image,
-                        i, location, CpuMode.RealAddressMode);
+                    Instruction insn = dasm.Image.DecodeInstruction(location);
 
                     if (insn.Operands.Length >= 1 && insn.Operands[0] is RegisterOperand)
                     {
