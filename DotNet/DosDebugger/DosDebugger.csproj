@@ -90,6 +90,7 @@
     <Compile Include="SegmentWindow.Designer.cs">
       <DependentUpon>SegmentWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="ToolStripExtensions.cs" />
     <Compile Include="ToolWindow.cs">
       <SubType>Form</SubType>
     </Compile>

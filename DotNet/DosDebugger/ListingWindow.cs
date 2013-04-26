@@ -145,7 +145,6 @@ namespace DosDebugger
         {
             // TODO: need to dispose() unused items.
 #if true
-            mnuListingGoToXRef.DropDownItems.Clear();
             mnuListingGoToXRef.Enabled = false;
 
             if (lvListing.SelectedIndices.Count == 0)
@@ -170,6 +169,11 @@ namespace DosDebugger
             }
             mnuListingGoToXRef.Enabled = mnuListingGoToXRef.HasDropDownItems;
 #endif
+        }
+
+        private void contextMenuListing_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            mnuListingGoToXRef.DropDownItems.ClearAndDispose();
         }
 
         private void mnuListingGoToXRefItem_Click(object sender, EventArgs e)
@@ -237,6 +241,10 @@ namespace DosDebugger
             if (setFocus)
                 item.ListView.Focus();
 
+            // Notify the navigation controller.
+            document.Navigator.SetLocation(target, this);
+            // TBD: navigation doesn't work in listing window yet.
+
             return true;
         }
 
@@ -271,10 +279,13 @@ namespace DosDebugger
                 }
             }
 
-            Pointer address = viewModel.Rows[viewportBeginIndex + i].Location;
+            Pointer address = row.Location;
             ByteProperties b = document.Disassembler.Image[address];
             if (b == null) // TBD: we should also do something for an unanalyzed byte.
                 return;
+
+            // Update the current location.
+            document.Navigator.SetLocation(row.Location, this, LocationChangeType.Minor);
 
             // this.ActiveSegment = address.Segment;
         }

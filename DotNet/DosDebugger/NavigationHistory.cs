@@ -25,6 +25,11 @@ namespace DosDebugger
             this.current = -1;
         }
 
+        public bool IsEmpty
+        {
+            get { return history.Count == 0; }
+        }
+
         /// <summary>
         /// Gets the current location.
         /// </summary>
@@ -35,6 +40,12 @@ namespace DosDebugger
                 if (history.Count == 0)
                     throw new InvalidOperationException("The history is empty.");
                 return history[current];
+            }
+            set
+            {
+                if (history.Count == 0)
+                    throw new InvalidOperationException("The history is empty.");
+                history[current] = value;
             }
         }
 
@@ -110,17 +121,27 @@ namespace DosDebugger
     {
         T location;
 
+        /// <summary>
+        /// Gets the current location of the navigation object.
+        /// </summary>
         public T Location
         {
             get { return location; }
         }
 
-        public void SetLocation(T location, object source)
+        /// <summary>
+        /// Sets the location to a new location. This triggers the
+        /// LocationChanged event.
+        /// </summary>
+        /// <param name="location">The new location to set to.</param>
+        /// <param name="source">Who made the change.</param>
+        public void SetLocation(T location, object source, LocationChangeType type)
         {
             LocationChangedEventArgs<T> e = new LocationChangedEventArgs<T>();
             e.OldLocation = this.location;
             e.NewLocation = location;
             e.Source = source;
+            e.Type = type;
 
             this.location = location;
             if (LocationChanged != null)
@@ -129,7 +150,31 @@ namespace DosDebugger
             }
         }
 
+        public void SetLocation(T location, object source)
+        {
+            SetLocation(location, source, LocationChangeType.Major);
+        }
+
+        // maybe we should call it UpdateLocation
+
         public event EventHandler<LocationChangedEventArgs<T>> LocationChanged;
+    }
+
+    enum LocationChangeType
+    {
+        /// <summary>
+        /// Indicates a major location change, such as jumping to another
+        /// subroutine. The new location should be appended to the navigation
+        /// history.
+        /// </summary>
+        Major,
+
+        /// <summary>
+        /// Indicates a minor location change, such as scrolling the window.
+        /// The navigation history only needs to be updated to reflect the
+        /// new location.
+        /// </summary>
+        Minor,
     }
 
     class LocationChangedEventArgs<T> : EventArgs
@@ -137,5 +182,6 @@ namespace DosDebugger
         public T NewLocation { get; set; }
         public T OldLocation { get; set; }
         public object Source { get; set; }
+        public LocationChangeType Type { get; set; }
     }
 }

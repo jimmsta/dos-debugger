@@ -27,19 +27,10 @@ namespace DosDebugger
         private void InitializeToolWindows()
         {
             procWindow = new ProcedureWindow();
-            //procWindow.NavigationRequested += OnNavigationRequested;
-
             errorWindow = new ErrorWindow();
-            //errorWindow.NavigationRequested += OnNavigationRequested;
-
             segmentWindow = new SegmentWindow(); 
-            //segmentWindow.NavigationRequested += OnNavigationRequested;
-
             listingWindow = new ListingWindow();
-            //listingWindow.NavigationRequested += OnNavigationRequested;
-
             propertiesWindow = new PropertiesWindow();
-
             hexWindow = new HexWindow();
         }
 
@@ -262,7 +253,14 @@ namespace DosDebugger
         {
             if (e.Source != this)
             {
-                navHistory.Add(e.NewLocation);
+                if (e.Type == LocationChangeType.Major || navHistory.IsEmpty)
+                {
+                    navHistory.Add(e.NewLocation);
+                }
+                else
+                {
+                    navHistory.Current = e.NewLocation;
+                }
             }
 
             btnNavigateBackward.Enabled = navHistory.CanMove(-1);
@@ -319,22 +317,12 @@ namespace DosDebugger
 
         private void btnNavigateBackward_DropDownClosed(object sender, EventArgs e)
         {
-            DeleteDropDownItems(btnNavigateBackward.DropDownItems);
+            btnNavigateBackward.DropDownItems.ClearAndDispose();
         }
 
         private void btnNavigateForward_DropDownClosed(object sender, EventArgs e)
         {
-            DeleteDropDownItems(btnNavigateForward.DropDownItems);
-        }
-
-        private static void DeleteDropDownItems(ToolStripItemCollection items)
-        {
-            for (int i = items.Count - 1; i >= 0; i--)
-            {
-                ToolStripItem item = items[i];
-                items.RemoveAt(i);
-                item.Dispose();
-            }
+            btnNavigateForward.DropDownItems.ClearAndDispose();
         }
 
         private void btnNavigateEntry_Click(object sender, EventArgs e)

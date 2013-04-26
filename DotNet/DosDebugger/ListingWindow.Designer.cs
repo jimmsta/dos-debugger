@@ -96,7 +96,8 @@
             this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.mnuListingGoToXRef});
             this.contextMenuListing.Name = "contextMenuListing";
-            this.contextMenuListing.Size = new System.Drawing.Size(177, 28);
+            this.contextMenuListing.Size = new System.Drawing.Size(177, 50);
+            this.contextMenuListing.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuListing_Closed);
             this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
             // 
             // mnuListingGoToXRef
