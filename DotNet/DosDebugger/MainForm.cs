@@ -22,8 +22,6 @@ namespace DosDebugger
             InitializeComponent();
             InitializeToolWindows();
             InitializeDockPanel();
-
-            this.navHistory.Changed += navHistory_Changed;
         }
 
         private void InitializeToolWindows()
@@ -123,15 +121,6 @@ namespace DosDebugger
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
-        }
-
-        private void navHistory_Changed(object sender, EventArgs e)
-        {
-            btnNavigateBackward.Enabled = navHistory.CanGoBackward;
-            mnuViewNavigateBackward.Enabled = navHistory.CanGoBackward;
-
-            btnNavigateForward.Enabled = navHistory.CanGoForward;
-            mnuViewNavigateForward.Enabled = navHistory.CanGoForward;
         }
 
         private void DoLoadFile(string fileName)
@@ -244,16 +233,7 @@ namespace DosDebugger
             }
 
             // Go to that location.
-            if (!GoToLocation(target))
-            {
-                MessageBox.Show(this, "Cannot find that address.");
-            }
-        }
-
-        private bool GoToLocation(Pointer target)
-        {
-            navHistory.GoTo(target);
-            return listingWindow.Navigate(target);
+            GoToLocation(target);
         }
 
         private void mnuFileExit_Click(object sender, EventArgs e)
@@ -270,34 +250,101 @@ namespace DosDebugger
             DoLoadFile(fileName);
         }
 
+        #region Navigation Related Members
+
+        private void GoToLocation(Pointer target)
+        {
+            navHistory.Add(target);
+            document.Navigator.SetLocation(target, this);
+        }
+
         private void navigator_LocationChanged(object sender, LocationChangedEventArgs<Pointer> e)
         {
             if (e.Source != this)
             {
-                navHistory.GoTo(e.NewLocation);
+                navHistory.Add(e.NewLocation);
+            }
+
+            btnNavigateBackward.Enabled = navHistory.CanMove(-1);
+            mnuViewNavigateBackward.Enabled = navHistory.CanMove(-1);
+
+            btnNavigateForward.Enabled = navHistory.CanMove(1);
+            mnuViewNavigateForward.Enabled = navHistory.CanMove(1);
+        }
+
+        private void NavigateThroughHistory(int offset)
+        {
+            if (navHistory.CanMove(offset))
+            {
+                navHistory.Move(offset);
+                document.Navigator.SetLocation(navHistory.Current, this);
             }
         }
 
         private void btnNavigateBackward_Click(object sender, EventArgs e)
         {
-            if (navHistory.CanGoBackward)
-            {
-                listingWindow.Navigate(navHistory.GoBackward());
-            }
+            NavigateThroughHistory(-1);
         }
 
         private void btnNavigateForward_Click(object sender, EventArgs e)
         {
-            if (navHistory.CanGoForward)
+            NavigateThroughHistory(1);
+        }
+
+        private void btnNavigateBackward_DropDownOpening(object sender, EventArgs e)
+        {
+            for (int offset = -1; navHistory.CanMove(offset); offset--)
             {
-                listingWindow.Navigate(navHistory.GoForward());
+                Pointer location = navHistory.Peek(offset);
+                ToolStripMenuItem item = new ToolStripMenuItem();
+                item.Text = location.ToString();
+                item.Click += btnNavigateEntry_Click;
+                item.Tag = offset;
+                btnNavigateBackward.DropDownItems.Add(item);
             }
         }
 
-        private void mnuFileInfo_Click(object sender, EventArgs e)
+        private void btnNavigateForward_DropDownOpening(object sender, EventArgs e)
         {
-           
+            for (int offset = 1; navHistory.CanMove(offset); offset++)
+            {
+                Pointer location = navHistory.Peek(offset);
+                ToolStripMenuItem item = new ToolStripMenuItem();
+                item.Text = location.ToString();
+                item.Click += btnNavigateEntry_Click;
+                item.Tag = offset;
+                btnNavigateForward.DropDownItems.Add(item);
+            }
         }
+
+        private void btnNavigateBackward_DropDownClosed(object sender, EventArgs e)
+        {
+            DeleteDropDownItems(btnNavigateBackward.DropDownItems);
+        }
+
+        private void btnNavigateForward_DropDownClosed(object sender, EventArgs e)
+        {
+            DeleteDropDownItems(btnNavigateForward.DropDownItems);
+        }
+
+        private static void DeleteDropDownItems(ToolStripItemCollection items)
+        {
+            for (int i = items.Count - 1; i >= 0; i--)
+            {
+                ToolStripItem item = items[i];
+                items.RemoveAt(i);
+                item.Dispose();
+            }
+        }
+
+        private void btnNavigateEntry_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem item = (ToolStripMenuItem)sender;
+            int offset = (int)item.Tag;
+            NavigateThroughHistory(offset);
+        }
+
+        #endregion
 
         private void btnFind_Click(object sender, EventArgs e)
         {

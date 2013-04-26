@@ -9,84 +9,95 @@ namespace DosDebugger
     /// </summary>
     class NavigationHistory<T>
     {
-        private LinkedList<T> history = new LinkedList<T>();
-        private LinkedListNode<T> current = null;
+        private List<T> history = new List<T>();
+        private int current = -1;
 
         public NavigationHistory()
         {
         }
 
+        /// <summary>
+        /// Clears the navigation history.
+        /// </summary>
         public void Clear()
         {
             this.history.Clear();
-            this.current = null;
-            RaiseChanged();
+            this.current = -1;
         }
 
-        public bool CanGoBackward
+        /// <summary>
+        /// Gets the current location.
+        /// </summary>
+        public T Current
         {
-            get { return current != null && current.Previous != null; }
-        }
-
-        public bool CanGoForward
-        {
-            get { return current != null && current.Next != null; }
-        }
-
-        public T GoBackward()
-        {
-            if (!CanGoBackward)
-                throw new InvalidOperationException("Cannot go backward.");
-
-            current = current.Previous;
-            RaiseChanged();
-            return current.Value;
-        }
-
-        public T GoForward()
-        {
-            if (!CanGoForward)
-                throw new InvalidOperationException("Cannot go forward.");
-
-            current = current.Next;
-            RaiseChanged();
-            return current.Value;
-        }
-
-        public void GoTo(T pos)
-        {
-            if (current == null)
+            get
             {
-                current = history.AddFirst(pos);
-                RaiseChanged();
-                return;
+                if (history.Count == 0)
+                    throw new InvalidOperationException("The history is empty.");
+                return history[current];
             }
-
-            if (pos.Equals(current.Value))
-            {
-                return;
-            }
-            if (current.Next != null && pos.Equals(current.Next.Value))
-            {
-                current = current.Next;
-                RaiseChanged();
-                return;
-            }
-
-            while (current.Next != null)
-            {
-                history.RemoveLast();
-            }
-            current = history.AddAfter(current, pos);
-            RaiseChanged();
         }
 
-        public event EventHandler Changed;
-
-        private void RaiseChanged()
+        /// <summary>
+        /// Returns the historical locations starting from the most recent
+        /// location back to the first location.
+        /// </summary>
+        public IEnumerable<T> History
         {
-            if (Changed != null)
-                Changed(this, null);
+            get
+            {
+                for (int index = current - 1; index >= 0; index--)
+                {
+                    yield return history[index];
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks whether we can move the given number of steps backward
+        /// or forward within the history.
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public bool CanMove(int offset)
+        {
+            int i = current + offset;
+            return (i >= 0) && (i < history.Count);
+        }
+
+        public T Peek(int offset)
+        {
+            if (!CanMove(offset))
+                throw new ArgumentException("The given offset is out of range.");
+
+            return history[current + offset];
+        }
+
+        /// <summary>
+        /// Moves the given number of steps backward or forward within the
+        /// history.
+        /// </summary>
+        /// <param name="offset"></param>
+        public void Move(int offset)
+        {
+            if (!CanMove(offset))
+                throw new InvalidOperationException("Cannot move the given offset.");
+
+            current += offset;
+        }
+
+        /// <summary>
+        /// Adds a location after the current position.
+        /// </summary>
+        /// <param name="location"></param>
+        public void Add(T location)
+        {
+            if (history.Count > 0)
+            {
+                history.RemoveRange(current + 1, history.Count - current - 1);
+            }
+            history.Add(location);
+            current++;
         }
     }
 
