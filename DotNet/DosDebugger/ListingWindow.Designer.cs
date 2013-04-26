@@ -41,10 +41,10 @@
             this.cbProcedures = new System.Windows.Forms.ComboBox();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.btnViewScope = new System.Windows.Forms.ToolStripSplitButton();
-            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.mnuScopeProcedure = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuScopeSegment = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuScopeExecutable = new System.Windows.Forms.ToolStripMenuItem();
+            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.contextMenuListing.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -172,12 +172,6 @@
             this.btnViewScope.Text = "Scope";
             this.btnViewScope.DropDownOpening += new System.EventHandler(this.btnViewScope_DropDownOpening);
             // 
-            // txtStatus
-            // 
-            this.txtStatus.Name = "txtStatus";
-            this.txtStatus.Size = new System.Drawing.Size(71, 20);
-            this.txtStatus.Text = "(Message)";
-            // 
             // mnuScopeProcedure
             // 
             this.mnuScopeProcedure.Name = "mnuScopeProcedure";
@@ -198,6 +192,12 @@
             this.mnuScopeExecutable.Size = new System.Drawing.Size(214, 24);
             this.mnuScopeExecutable.Text = "View &Entire Executable";
             this.mnuScopeExecutable.Click += new System.EventHandler(this.mnuScopeExecutable_Click);
+            // 
+            // txtStatus
+            // 
+            this.txtStatus.Name = "txtStatus";
+            this.txtStatus.Size = new System.Drawing.Size(71, 20);
+            this.txtStatus.Text = "(Message)";
             // 
             // ListingWindow
             // 

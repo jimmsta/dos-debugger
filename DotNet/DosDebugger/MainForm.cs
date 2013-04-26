@@ -29,16 +29,16 @@ namespace DosDebugger
         private void InitializeToolWindows()
         {
             procWindow = new ProcedureWindow();
-            procWindow.NavigationRequested += OnNavigationRequested;
+            //procWindow.NavigationRequested += OnNavigationRequested;
 
             errorWindow = new ErrorWindow();
-            errorWindow.NavigationRequested += OnNavigationRequested;
+            //errorWindow.NavigationRequested += OnNavigationRequested;
 
             segmentWindow = new SegmentWindow(); 
-            segmentWindow.NavigationRequested += OnNavigationRequested;
+            //segmentWindow.NavigationRequested += OnNavigationRequested;
 
             listingWindow = new ListingWindow();
-            listingWindow.NavigationRequested += OnNavigationRequested;
+            //listingWindow.NavigationRequested += OnNavigationRequested;
 
             propertiesWindow = new PropertiesWindow();
 
@@ -120,7 +120,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
         }
@@ -142,6 +142,7 @@ namespace DosDebugger
 
             document = new Document();
             document.Disassembler = dasm;
+            document.Navigator.LocationChanged += navigator_LocationChanged;
             navHistory.Clear();
 
             DoAnalyze();
@@ -267,6 +268,14 @@ namespace DosDebugger
 
             string fileName = openFileDialog1.FileName;
             DoLoadFile(fileName);
+        }
+
+        private void navigator_LocationChanged(object sender, LocationChangedEventArgs<Pointer> e)
+        {
+            if (e.Source != this)
+            {
+                navHistory.GoTo(e.NewLocation);
+            }
         }
 
         private void btnNavigateBackward_Click(object sender, EventArgs e)
@@ -411,11 +420,6 @@ namespace DosDebugger
                     i++;
                 }
             }
-        }
-
-        public void OnNavigationRequested(object sender, NavigationRequestedEventArgs e)
-        {
-            GoToLocation(e.Location);
         }
 
         private void mnuViewDisassembly_Click(object sender, EventArgs e)

@@ -19,6 +19,7 @@ namespace DosDebugger
         }
     }
 
+#if false
     public class NavigationRequestedEventArgs : EventArgs
     {
         Pointer location;
@@ -33,4 +34,5 @@ namespace DosDebugger
             get { return this.location; }
         }
     }
+#endif
 }

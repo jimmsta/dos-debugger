@@ -191,7 +191,7 @@ namespace Disassembler
                 if (iJumpTable >= jumpTables.Count)
                     break;
 
-                //ProcessJumpTableEntry(jumpTables[iJumpTable], xrefs);
+                ProcessJumpTableEntry(jumpTables[iJumpTable], xrefs);
                 //System.Diagnostics.Debug.WriteLine("Processing jump table at " + entry.Source.ToString());
                 iJumpTable++;
             }

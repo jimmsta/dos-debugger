@@ -47,6 +47,9 @@ namespace DosDebugger
             if (document == null)
                 return;
 
+            // Listen to navigation events.
+            document.Navigator.LocationChanged += navigator_LocationChanged;
+
             // Create the view model.
             viewModel = new ListingViewModel(document.Disassembler);
 
@@ -173,12 +176,23 @@ namespace DosDebugger
         {
             ToolStripMenuItem item = (ToolStripMenuItem)sender;
             Pointer source = (Pointer)item.Tag;
+            Navigate(source);
+#if false
             if (NavigationRequested != null)
             {
                 NavigationRequestedEventArgs args =
                     new NavigationRequestedEventArgs(source);
                 NavigationRequested(this, args);
             }
+#endif
+        }
+
+        private void navigator_LocationChanged(object sender, LocationChangedEventArgs<Pointer> e)
+        {
+            if (e.Source == this)
+                return;
+
+            Navigate(e.NewLocation);
         }
 
         // TODO: what should we do if the navigation target is out of the current sub?
@@ -226,7 +240,7 @@ namespace DosDebugger
             return true;
         }
 
-        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
+        //public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
 
         // can we hard code it?
         private void ListingWindow_Load(object sender, EventArgs e)

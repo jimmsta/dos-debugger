@@ -89,4 +89,42 @@ namespace DosDebugger
                 Changed(this, null);
         }
     }
+
+    /// <summary>
+    /// Represents a token that keeps track of the current navigation
+    /// location. Multiple objects can "connect" to this token to change the
+    /// navigation location and be notified of such changes.
+    /// </summary>
+    class NavigationPoint<T>
+    {
+        T location;
+
+        public T Location
+        {
+            get { return location; }
+        }
+
+        public void SetLocation(T location, object source)
+        {
+            LocationChangedEventArgs<T> e = new LocationChangedEventArgs<T>();
+            e.OldLocation = this.location;
+            e.NewLocation = location;
+            e.Source = source;
+
+            this.location = location;
+            if (LocationChanged != null)
+            {
+                LocationChanged(this, e);
+            }
+        }
+
+        public event EventHandler<LocationChangedEventArgs<T>> LocationChanged;
+    }
+
+    class LocationChangedEventArgs<T> : EventArgs
+    {
+        public T NewLocation { get; set; }
+        public T OldLocation { get; set; }
+        public object Source { get; set; }
+    }
 }

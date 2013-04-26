@@ -51,7 +51,7 @@ namespace DosDebugger
             return string.Format("{0} ({1:X5})", address, address.EffectiveAddress);
         }
 
-        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
+        //public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
 
         private void lvSegments_DoubleClick(object sender, EventArgs e)
         {
@@ -59,11 +59,7 @@ namespace DosDebugger
                 return;
 
             Segment segment = (Segment)lvSegments.SelectedItems[0].Tag;
-            if (NavigationRequested != null)
-            {
-                NavigationRequestedEventArgs args=new NavigationRequestedEventArgs(segment.StartAddress);
-                NavigationRequested(this, args);
-            }
+            document.Navigator.SetLocation(segment.StartAddress, this);
         }
     }
 }

@@ -59,18 +59,9 @@ namespace DosDebugger
             if (lvProcedures.SelectedIndices.Count == 1)
             {
                 Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
-                // viewModel.ActivateProcedure(proc);
-                if (NavigationRequested != null)
-                {
-                    NavigationRequestedEventArgs args = 
-                        new NavigationRequestedEventArgs(proc.EntryPoint);
-                    NavigationRequested(this, args);
-                }
+                document.Navigator.SetLocation(proc.EntryPoint, this);
             }
         }
-
-        //public EventHandler<ProcedureActivatedEventArgs> ProcedureActivated;
-        public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
     }
 
 #if false

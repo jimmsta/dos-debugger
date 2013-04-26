@@ -53,16 +53,12 @@ namespace DosDebugger
         {
             if (lvErrors.SelectedIndices.Count == 1)
             {
-                if (NavigationRequested != null)
-                {
-                    Error error = (Error)lvErrors.SelectedItems[0].Tag;
-                    NavigationRequestedEventArgs args = new NavigationRequestedEventArgs(error.Location);
-                    NavigationRequested(this, args);
-                }
+                Error error = (Error)lvErrors.SelectedItems[0].Tag;
+                document.Navigator.SetLocation(error.Location, this);
             }
         }
 
-        public EventHandler<NavigationRequestedEventArgs> NavigationRequested { get; set; }
+        //public EventHandler<NavigationRequestedEventArgs> NavigationRequested { get; set; }
 
         private void DisplayErrors(ErrorCategory category)
         {
