@@ -309,6 +309,7 @@ namespace DosDebugger
         // updated or an ActiveSegmentChanged event must be raised.
         // private ushort activeSegment;
 
+#if false
         /// <summary>
         /// Gets or sets the active segment selected in the window. A value
         /// of 0xFFFF indicates no segment is selected.
@@ -339,6 +340,7 @@ namespace DosDebugger
 #endif
             }
         }
+#endif
 
         private void cbProcedures_SelectedIndexChanged(object sender, EventArgs e)
         {

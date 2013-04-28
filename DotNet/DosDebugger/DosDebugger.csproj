@@ -145,7 +145,9 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Resources\left_circular-26.png" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Disassembler\Disassembler.csproj">
       <Project>{fe4abc64-1873-4e7d-b930-d50d2e948e1e}</Project>
@@ -159,6 +161,24 @@
       <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>
       <Name>X86Codec</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\right_circular-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\error-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\settings2-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\activity_feed-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\cancel-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\about-26.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -28,15 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ErrorWindow));
             this.lvErrors = new Util.Forms.DoubleBufferedListView();
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.btnErrors = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.btnWarnings = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnErrors = new System.Windows.Forms.ToolStripButton();
+            this.btnWarnings = new System.Windows.Forms.ToolStripButton();
             this.btnMessages = new System.Windows.Forms.ToolStripButton();
             this.toolStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -85,48 +84,45 @@
             this.toolStrip1.TabIndex = 8;
             this.toolStrip1.Text = "toolStrip1";
             // 
-            // btnErrors
-            // 
-            this.btnErrors.Checked = true;
-            this.btnErrors.CheckOnClick = true;
-            this.btnErrors.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.btnErrors.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnErrors.Image = ((System.Drawing.Image)(resources.GetObject("btnErrors.Image")));
-            this.btnErrors.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnErrors.Name = "btnErrors";
-            this.btnErrors.Size = new System.Drawing.Size(61, 23);
-            this.btnErrors.Text = "0 Errors";
-            this.btnErrors.CheckedChanged += new System.EventHandler(this.btnErrorCategory_CheckedChanged);
-            // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 26);
-            // 
-            // btnWarnings
-            // 
-            this.btnWarnings.CheckOnClick = true;
-            this.btnWarnings.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnWarnings.Image = ((System.Drawing.Image)(resources.GetObject("btnWarnings.Image")));
-            this.btnWarnings.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnWarnings.Name = "btnWarnings";
-            this.btnWarnings.Size = new System.Drawing.Size(83, 23);
-            this.btnWarnings.Text = "0 Warnings";
-            this.btnWarnings.CheckedChanged += new System.EventHandler(this.btnErrorCategory_CheckedChanged);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 26);
             // 
+            // btnErrors
+            // 
+            this.btnErrors.Checked = true;
+            this.btnErrors.CheckOnClick = true;
+            this.btnErrors.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.btnErrors.Image = global::DosDebugger.Properties.Resources.ErrorIcon;
+            this.btnErrors.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnErrors.Name = "btnErrors";
+            this.btnErrors.Size = new System.Drawing.Size(77, 23);
+            this.btnErrors.Text = "0 Errors";
+            this.btnErrors.CheckedChanged += new System.EventHandler(this.btnErrorCategory_CheckedChanged);
+            // 
+            // btnWarnings
+            // 
+            this.btnWarnings.CheckOnClick = true;
+            this.btnWarnings.Image = global::DosDebugger.Properties.Resources.WarningIcon;
+            this.btnWarnings.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnWarnings.Name = "btnWarnings";
+            this.btnWarnings.Size = new System.Drawing.Size(99, 23);
+            this.btnWarnings.Text = "0 Warnings";
+            this.btnWarnings.CheckedChanged += new System.EventHandler(this.btnErrorCategory_CheckedChanged);
+            // 
             // btnMessages
             // 
             this.btnMessages.CheckOnClick = true;
-            this.btnMessages.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.btnMessages.Image = ((System.Drawing.Image)(resources.GetObject("btnMessages.Image")));
+            this.btnMessages.Image = global::DosDebugger.Properties.Resources.MessageIcon;
             this.btnMessages.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnMessages.Name = "btnMessages";
-            this.btnMessages.Size = new System.Drawing.Size(85, 23);
+            this.btnMessages.Size = new System.Drawing.Size(101, 23);
             this.btnMessages.Text = "0 Messages";
             this.btnMessages.CheckedChanged += new System.EventHandler(this.btnErrorCategory_CheckedChanged);
             // 
