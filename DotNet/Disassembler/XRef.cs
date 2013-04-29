@@ -13,12 +13,16 @@ namespace Disassembler
     public class XRef
     {
         /// <summary>
-        /// Gets or sets the target address being referenced.
+        /// Gets or sets the target address being referenced. This may be
+        /// <code>Pointer.Invalid</code> if the target address cannot be
+        /// determined, such as in a dynamic jump or call.
         /// </summary>
         public Pointer Target { get; set; }
 
         /// <summary>
-        /// Gets or sets the source address that refers to target.
+        /// Gets or sets the source address that refers to target. This may
+        /// be <code>Pointer.Invalid</code> if the source address cannot be
+        /// determined, such as in the entry routine of a program.
         /// </summary>
         public Pointer Source { get; set; }
 
@@ -26,6 +30,21 @@ namespace Disassembler
         /// Gets or sets the type of cross-reference.
         /// </summary>
         public XRefType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the address of the associated data item. This is
+        /// only relevant if Type is NearIndexedJump or FarIndexedJump, where
+        /// DataLocation contains the address of the jump table entry.
+        /// </summary>
+        public Pointer DataLocation { get; set; }
+
+        public XRef()
+        {
+            this.Source = Pointer.Invalid;
+            this.Target = Pointer.Invalid;
+            this.DataLocation = Pointer.Invalid;
+            this.Type = XRefType.UserSpecified;
+        }
 
         public override string ToString()
         {
@@ -98,7 +117,7 @@ namespace Disassembler
         ConditionalJump,
 
         /// <summary>
-        /// A JMP instruction refers to this location.
+        /// A JMPN instruction refers to this location.
         /// </summary>
         NearJump,
 
@@ -123,16 +142,16 @@ namespace Disassembler
         /// offset to a JMPN instruction that refers to a jump-table. The
         /// location of the JMPN instruction is stored in Source.
         /// </summary>
-        NearJumpTableEntry,
+        //NearJumpTableEntry,
 
         /// <summary>
         /// A JMPN instruction refers to this location indirectly through
         /// a word-sized jump table entry. The address of the jump table
-        /// entry is stored in the DataReference field of the XRef object.
+        /// entry is stored in the DataLocation field of the XRef object.
         /// </summary>
-        //NearIndexedJump,
+        NearIndexedJump,
 
-        NearJumpTableTarget,
+        //NearJumpTableTarget,
 
 #if false
     ENTRY_FAR_JUMP_TABLE        = 8,    /* the dword at this location appears to represent

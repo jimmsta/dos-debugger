@@ -147,15 +147,18 @@ namespace Disassembler
                 {
                     XRef entry = xrefs[i];
 
-                    // If the target of this xref is dynamic, do nothing.
+                    // Process dynamic xrefs (i.e. whose Target is Invalid).
                     if (entry.Target == Pointer.Invalid)
-                        continue;
-
-                    // If this xref refers to a jump table entry, add it to
-                    // the list of jump table entries to process later.
-                    if (entry.Type == XRefType.NearJumpTableEntry)
                     {
-                        jumpTables.Add(entry);
+                        // If this xref is an indexed jump, add it to the list
+                        // of jump table entries to process later.
+                        if (entry.Type == XRefType.NearIndexedJump)
+                        {
+                            jumpTables.Add(entry);
+                            continue;
+                        }
+
+                        // Skip other types of dynamic xrefs.
                         continue;
                     }
 
@@ -178,9 +181,9 @@ namespace Disassembler
                         continue;
                     }
 
-                    // If this xref is NearJumpTableTarget, process the
+                    // If this xref is an indexed jump, process the
                     // procedure again.
-                    if (entry.Type == XRefType.NearJumpTableTarget)
+                    if (entry.Type == XRefType.NearIndexedJump)
                     {
                         // Find out which procedure entry.Source belongs to.
                         Procedure proc = image[entry.Source].Procedure;
@@ -300,10 +303,10 @@ namespace Disassembler
                 {
                     continue;
                 }
-                if (entry.Type == XRefType.NearJumpTableEntry)
-                {
-                    continue;
-                }
+                //if (entry.Type == XRefType.NearJumpTableEntry)
+                //{
+                //    continue;
+                //}
 
                 // Process this code block assuming no jumps are taken and
                 // function calls and interrupts all return.
@@ -328,7 +331,8 @@ namespace Disassembler
 
         private void ProcessJumpTableEntry(XRef entry, ICollection<XRef> xrefs)
         {
-            if (entry.Type != XRefType.NearJumpTableEntry)
+            if (entry.Type != XRefType.NearIndexedJump ||
+                entry.Target != Pointer.Invalid)
                 throw new ArgumentException("xref type mismatch.");
 
             // If the target refers to a jump table entry, we delay its
@@ -339,9 +343,9 @@ namespace Disassembler
             // Process this one. If the jump target is already analyzed, it
             // probably means the jump table entry is fake, i.e. the jump
             // table ends one entry before.
-            int b = PointerToOffset(entry.Target);
+            int b = PointerToOffset(entry.DataLocation);
             if (image[b].Type != ByteType.Unknown ||
-                image[b + 1].Type != ByteType.Unknown) 
+                image[b + 1].Type != ByteType.Unknown)
                 return;
 
             // If the jump target is outside the range of the current segment
@@ -355,22 +359,26 @@ namespace Disassembler
             proc.DataRange.AddInterval(b, b + 2);
             proc.ByteRange.AddInterval(b, b + 2);
 
-            // Mark the memory location specified by the jump table
-            // entry as data.
+            // Mark the memory location specified by the jump table entry
+            // as data.
+#if false
+            image.CreatePiece(entry.DataLocation, entry.DataLocation + 2, ByteType.Data);
+#else
             image[b] = new ByteProperties
             {
                 Type = ByteType.Data,
                 IsLeadByte = true,
-                Address = entry.Target,
+                Address = entry.DataLocation,
                 Procedure = proc,
             };
             image[b + 1] = new ByteProperties
             {
                 Type = ByteType.Data,
                 IsLeadByte = false,
-                Address = entry.Target + 1,
+                Address = entry.DataLocation + 1,
                 Procedure = proc,
             };
+#endif
 
             // Read the jump offset.
             ushort jumpOffset = image.GetUInt16(b);
@@ -379,15 +387,16 @@ namespace Disassembler
             // is valid. If not, we should stop immediately.
             // This whole jump table thing needs to be improved.
 
-            // Add a xref from the jump table entry to the jump target.
+            // Add a xref from the JMP instruction to the jump target.
             xrefs.Add(new XRef
             {
-                Source = entry.Target,
+                Source = entry.Source,
                 Target = new Pointer(entry.Source.Segment, jumpOffset),
-                Type = XRefType.NearJumpTableTarget
+                DataLocation = entry.DataLocation,
+                Type = XRefType.NearIndexedJump
             });
 
-            // Add a xref from the JMP instruction to the next jump
+            // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
             // BUG: We actually should do this in the handler for the
             // NearJumpTableTarget xref, and only add this if that
@@ -395,8 +404,9 @@ namespace Disassembler
             xrefs.Add(new XRef
             {
                 Source = entry.Source,
-                Target = entry.Target + 2,
-                Type = XRefType.NearJumpTableEntry
+                Target = Pointer.Invalid,
+                DataLocation = entry.DataLocation + 2,
+                Type = XRefType.NearIndexedJump
             });
         }
 
@@ -524,7 +534,7 @@ namespace Disassembler
                     if (xref.Type == XRefType.ConditionalJump ||
                         xref.Type == XRefType.NearJump ||
                         xref.Type == XRefType.FarJump ||
-                        xref.Type == XRefType.NearJumpTableEntry)
+                        xref.Type == XRefType.NearIndexedJump)
                         break;
                 }
 
@@ -669,19 +679,16 @@ namespace Disassembler
                     return new XRef
                     {
                         Source = start,
-                        Target = new Pointer(start.Segment, (UInt16)opr.Displacement),
-                        Type = XRefType.NearJumpTableEntry
+                        Target = Pointer.Invalid,
+                        DataLocation = new Pointer(start.Segment, (UInt16)opr.Displacement),
+                        Type = XRefType.NearIndexedJump
                     };
                 }
             }
 
             // Other jump/call targets that we cannot recognize.
-            errors.Add(new Error(
-                start, 
-                string.Format(
-                    "Cannot determine target of {0} instruction.",
-                    instruction.Operation.ToString().ToUpperInvariant()),
-                ErrorCategory.Message));
+            AddError(start, ErrorCategory.Message,
+                "Cannot determine target of {0} instruction.", op);
 
             return new XRef
             {
