@@ -49,6 +49,11 @@ namespace DosDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
+                    if (b.BasicBlock != null && b.BasicBlock.Start == b.Address)
+                    {
+                        rows.Add(new LabelListingRow(i, b.BasicBlock));
+                    }
+
                     Instruction insn = dasm.Image.DecodeInstruction(b.Address);
                     rows.Add(new CodeListingRow(i, insn, dasm.Image.GetBytes(i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
@@ -211,15 +216,15 @@ namespace DosDebugger
         {
             ListViewItem item = new ListViewItem();
             item.Text = this.Location.ToString();
+
             byte[] data = this.Opcode;
-            if (data.Length > 6)
-            {
+            if (data == null)
+                item.SubItems.Add("");
+            else if (data.Length > 6)
                 item.SubItems.Add(FormatBinary(data, 0, 6) + "...");
-            }
             else
-            {
                 item.SubItems.Add(FormatBinary(data, 0, data.Length));
-            }
+
             item.SubItems.Add(this.Text);
             return item;
         }
@@ -388,6 +393,41 @@ namespace DosDebugger
         {
             ListViewItem item = base.CreateViewItem();
             item.ForeColor = Color.Red;
+            return item;
+        }
+    }
+
+    class LabelListingRow : ListingRow
+    {
+        private BasicBlock block;
+
+        public LabelListingRow(int index, BasicBlock block)
+            : base(index)
+        {
+            this.block = block;
+        }
+
+        public override Pointer Location
+        {
+            get { return block.Start; }
+        }
+
+        public override byte[] Opcode
+        {
+            get { return null; }
+        }
+
+        public override string Text
+        {
+            get { return string.Format("loc_{0:X5}", block.Start.EffectiveAddress); }
+        }
+
+        public override ListViewItem CreateViewItem()
+        {
+            ListViewItem item = base.CreateViewItem();
+            //item.UseItemStyleForSubItems = true;
+            //item.SubItems[2].ForeColor = Color.Blue;
+            item.ForeColor = Color.Blue;
             return item;
         }
     }

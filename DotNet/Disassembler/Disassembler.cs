@@ -414,21 +414,21 @@ namespace Disassembler
         {
             Pointer pos = start.Target;
 
+            // Check if we are running into the middle of code or data. This
+            // can only happen when we process the first instruction in the
+            // block.
+            if (image[pos].Type != ByteType.Unknown && !image[pos].IsLeadByte)
+            {
+                errors.Add(new Error(pos, string.Format(
+                    "XRef target is in the middle of code/data (referred from {0})",
+                    start.Source)));
+                return null;
+            }
+
             // Check if this location is already analyzed as code.
             if (image[pos].Type == ByteType.Code)
             {
                 ByteProperties b = image[pos];
-
-                // Check if we are running into the middle of code. This may
-                // only happen when we process the first instruction in the
-                // block.
-                if (!b.IsLeadByte)
-                {
-                    errors.Add(new Error(pos, string.Format(
-                        "Ran into the middle of code when processing block {0} referred from {1}",
-                        start.Target, start.Source)));
-                    return null;
-                }
 
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
@@ -439,6 +439,15 @@ namespace Disassembler
                 }
                 else
                 {
+                    if (b.BasicBlock.Start.Segment != pos.Segment)
+                    {
+                        errors.Add(new Error(pos, string.Format(
+                            "Ran into the middle of a block [{0},{1}) from another segment " +
+                            "when processing block {2} referred from {3}",
+                            b.BasicBlock.Start, b.BasicBlock.End,
+                            start.Target, start.Source)));
+                        return null;
+                    }
                     BasicBlock newBlock = b.BasicBlock.Split(pos);
                     return newBlock;
                 }
@@ -451,20 +460,26 @@ namespace Disassembler
                 Instruction insn;
 
                 // Decode an instruction at this location.
-                string errMsg;
-                DecodeResult ret = TryDecodeInstruction(pos, out insn, out errMsg);
-                if (ret == DecodeResult.BadInstruction)
+                try
                 {
-                        errors.Add(new Error(pos, "Bad instruction: " + errMsg));
+                    insn = image.DecodeInstruction(pos);
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(new Error(pos, "Bad instruction: " + ex.Message));
                     break;
                 }
-                else if (ret != DecodeResult.OK)
+
+                // Create a code piece for this instruction.
+                if (!image.CheckByteType(pos, pos + insn.EncodedLength, ByteType.Unknown))
                 {
                     errors.Add(new Error(pos, string.Format(
-                            "Ran into {0} when processing block {1} referred from {2}",
-                            ret, start.Target, start.Source)));
+                        "Ran into the middle of code when processing block {0} referred from {1}",
+                        start.Target, start.Source)));
                     break;
                 }
+
+                Piece piece = image.CreatePiece(pos, pos + insn.EncodedLength, ByteType.Code);
 
                 // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
                 // if pos.off + count > 0xFFFF. This is probably not intended but
@@ -513,119 +528,11 @@ namespace Disassembler
                     break;
                 }
             }
-            return image.CreateBasicBlock(start.Target, pos);
-        }
 
-        /// <summary>
-        /// Represents the result of trying to decode an instruction at a
-        /// given location.
-        /// </summary>
-        enum DecodeResult
-        {
-            /// <summary>
-            /// The instruction is successfully decoded.
-            /// </summary>
-            OK = 0,
-
-            /// <summary>
-            /// The byte is already analyzed and is marked as the first byte
-            /// of an instruction.
-            /// </summary>
-            AlreadyAnalyzed,
-
-            /// <summary>
-            /// The bytes at the given range do not form a valid instruction.
-            /// </summary>
-            BadInstruction,
-
-            /// <summary>
-            /// The byte, or an instruction if decoded, runs into bytes
-            /// previously analyzed and marked as data.
-            /// </summary>
-            UnexpectedData,
-
-            /// <summary>
-            /// The byte, or an instruction if decoded, runs into bytes
-            /// previously analyzed and marked as code. However, the byte
-            /// itself is not previously analyzed to be the start of an
-            /// instruction.
-            /// </summary>
-            UnexpectedCode,
-        }
-
-        /// <summary>
-        /// Try decode an instruction at the given location.
-        /// </summary>
-        /// <param name="start">The address to decode.</param>
-        /// <param name="instruction">On return, stores the decoded
-        /// instruction if successful, or null if failed.</param>
-        /// <returns>One of the status codes.</returns>
-        DecodeResult TryDecodeInstruction(Pointer start, out Instruction instruction, out string errMsg)
-        {
-            errMsg = null;
-            instruction = null;
-            int b = PointerToOffset(start);
-
-            // TODO: we actually need to make sure that the full instruction
-            // is within bound, not just the first byte.
-            if (b >= image.Length)
-                return DecodeResult.BadInstruction;
-
-            // If the byte is already analyzed, check if there's a conflict.
-            if (image[b].Type != ByteType.Unknown)
-            {
-                // If the byte to analyze is already marked as code, check 
-                // that it was marked as the lead byte of an instruction. 
-                // Otherwise, return code conflict.
-                if (image[b].Type == ByteType.Code)
-                {
-                    if (image[b].IsLeadByte)
-                        return DecodeResult.AlreadyAnalyzed;
-                    else
-                        return DecodeResult.UnexpectedCode;
-                }
-
-                // Return data conflict.
-                return DecodeResult.UnexpectedData;
-            }
-
-            // Try decode an instruction at this location.
-            try
-            {
-                instruction = image.DecodeInstruction(start);
-            }
-            catch (Exception ex)
-            {
-                errMsg = ex.Message;
-                return DecodeResult.BadInstruction;
-            }
-
-            // Check that the instruction covers only unprocessed bytes.
-            // If any byte in the area is already processed, return an error.
-            for (int j = 1; j < instruction.EncodedLength; j++)
-            {
-                if (image[b + j].Type != ByteType.Unknown)
-                {
-                    return image[b + j].Type == ByteType.Code ?
-                        DecodeResult.UnexpectedCode : DecodeResult.UnexpectedData;
-                }
-            }
-
-            // Mark the bytes covered by the instruction as code.
-#if true
-            image.CreatePiece(start, start + instruction.EncodedLength, ByteType.Code);
-#else
-            for (int j = 0; j < instruction.EncodedLength; j++)
-            {
-                image[b + j] = new ByteProperties
-                {
-                    Type = ByteType.Code,
-                    IsLeadByte = (j == 0),
-                    Address = start + j,
-                };
-            }
-#endif
-            return DecodeResult.OK;
+            if (pos.EffectiveAddress > start.Target.EffectiveAddress)
+                return image.CreateBasicBlock(start.Target, pos);
+            else
+                return null;
         }
 
         /// <summary>

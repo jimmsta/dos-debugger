@@ -210,8 +210,11 @@ namespace X86Codec
                 (size == CpuSize.Use128Bit) ? "DQWORD" : "";
 
             StringBuilder s = new StringBuilder();
-            s.Append(prefix);
-            s.Append(" PTR ");
+            if (prefix != "")
+            {
+                s.Append(prefix);
+                s.Append(" PTR ");
+            }
 
             if (Segment != Register.None)
             {

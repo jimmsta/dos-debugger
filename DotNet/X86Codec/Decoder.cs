@@ -813,8 +813,8 @@ namespace X86Codec
         {
             if (context.CpuMode == CpuMode.X64Mode)
                 throw new NotSupportedException();
-            if (operandSize == CpuSize.Default)
-                throw new ArgumentException("operandSize is not specified.");
+            //if (operandSize == CpuSize.Default)
+            //    throw new ArgumentException("operandSize is not specified.");
             if (context.AddressSize != CpuSize.Use16Bit)
                 throw new NotSupportedException("32-bit addressing mode is not supported.");
 
@@ -1071,11 +1071,14 @@ namespace X86Codec
                         (context.OperandSize == CpuSize.Use16Bit) ?
                         CpuSize.Use16Bit : CpuSize.Use32Bit);
 
+                case O.M_: // r/m must refer to memory; contains void pointer
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Default, context);
+
                 case O.Mp: // r/m must refer to memory; contains far pointer
                     // seg:ptr of 32, 48, or 80 bits.
                     if (context.OperandSize != CpuSize.Use16Bit)
                         throw new NotSupportedException();
-                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use16Bit, context);
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use32Bit, context);
 
                 case O.Mb: // r/m refers to memory; byte
                     return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use8Bit, context);
@@ -1256,6 +1259,13 @@ namespace X86Codec
             Ib, Iv, Iw, Iz,
             Jb, Jz,
             Ma, Mb, Md, Mp, Mw, Mq,
+
+            /// <summary>
+            /// The ModR/M byte refers to a memory location. Only the memory
+            /// address is used; the type of the operand doesn't matter. This
+            /// is used with LEA instruction.
+            /// </summary>
+            M_,
 
             /// <summary>
             /// The ModR/M byte refers to a memory location containing 14 
@@ -1495,7 +1505,7 @@ namespace X86Codec
             /* 8A */ new Op(Operation.MOV, O.Gb, O.Eb),
             /* 8B */ new Op(Operation.MOV, O.Gv, O.Ev),
             /* 8C */ new Op(Operation.MOV, O.Ev, O.Sw),
-            /* 8D */ new Op(Operation.LEA, O.Gv, O.Mp), /* ??? missing TBD */
+            /* 8D */ new Op(Operation.LEA, O.Gv, O.M_), /* ??? missing TBD */
             /* 8E */ new Op(Operation.MOV, O.Sw, O.Ew),
             /* 8F */ new Op(OpcodeExtension.Ext1A), /* POP(d64) Ev */
 

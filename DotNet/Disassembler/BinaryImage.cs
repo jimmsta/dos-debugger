@@ -155,6 +155,27 @@ namespace Disassembler
             return (UInt16)(image[offset] | (image[offset + 1] << 8));
         }
 
+        public bool CheckByteType(Pointer start, Pointer end, ByteType type)
+        {
+            int pos1 = PointerToOffset(start);
+            int pos2 = PointerToOffset(end);
+            
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (attr[i].Type != type)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Groups a continuous range of bytes as one piece that must be
+        /// accessed as a unit.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public Piece CreatePiece(Pointer start, Pointer end, ByteType type)
         {
             if (type != ByteType.Code &&
@@ -170,17 +191,12 @@ namespace Disassembler
             int pos2 = PointerToOffset(end);
             if (pos1 < 0 || pos1 >= image.Length)
                 throw new ArgumentOutOfRangeException("start");
-            if (pos2 < 0 || pos2 >= image.Length)
+            if (pos2 <= pos1 || pos2 >= image.Length)
                 throw new ArgumentOutOfRangeException("end");
-            if (pos1 >= pos2)
-                throw new ArgumentException("start must be smaller than end.");
 
             // Verify that [start, end) is unoccupied.
-            for (int i = pos1; i < pos2; i++)
-            {
-                if (attr[i].Type != ByteType.Unknown)
-                    throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
-            }
+            if (!CheckByteType(start, end, ByteType.Unknown))
+                throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
 
             // Create a Piece object for this range of bytes.
             Piece piece = new Piece(this, start, end, type);
@@ -218,7 +234,7 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("end");
 
             // Check that the basic block covers consecutive Piece objects.
-            int i=pos1;
+            int i = pos1;
             while (i < pos2)
             {
                 if (!attr[i].IsLeadByte ||
