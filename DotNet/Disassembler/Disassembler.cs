@@ -303,9 +303,10 @@ namespace Disassembler
 
                 // Process this code block assuming no jumps are taken and
                 // function calls and interrupts all return.
-                int count = AnalyzeCodeBlock(entry, localXrefs);
-                if (count > 0)
+                BasicBlock block = AnalyzeBasicBlock(entry, localXrefs);
+                if (block != null)
                 {
+                    int count = block.Length;
                     int baseOffset = PointerToOffset(entry.Target);
                     proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
                     proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
@@ -396,22 +397,55 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Analyzes a continuous block of code until end-of-input, analyzed
+        /// Analyzes a continuous sequence of instructions that form a basic
+        /// block. The termination conditions include end-of-input, analyzed
         /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT. Conditional jumps and calls are stored but they do not
-        /// terminate the block.
+        /// HLT.
         /// </summary>
-        /// <param name="start">Address of first instruction in the block.
-        /// </param>
+        /// <param name="start">Address to begin analysis.</param>
         /// <param name="jumps">Jump instructions are added to this list.</param>
         /// <param name="calls">Call instructions are added to this list.</param>
         /// <param name="dynamicJumps">Jump instructions with a dynamic target
         /// are added to this list.</param>
         /// <returns>The number of bytes successfully analyzed as code.</returns>
-        private int AnalyzeCodeBlock(XRef start, ICollection<XRef> xrefs)
+        // TODO: should be roll-back the entire basic block if we 
+        // encounters an error on our way? maybe not.
+        private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Pointer pos = start.Target;
-            int count = 0;
+
+            // Check if this location is already analyzed as code.
+            if (image[pos].Type == ByteType.Code)
+            {
+                ByteProperties b = image[pos];
+
+                // Check if we are running into the middle of code. This may
+                // only happen when we process the first instruction in the
+                // block.
+                if (!b.IsLeadByte)
+                {
+                    errors.Add(new Error(pos, string.Format(
+                        "Ran into the middle of code when processing block {0} referred from {1}",
+                        start.Target, start.Source)));
+                    return null;
+                }
+
+                // Now we are already covered by a basic block. If the
+                // basic block *starts* from this address, do nothing.
+                // Otherwise, split the basic block into two.
+                if (b.BasicBlock.Start.EffectiveAddress == pos.EffectiveAddress)
+                {
+                    return null;
+                }
+                else
+                {
+                    BasicBlock newBlock = b.BasicBlock.Split(pos);
+                    return newBlock;
+                }
+            }
+
+            // Analyze each instruction in sequence until we encounter
+            // analyzed code, flow instruction, or an error condition.
             while (true)
             {
                 Instruction insn;
@@ -419,30 +453,36 @@ namespace Disassembler
                 // Decode an instruction at this location.
                 string errMsg;
                 DecodeResult ret = TryDecodeInstruction(pos, out insn, out errMsg);
-                switch (ret)
+                if (ret == DecodeResult.BadInstruction)
                 {
-                    case DecodeResult.AlreadyAnalyzed:
-                        return count;
-                    case DecodeResult.UnexpectedData:
-                    case DecodeResult.UnexpectedCode:
-                        errors.Add(new Error(pos, string.Format(
+                        errors.Add(new Error(pos, "Bad instruction: " + errMsg));
+                    break;
+                }
+                else if (ret != DecodeResult.OK)
+                {
+                    errors.Add(new Error(pos, string.Format(
                             "Ran into {0} when processing block {1} referred from {2}",
                             ret, start.Target, start.Source)));
-                        return count;
-                    case DecodeResult.BadInstruction:
-                        errors.Add(new Error(pos, "Bad instruction: " + errMsg));
-                        return count;
+                    break;
                 }
-                count += insn.EncodedLength;
+
+                // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
+                // if pos.off + count > 0xFFFF. This is probably not intended but
+                // technically allowed. So we allow for this for the moment.
+                if (pos.Offset + insn.EncodedLength > 0xFFFF)
+                {
+                    errors.Add(new Error(pos, string.Format(
+                        "CS:IP wrapped when processing block {1} referred from {2}",
+                        start.Target, start.Source)));
+                    break;
+                }
+                pos += insn.EncodedLength;
 
                 // Check if this instruction terminates the block.
-                switch (insn.Operation)
-                {
-                    case Operation.RET:
-                    case Operation.RETF:
-                    case Operation.HLT:
-                        return count;
-                }
+                if (insn.Operation == Operation.RET ||
+                    insn.Operation == Operation.RETF ||
+                    insn.Operation == Operation.HLT)
+                    break;
 
                 // Analyze BCJ (branch, jump, call) instructions. Such an
                 // instruction will create a cross reference.
@@ -450,26 +490,30 @@ namespace Disassembler
                 if (xref != null)
                 {
                     xrefs.Add(xref);
-                    switch (xref.Type)
+                    if (xref.Type == XRefType.ConditionalJump)
                     {
-                        case XRefType.FunctionCall:
-                        case XRefType.ConditionalJump:
-                            break;
-                        case XRefType.UnconditionalJump:
-                        case XRefType.NearJumpTableEntry:
-                            return count;
-                        default:
-                            throw new ArgumentException("Unexpected.");
+                        xrefs.Add(new XRef
+                        {
+                            Type = XRefType.ConditionalJump,
+                            Source = insn.Location,
+                            Target = pos
+                        });
                     }
+                    if (xref.Type == XRefType.ConditionalJump ||
+                        xref.Type == XRefType.UnconditionalJump ||
+                        xref.Type == XRefType.NearJumpTableEntry)
+                        break;
                 }
 
-                // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
-                // if pos.off + count > 0xFFFF. This is probably not intended but
-                // technically allowed. So we allow for this for the moment.
-                if (pos.Offset + insn.EncodedLength > 0xFFFF)
-                    throw new InvalidOperationException("Instruction wrapped!");
-                pos += insn.EncodedLength;
+                // If the new location is already analyzed as code, we are
+                // done.
+                if (image[pos].Type == ByteType.Code)
+                {
+                    System.Diagnostics.Debug.Assert(image[pos].IsLeadByte);
+                    break;
+                }
             }
+            return image.CreateBasicBlock(start.Target, pos);
         }
 
         /// <summary>
@@ -568,6 +612,9 @@ namespace Disassembler
             }
 
             // Mark the bytes covered by the instruction as code.
+#if true
+            image.CreatePiece(start, start + instruction.EncodedLength, ByteType.Code);
+#else
             for (int j = 0; j < instruction.EncodedLength; j++)
             {
                 image[b + j] = new ByteProperties
@@ -577,7 +624,7 @@ namespace Disassembler
                     Address = start + j,
                 };
             }
-
+#endif
             return DecodeResult.OK;
         }
 

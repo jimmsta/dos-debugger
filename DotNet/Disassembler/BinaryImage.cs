@@ -154,6 +154,89 @@ namespace Disassembler
 
             return (UInt16)(image[offset] | (image[offset + 1] << 8));
         }
+
+        public Piece CreatePiece(Pointer start, Pointer end, ByteType type)
+        {
+            if (type != ByteType.Code &&
+                type != ByteType.Data &&
+                type != ByteType.Padding)
+                throw new ArgumentException("type is invalid.");
+
+            if (start.Segment != end.Segment)
+                throw new ArgumentException("start and end must be in the same segment.");
+
+            // Verify that [start, end) is within the image.
+            int pos1 = PointerToOffset(start);
+            int pos2 = PointerToOffset(end);
+            if (pos1 < 0 || pos1 >= image.Length)
+                throw new ArgumentOutOfRangeException("start");
+            if (pos2 < 0 || pos2 >= image.Length)
+                throw new ArgumentOutOfRangeException("end");
+            if (pos1 >= pos2)
+                throw new ArgumentException("start must be smaller than end.");
+
+            // Verify that [start, end) is unoccupied.
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (attr[i].Type != ByteType.Unknown)
+                    throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
+            }
+
+            // Create a Piece object for this range of bytes.
+            Piece piece = new Piece(this, start, end, type);
+
+            // Mark the byte range as 'type' and associate it with the Piece
+            // object.
+            for (int i = pos1; i < pos2; i++)
+            {
+                attr[i].Address = start + (i - pos1);
+                attr[i].IsLeadByte = (i == pos1);
+                attr[i].Type = type;
+                attr[i].Piece = piece;
+            }
+
+            return piece;
+        }
+
+        /// <summary>
+        /// Creates a basic block over the given byte range. The basic block
+        /// must cover consecutive Piece objects.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        public BasicBlock CreateBasicBlock(Pointer start, Pointer end)
+        {
+            if (start.Segment != end.Segment)
+                throw new ArgumentException();
+
+            int pos1 = PointerToOffset(start);
+            int pos2 = PointerToOffset(end);
+            if (pos1 < 0 || pos1 >= image.Length)
+                throw new ArgumentOutOfRangeException("start");
+            if (pos2 <= pos1 || pos2 >= image.Length)
+                throw new ArgumentOutOfRangeException("end");
+
+            // Check that the basic block covers consecutive Piece objects.
+            int i=pos1;
+            while (i < pos2)
+            {
+                if (!attr[i].IsLeadByte ||
+                    attr[i].Piece == null)
+                    throw new ArgumentException("Some bytes in the basic block are not analyzed.");
+
+                i += attr[i].Piece.Length;
+            }
+            if (i != pos2)
+                throw new ArgumentException();
+
+            BasicBlock block = new BasicBlock(this, start, end);
+            for (i = pos1; i < pos2; i++)
+            {
+                attr[i].BasicBlock = block;
+            }
+            return block;
+        }
     }
 #endif
 
@@ -178,10 +261,14 @@ namespace Disassembler
         /// </summary>
         public Pointer Address { get; internal set; }
 
+        public BasicBlock BasicBlock { get; internal set; }
+
         /// <summary>
         /// Gets or sets the procedure that owns this byte.
         /// </summary>
         public Procedure Procedure { get; internal set; }
+
+        public Piece Piece { get; internal set; }
 
         public ByteProperties()
         {
@@ -323,4 +410,159 @@ namespace Disassembler
             return string.Format("{0} - {1}", StartAddress, EndAddress);
         }
     }
+
+    /// <summary>
+    /// Represents an instruction or data item that takes up a continous range
+    /// of bytes in a binary image.
+    /// </summary>
+    public class Piece
+    {
+        //private BinaryImage image;
+        public Pointer Start { get; private set; }
+        public Pointer End { get; private set; }
+        public ByteType Type { get; private set; }
+        public int Length
+        {
+            get { return End - Start; }
+        }
+
+        internal Piece(BinaryImage image, Pointer start, Pointer end, ByteType type)
+        {
+            this.Start = start;
+            this.End = end;
+            this.Type = type;
+        }
+    }
+
+    /// <summary>
+    /// Represents a basic block of code.
+    /// </summary>
+    /// <remarks>
+    /// A basic block is a continuous sequence of instructions such that in a
+    /// well-behaved program, if any of these instructions is executed, then
+    /// all the rest instructions must be executed.
+    /// 
+    /// For example, a basic block may begin with an instruction that is the
+    /// target of a JMP instruction, continue execution for a few 
+    /// instructions, and end with another JMP instruction.
+    /// 
+    /// In a control flow graph, each basic block can be represented by a
+    /// node, and the control flow can be expressed as directed edges linking
+    /// these nodes.
+    /// 
+    /// For the purpose in our application, we do NOT terminate a basic block
+    /// when we encounter a CALL instruction. This has the benefit that the
+    /// resulting control flow graph won't have too many nodes that merely
+    /// call another function. 
+    /// </remarks>
+    public class BasicBlock
+    {
+        private BinaryImage image;
+        private Pointer start;
+        private Pointer end;
+
+        /// <summary>
+        /// Gets the start address of the basic block.
+        /// </summary>
+        public Pointer Start
+        {
+            get { return start; }
+            private set { this.start = value; }
+        }
+
+        /// <summary>
+        /// Gets the end address of the basic block.
+        /// </summary>
+        public Pointer End
+        {
+            get{return end;}
+            private set { this.end = value; }
+        }
+
+        public int Length
+        {
+            get { return end.EffectiveAddress - start.EffectiveAddress; }
+        }
+
+        internal BasicBlock(BinaryImage image, Pointer start, Pointer end)
+        {
+            this.image = image;
+            this.start = start;
+            this.end = end;
+        }
+
+#if true
+        /// <summary>
+        /// Splits the basic block into two at the given location.
+        /// </summary>
+        /// <param name="location"></param>
+        internal BasicBlock Split(Pointer location)
+        {
+            if (location.Segment != start.Segment)
+                throw new ArgumentException("location must be in the block's segment.", "location");
+            if (location.EffectiveAddress <= start.EffectiveAddress ||
+                location.EffectiveAddress >= end.EffectiveAddress)
+                throw new ArgumentException("location must be within [start, end).");
+            if (!image[location].IsLeadByte)
+                throw new ArgumentException("location must be at piece boundary.");
+
+            // Create a new block that covers [location, end).
+            BasicBlock newBlock = new BasicBlock(image, location, end);
+
+            // Update the BasicBlock property of bytes in the second block.
+            int pos1 = image.PointerToOffset(location);
+            int pos2 = image.PointerToOffset(end);
+            for (int i = pos1; i < pos2; i++)
+            {
+                image[i].BasicBlock = newBlock;
+            }
+
+            // Update the end position of this block.
+            this.end = location;
+
+            return newBlock;
+        }
+#endif
+
+#if false
+        internal BasicBlock(Pointer start, Pointer end)
+        {
+            if (start.Segment != end.Segment)
+                throw new ArgumentException("A BasicBlock must have the same segment value.");
+
+            this.Start = start;
+            this.End = end;
+        }
+#endif
+    }
+
+#if false
+    /// <summary>
+    /// Specifies a location in a binary image, which may be referenced either
+    /// by its SEG:OFF address or by its relative position (byte offset) from
+    /// the start of the image.
+    /// </summary>
+    public struct Location
+    {
+        private BinaryImage image;
+        private Pointer address;
+
+        public Pointer Address
+        {
+            get { return this.address; }
+            set { this.address = value; }
+        }
+
+        public int Position
+        {
+            get { return address.EffectiveAddress - image.BaseAddress.EffectiveAddress; }
+        }
+
+        public Location(BinaryImage image, Pointer address)
+        {
+            this.image = image;
+            this.address = address;
+        }
+    }
+#endif
 }

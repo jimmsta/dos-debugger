@@ -139,6 +139,19 @@ namespace DosDebugger
         private void lvListing_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             e.Item = viewModel.CreateViewItem(viewportBeginIndex + e.ItemIndex);
+            //System.Diagnostics.Debug.WriteLine("RetrieveVirtualItem");
+        }
+
+        /// <summary>
+        /// Updates the location of the navigation object to the selected
+        /// item.
+        /// </summary>
+        private void UpdateLocation()
+        {
+            if (document != null)
+            {
+                //document.Navigator.SetLocation(
+            }
         }
 
         private void contextMenuListing_Opening(object sender, CancelEventArgs e)
@@ -200,11 +213,47 @@ namespace DosDebugger
         }
 
         // TODO: what should we do if the navigation target is out of the current sub?
-        public bool Navigate(Pointer target)
+
+        /// <summary>
+        /// Navigates to the given address. This function does not raise the
+        /// LocationChanged event.
+        /// </summary>
+        /// <param name="target">The address to navigate to.</param>
+        /// <returns></returns>
+        public void Navigate(Pointer target)
         {
-            return Navigate(target, true, true);
+            // Navigate(target, true, true);
+            if (viewModel.Rows.Count == 0)
+                return;
+
+            int rowIndex = viewModel.FindRowIndex(target);
+            activeRowIndex = rowIndex;
+            UpdateScope();
+
+            if (rowIndex < viewportBeginIndex || rowIndex >= viewportEndIndex)
+            {
+                throw new NotImplementedException();
+            }
+
+            ListViewItem item = lvListing.Items[rowIndex - viewportBeginIndex];
+
+            item.Selected = true;
+            item.Focused = true;
+
+            //if (scrollToTop)
+            //    item.ScrollToTop();
+            //else
+                item.EnsureVisible();
+
+            //if (setFocus)
+                item.ListView.Focus();
+
+            // Notify the navigation controller.
+            //document.Navigator.SetLocation(target, this);
+            // TBD: navigation doesn't work in listing window yet.
         }
 
+#if false
         // TODO: what should we do if the navigation target is out of the current sub?
         /// <summary>
         /// Navigates to the given address. This also updates the current
@@ -247,6 +296,7 @@ namespace DosDebugger
 
             return true;
         }
+#endif
 
         //public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
 
@@ -347,6 +397,7 @@ namespace DosDebugger
             if (cbProcedures.SelectedIndex < 0)
                 return;
 
+#if false
             ProcedureItem item = (ProcedureItem)cbProcedures.SelectedItem;
 
             // Display only the rows that belong to this procedure.
@@ -356,6 +407,7 @@ namespace DosDebugger
             // this may not be the first instruction in the procedure's
             // range, though it usually is.
             Navigate(item.Procedure.EntryPoint, false, true);
+#endif
         }
 
         private void btnViewScope_DropDownOpening(object sender, EventArgs e)
