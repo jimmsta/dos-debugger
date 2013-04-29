@@ -133,7 +133,7 @@ namespace Disassembler
             {
                 Target = start,
                 Source = Pointer.Invalid,
-                Type = XRefType.FunctionCall,
+                Type = XRefType.FarCall,
             });
 
             List<XRef> jumpTables = new List<XRef>();
@@ -161,7 +161,8 @@ namespace Disassembler
 
                     // If this xref is a function call, analyze the function
                     // if the entry point has not yet analyzed yet.
-                    if (entry.Type == XRefType.FunctionCall)
+                    if (entry.Type == XRefType.NearCall ||
+                        entry.Type == XRefType.FarCall)
                     {
                         if (!procedures.ContainsKey(PointerToOffset(entry.Target)))
                         {
@@ -294,8 +295,11 @@ namespace Disassembler
 
                 // Skip dynamic xrefs, function calls, and jump tables.
                 if (entry.Target == Pointer.Invalid ||
-                    entry.Type == XRefType.FunctionCall)
+                    entry.Type == XRefType.NearCall ||
+                    entry.Type == XRefType.FarCall)
+                {
                     continue;
+                }
                 if (entry.Type == XRefType.NearJumpTableEntry)
                 {
                     continue;
@@ -457,9 +461,8 @@ namespace Disassembler
             // analyzed code, flow instruction, or an error condition.
             while (true)
             {
-                Instruction insn;
-
                 // Decode an instruction at this location.
+                Instruction insn;
                 try
                 {
                     insn = image.DecodeInstruction(pos);
@@ -482,8 +485,7 @@ namespace Disassembler
                 Piece piece = image.CreatePiece(pos, pos + insn.EncodedLength, ByteType.Code);
 
                 // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
-                // if pos.off + count > 0xFFFF. This is probably not intended but
-                // technically allowed. So we allow for this for the moment.
+                // if pos.off + count > 0xFFFF. This is probably not intended.
                 if (pos.Offset + insn.EncodedLength > 0xFFFF)
                 {
                     errors.Add(new Error(pos, string.Format(
@@ -505,6 +507,9 @@ namespace Disassembler
                 if (xref != null)
                 {
                     xrefs.Add(xref);
+
+                    // If the instruction is a conditional jump, add xref to
+                    // the 'no-jump' branch.
                     if (xref.Type == XRefType.ConditionalJump)
                     {
                         xrefs.Add(new XRef
@@ -514,14 +519,18 @@ namespace Disassembler
                             Target = pos
                         });
                     }
+
+                    // Finish basic block unless this is a CALL instruction.
                     if (xref.Type == XRefType.ConditionalJump ||
-                        xref.Type == XRefType.UnconditionalJump ||
+                        xref.Type == XRefType.NearJump ||
+                        xref.Type == XRefType.FarJump ||
                         xref.Type == XRefType.NearJumpTableEntry)
                         break;
                 }
 
-                // If the new location is already analyzed as code, we are
-                // done.
+                // If the new location is already analyzed as code, create a
+                // control-flow edge from the previous block to the existing
+                // block, and we are done.
                 if (image[pos].Type == ByteType.Code)
                 {
                     System.Diagnostics.Debug.Assert(image[pos].IsLeadByte);
@@ -529,6 +538,7 @@ namespace Disassembler
                 }
             }
 
+            // Create a basic block unless we failed on the first instruction.
             if (pos.EffectiveAddress > start.Target.EffectiveAddress)
                 return image.CreateBasicBlock(start.Target, pos);
             else
@@ -536,7 +546,10 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Analyzes a branch/call/jump instruction and returns a xref.
+        /// Analyzes an instruction and returns a xref if the instruction is
+        /// one of the branch/call/jump instructions. Note that the 'no-jump'
+        /// branch of a conditional jump instruction is not returned. The
+        /// caller must manually create such a xref if needed.
         /// </summary>
         /// <param name="instruction">The instruction to analyze.</param>
         /// <returns>XRef if the instruction is a b/c/j instruction; 
@@ -585,13 +598,19 @@ namespace Disassembler
                     break;
 
                 case Operation.JMP:
+                    bcjType = XRefType.NearJump;
+                    break;
+
                 case Operation.JMPF:
-                    bcjType = XRefType.UnconditionalJump;
+                    bcjType = XRefType.FarJump;
                     break;
 
                 case Operation.CALL:
+                    bcjType = XRefType.NearCall;
+                    break;
+
                 case Operation.CALLF:
-                    bcjType = XRefType.FunctionCall;
+                    bcjType = XRefType.FarCall;
                     break;
 
                 default:
@@ -672,9 +691,18 @@ namespace Disassembler
             };
         }
 
+#if false
         private static void DebugPrint(string format, params object[] args)
         {
             System.Diagnostics.Debug.WriteLine(string.Format(format, args));
+        }
+#endif
+
+        private void AddError(
+            Pointer location, ErrorCategory category,
+            string format, params object[] args)
+        {
+            errors.Add(new Error(location, string.Format(format, args), category));
         }
     }
 

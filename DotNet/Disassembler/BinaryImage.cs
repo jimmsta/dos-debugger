@@ -191,7 +191,7 @@ namespace Disassembler
             int pos2 = PointerToOffset(end);
             if (pos1 < 0 || pos1 >= image.Length)
                 throw new ArgumentOutOfRangeException("start");
-            if (pos2 <= pos1 || pos2 >= image.Length)
+            if (pos2 <= pos1 || pos2 > image.Length)
                 throw new ArgumentOutOfRangeException("end");
 
             // Verify that [start, end) is unoccupied.
@@ -230,7 +230,7 @@ namespace Disassembler
             int pos2 = PointerToOffset(end);
             if (pos1 < 0 || pos1 >= image.Length)
                 throw new ArgumentOutOfRangeException("start");
-            if (pos2 <= pos1 || pos2 >= image.Length)
+            if (pos2 <= pos1 || pos2 > image.Length)
                 throw new ArgumentOutOfRangeException("end");
 
             // Check that the basic block covers consecutive Piece objects.

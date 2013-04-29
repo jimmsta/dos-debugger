@@ -76,24 +76,36 @@ namespace Disassembler
     public enum XRefType
     {
         /// <summary>
-        /// user specified entry point (e.g. program start)
+        /// User specified entry point (such as program start).
         /// </summary>
         UserSpecified,
 
         /// <summary>
-        /// A CALL instruction refers to this location.
+        /// A CALLN instruction refers to this location.
         /// </summary>
-        FunctionCall,
+        NearCall,
 
         /// <summary>
-        /// A Jcc instruction refers to this location.
+        /// A CALLF instruction refers to this location.
+        /// </summary>
+        FarCall,
+
+        /// <summary>
+        /// A Jcc instruction refers to this location. In the x86 instruction
+        /// set, a conditional jump is always near and always relative (i.e.
+        /// its target address can always be determined).
         /// </summary>
         ConditionalJump,
 
         /// <summary>
-        /// A JUMP instruction refers to this location.
+        /// A JMP instruction refers to this location.
         /// </summary>
-        UnconditionalJump,
+        NearJump,
+
+        /// <summary>
+        /// A JMPF instruction refers to this location.
+        /// </summary>
+        FarJump,
 
         /// <summary>
         /// A JUMP instruction where the jump target address is given by
@@ -112,6 +124,13 @@ namespace Disassembler
         /// location of the JMPN instruction is stored in Source.
         /// </summary>
         NearJumpTableEntry,
+
+        /// <summary>
+        /// A JMPN instruction refers to this location indirectly through
+        /// a word-sized jump table entry. The address of the jump table
+        /// entry is stored in the DataReference field of the XRef object.
+        /// </summary>
+        //NearIndexedJump,
 
         NearJumpTableTarget,
 
