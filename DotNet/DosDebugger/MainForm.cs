@@ -28,7 +28,7 @@ namespace DosDebugger
         {
             procWindow = new ProcedureWindow();
             errorWindow = new ErrorWindow();
-            segmentWindow = new SegmentWindow(); 
+            segmentWindow = new SegmentWindow();
             listingWindow = new ListingWindow();
             propertiesWindow = new PropertiesWindow();
             hexWindow = new HexWindow();
@@ -52,7 +52,7 @@ namespace DosDebugger
                 propertiesWindow.Show(dockPanel);
                 hexWindow.Show(dockPanel);
             }
-            
+
             // ActivateDockWindow(listingWindow);
         }
 
@@ -374,7 +374,16 @@ namespace DosDebugger
 
         private void btnTest_Click(object sender, EventArgs e)
         {
-            // SaveDockPanelLayout();
+            PriorityQueue<int> q = new PriorityQueue<int>();
+            int[] testArray = new int[]
+            {
+                5,7,2,2,3,8,0,9
+            };
+            for (int i = 0; i < testArray.Length; i++)
+                q.Enqueue(testArray[i]);
+
+            for (int i = 0; i < testArray.Length; i++)
+                testArray[i] = q.Dequeue();
         }
 
         /// <summary>

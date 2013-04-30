@@ -94,16 +94,27 @@ namespace X86Codec
         int modrmOffset;
         int currentOffset;
 
-        public Instruction Instruction { get; set; }
-
         public int Position
         {
             get { return this.currentOffset; }
         }
 
-        /* Initializes a bytecode reader to read code from a given part of memory. */
+        /// <summary>
+        /// Creates an instruction reader that reads the given portion of a
+        /// byte array.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="startIndex"></param>
+        /// <param name="count"></param>
         public InstructionReader(byte[] code, int startIndex, int count)
         {
+            if (code == null)
+                throw new ArgumentNullException("code");
+            if (startIndex < 0 || startIndex >= code.Length)
+                throw new ArgumentOutOfRangeException("startIndex");
+            if (count < 0 || startIndex + count > code.Length)
+                throw new ArgumentOutOfRangeException("count");
+
             this.code = code;
             this.startIndex = startIndex;
             this.count = count;

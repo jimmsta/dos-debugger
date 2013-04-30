@@ -90,7 +90,8 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Defines types of cross-references.
+    /// Defines types of cross-references. The numeric values of the enum
+    /// members are in decreasing order of their priority in analysis.
     /// </summary>
     public enum XRefType
     {
@@ -98,6 +99,16 @@ namespace Disassembler
         /// User specified entry point (such as program start).
         /// </summary>
         UserSpecified,
+
+        /// <summary>
+        /// A JMPN instruction refers to this location.
+        /// </summary>
+        NearJump,
+
+        /// <summary>
+        /// A JMPF instruction refers to this location.
+        /// </summary>
+        FarJump,
 
         /// <summary>
         /// A CALLN instruction refers to this location.
@@ -115,16 +126,6 @@ namespace Disassembler
         /// its target address can always be determined).
         /// </summary>
         ConditionalJump,
-
-        /// <summary>
-        /// A JMPN instruction refers to this location.
-        /// </summary>
-        NearJump,
-
-        /// <summary>
-        /// A JMPF instruction refers to this location.
-        /// </summary>
-        FarJump,
 
         /// <summary>
         /// A JUMP instruction where the jump target address is given by
