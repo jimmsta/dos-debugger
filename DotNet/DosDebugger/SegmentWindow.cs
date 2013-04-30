@@ -36,7 +36,7 @@ namespace DosDebugger
             if (document == null)
                 return;
 
-            foreach (Segment segment in document.Disassembler.Segments)
+            foreach (Segment segment in document.Disassembler.Image.Segments)
             {
                 ListViewItem item = new ListViewItem();
                 item.Text = FormatAddress(segment.StartAddress);

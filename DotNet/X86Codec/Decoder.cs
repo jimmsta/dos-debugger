@@ -18,7 +18,7 @@ namespace X86Codec
         /// </exception>
         public static Instruction Decode(
             byte[] code, 
-            int startIndex, 
+            int startIndex,
             Pointer location,
             CpuMode cpuMode)
         {
@@ -30,7 +30,7 @@ namespace X86Codec
             context.OperandSize = CpuSize.Use16Bit;
 
             X86Codec.Decoder decoder = new X86Codec.Decoder();
-            return decoder.Decode(code, startIndex, location, context);
+            return decoder.Decode(code, startIndex, code.Length - startIndex, location, context);
         }
 
         /// <summary>
@@ -45,14 +45,15 @@ namespace X86Codec
         /// </exception>
         public Instruction Decode(
             byte[] code, 
-            int startIndex, 
+            int startIndex,
+            int count,
             Pointer location, 
             DecoderContext context)
         {
             Instruction instruction = new Instruction();
 
             // Create an instruction reader.
-            InstructionReader reader = new InstructionReader(code, startIndex, 100);
+            InstructionReader reader = new InstructionReader(code, startIndex, count);
 
             // Reset the context.
             context.AddressSize = CpuSize.Use16Bit;

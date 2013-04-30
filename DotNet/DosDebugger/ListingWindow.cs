@@ -80,7 +80,7 @@ namespace DosDebugger
             if (scope == ListingScope.Segment)
             {
                 UInt16 seg = viewModel.Rows[activeRowIndex].Location.Segment;
-                Segment s = document.Disassembler.FindSegment(seg);
+                Segment s = document.Disassembler.Image.FindSegment(seg);
                 int k1 = viewModel.FindRowIndex(s.StartAddress);
                 int k2 = viewModel.FindRowIndex(s.EndAddress);
                 DisplayViewport(k1, k2);

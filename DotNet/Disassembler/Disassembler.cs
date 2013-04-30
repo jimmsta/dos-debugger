@@ -22,24 +22,6 @@ namespace Disassembler
         /// </summary>
         private List<XRef> globalXRefs;
 
-#if false
-        /// <summary>
-        /// Maintains a dictionary that maps the entry point offset of a
-        /// procedure to a Procedure object.
-        /// </summary>
-        private SortedList<int, Procedure> procedures 
-            = new SortedList<int, Procedure>();
-#endif
-
-        /// <summary>
-        /// Maintains a dictionary that maps a 16-bit segment number to a
-        /// Segment object. 
-        /// Ideally we should have each segment starting at offset 0, but
-        /// this may not be the case in an executable.
-        /// </summary>
-        private SortedList<UInt16, Segment> segments
-            = new SortedList<ushort, Segment>();
-
         /// <summary>
         /// -Maintains a dictionary that maps an offset to an Error object
         /// -where the error occurred at this offset.
@@ -67,20 +49,6 @@ namespace Disassembler
         public Pointer BaseAddress
         {
             get { return image.BaseAddress; }
-        }
-
-        /// <summary>
-        /// Gets a collection of analyzed segments. The segments are returned
-        /// in order of their 16-bit segment number.
-        /// </summary>
-        public ICollection<Segment> Segments
-        {
-            get { return segments.Values; }
-        }
-
-        public Segment FindSegment(ushort seg)
-        {
-            return segments[seg];
         }
 
         /// <summary>
@@ -207,7 +175,7 @@ namespace Disassembler
             }
 
             // Update the segment statistics.
-            UpdateSegmentInformation();
+            CheckSegmentOverlaps();
 
 #if false
             /* Sort the XREFs built from the above analyses by target address. 
@@ -227,50 +195,23 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Updates segmentation information of the executable. This method
-        /// must be called AFTER all the procedures have been analyzed, as
-        /// it simply performs a byte-by-byte review of the executable.
+        /// Checks for segment overlaps and emits error messages for
+        /// overlapping segments.
         /// </summary>
-        private void UpdateSegmentInformation()
+        private void CheckSegmentOverlaps()
         {
-            segments.Clear();
-            for (int i = 0; i < image.Length; i++)
-            {
-                ByteProperties b = image[i];
-                if (b.Address != Pointer.Invalid)
-                {
-                    ushort seg = b.Address.Segment;
-                    if (!segments.ContainsKey(seg))
-                    {
-                        segments.Add(seg, new Segment
-                        {
-                            StartAddress = b.Address,
-                            EndAddress = b.Address + 1
-                        });
-                    }
-                    else
-                    {
-                        segments[seg].EndAddress = b.Address + 1;
-                    }
-                }
-            }
-
             // Check for segment overlaps.
-            for (int i = 0; i < segments.Count; i++)
+            Segment lastSegment = null;
+            foreach (Segment segment in image.Segments)
             {
-                Segment s1 = segments.Values[i];
-                for (int j = i + 1; j < segments.Count; j++)
+                if (lastSegment != null &&
+                    segment.StartAddress.LinearAddress < lastSegment.EndAddress.LinearAddress)
                 {
-                    Segment s2 = segments.Values[j];
-                    if (s1.EndAddress.LinearAddress >
-                        s2.StartAddress.LinearAddress)
-                    {
-                        errors.Add(new Error(
-                            s2.StartAddress,
-                            string.Format("Segment {0:X4} overlaps with segment {1:X4}.",
-                            s1.StartAddress.Segment, s2.StartAddress.Segment)));
-                    }
+                    AddError(segment.StartAddress, ErrorCategory.Error,
+                        "Segment {0:X4} overlaps with segment {1:X4}.",
+                        lastSegment.StartAddress.Segment, segment.StartAddress.Segment);
                 }
+                lastSegment = segment;
             }
         }
 

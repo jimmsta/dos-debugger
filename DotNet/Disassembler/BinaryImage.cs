@@ -5,7 +5,6 @@ using X86Codec;
 
 namespace Disassembler
 {
-#if true
     /// <summary>
     /// Stores the analysis results of an executable image. This class only
     /// takes care of book-keeping; it does not analyze the image. The 
@@ -25,6 +24,13 @@ namespace Disassembler
         /// </summary>
         private SortedList<int, Procedure> procedures
             = new SortedList<int, Procedure>();
+
+        /// <summary>
+        /// Dictionary that maps a 16-bit segment address to a Segment
+        /// object. 
+        /// </summary>
+        private SortedList<UInt16, Segment> segments
+            = new SortedList<UInt16, Segment>();
 
         /// <summary>
         /// Creates a binary image with the given data and base address.
@@ -220,7 +226,42 @@ namespace Disassembler
                 //attr[i].Piece = piece;
             }
 
+            // Update the segment bounds.
+            Segment segment = FindSegment(start.Segment);
+            if (segment == null)
+            {
+                segment = new Segment();
+                segment.StartAddress = start;
+                segment.EndAddress = end;
+                segments.Add(start.Segment, segment);
+            }
+            else
+            {
+                if (start.LinearAddress < segment.StartAddress.LinearAddress)
+                    segment.StartAddress = start;
+                if (end.LinearAddress > segment.EndAddress.LinearAddress)
+                    segment.EndAddress = end;
+            }
+
             return piece;
+        }
+
+        /// <summary>
+        /// Gets a collection of analyzed segments. The segments are returned
+        /// in order of their 16-bit segment number.
+        /// </summary>
+        public ICollection<Segment> Segments
+        {
+            get { return segments.Values; }
+        }
+
+        public Segment FindSegment(UInt16 seg)
+        {
+            Segment segment;
+            if (segments.TryGetValue(seg, out segment))
+                return segment;
+            else
+                return null;
         }
 
         private bool RangeCoversWholeInstructions(int pos1, int pos2)
@@ -324,7 +365,6 @@ namespace Disassembler
         //{
         //}
     }
-#endif
 
     /// <summary>
     /// Contains information about a byte in a binary image.
