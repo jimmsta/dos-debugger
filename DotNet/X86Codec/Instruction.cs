@@ -68,7 +68,7 @@ namespace X86Codec
             if (operand is RelativeOperand)
             {
                 RelativeOperand opr = (RelativeOperand)operand;
-                return (this.Location + this.EncodedLength + opr.Offset).Offset.ToString("X4");
+                return ((ushort)(this.Location.Offset + this.EncodedLength + opr.Offset)).ToString("X4");
             }
             else
             {

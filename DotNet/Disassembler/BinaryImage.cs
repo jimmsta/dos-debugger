@@ -116,7 +116,7 @@ namespace Disassembler
         /// <returns>An offset that may be outside the image.</returns>
         public int PointerToOffset(Pointer address)
         {
-            return address - baseAddress;
+            return address.LinearAddress - baseAddress.LinearAddress;
         }
 
         /// <summary>
@@ -507,10 +507,6 @@ namespace Disassembler
         public Pointer Start { get; private set; }
         public Pointer End { get; private set; }
         public ByteType Type { get; private set; }
-        public int Length
-        {
-            get { return End - Start; }
-        }
 
         internal Piece(BinaryImage image, Pointer start, Pointer end, ByteType type)
         {
@@ -567,7 +563,7 @@ namespace Disassembler
 
         public int Length
         {
-            get { return end.EffectiveAddress - start.EffectiveAddress; }
+            get { return end.LinearAddress - start.LinearAddress; }
         }
 
         internal BasicBlock(BinaryImage image, Pointer start, Pointer end)
@@ -585,8 +581,8 @@ namespace Disassembler
         {
             if (location.Segment != start.Segment)
                 throw new ArgumentException("location must be in the block's segment.", "location");
-            if (location.EffectiveAddress <= start.EffectiveAddress ||
-                location.EffectiveAddress >= end.EffectiveAddress)
+            if (location.LinearAddress <= start.LinearAddress ||
+                location.LinearAddress >= end.LinearAddress)
                 throw new ArgumentException("location must be within [start, end).");
             if (!image[location].IsLeadByte)
                 throw new ArgumentException("location must be at piece boundary.");

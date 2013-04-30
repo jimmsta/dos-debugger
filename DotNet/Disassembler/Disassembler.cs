@@ -245,7 +245,7 @@ namespace Disassembler
                         segments.Add(seg, new Segment
                         {
                             StartAddress = b.Address,
-                            EndAddress = b.Address + 1,
+                            EndAddress = b.Address + 1
                         });
                     }
                     else
@@ -262,8 +262,8 @@ namespace Disassembler
                 for (int j = i + 1; j < segments.Count; j++)
                 {
                     Segment s2 = segments.Values[j];
-                    if (s1.EndAddress.EffectiveAddress >
-                        s2.StartAddress.EffectiveAddress)
+                    if (s1.EndAddress.LinearAddress >
+                        s2.StartAddress.LinearAddress)
                     {
                         errors.Add(new Error(
                             s2.StartAddress,
@@ -403,7 +403,7 @@ namespace Disassembler
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
                 // Otherwise, split the basic block into two.
-                if (b.BasicBlock.Start.EffectiveAddress == pos.EffectiveAddress)
+                if (b.BasicBlock.Start.LinearAddress == pos.LinearAddress)
                 {
                     return null;
                 }
@@ -448,18 +448,20 @@ namespace Disassembler
                     break;
                 }
 
-                Piece piece = image.CreatePiece(pos, pos + insn.EncodedLength, ByteType.Code);
-
                 // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
                 // if pos.off + count > 0xFFFF. This is probably not intended.
-                if (pos.Offset + insn.EncodedLength > 0xFFFF)
+                try
                 {
-                    errors.Add(new Error(pos, string.Format(
+                    Piece piece = image.CreatePiece(pos, pos + insn.EncodedLength, ByteType.Code);
+                    pos += insn.EncodedLength;
+                }
+                catch (AddressWrappedException)
+                {
+                    AddError(pos, ErrorCategory.Error,
                         "CS:IP wrapped when processing block {1} referred from {2}",
-                        start.Target, start.Source)));
+                        start.Target, start.Source);
                     break;
                 }
-                pos += insn.EncodedLength;
 
                 // Check if this instruction terminates the block.
                 if (insn.Operation == Operation.RET ||
@@ -505,7 +507,7 @@ namespace Disassembler
             }
 
             // Create a basic block unless we failed on the first instruction.
-            if (pos.EffectiveAddress > start.Target.EffectiveAddress)
+            if (pos.LinearAddress > start.Target.LinearAddress)
                 return image.CreateBasicBlock(start.Target, pos);
             else
                 return null;
@@ -591,7 +593,7 @@ namespace Disassembler
                 return new XRef
                 {
                     Source = start,
-                    Target = start + instruction.EncodedLength + opr.Offset,
+                    Target = start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset),
                     Type = bcjType
                 };
             }

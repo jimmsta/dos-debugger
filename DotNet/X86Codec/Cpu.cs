@@ -19,7 +19,7 @@ namespace X86Codec
         Use128Bit = 16,
         Use28Bytes = 28,
     }
-    
+
     public enum CpuMode
     {
         Default = 0,
@@ -71,14 +71,19 @@ namespace X86Codec
     }
 
     /// <summary>
-    /// Represents an absolute address with segment and offset.
-    /// For the moment, we only support 16-bit pointers.
+    /// Represents a far pointer consisting of segment and offset components.
+    /// For the moment, we only support 16-bit far pointers.
     /// </summary>
-    public struct Pointer : IComparable<Pointer>
+    public struct Pointer
     {
         private UInt16 segment;
         private UInt16 offset;
 
+        /// <summary>
+        /// Creates a far pointer with the given segment and offset values.
+        /// </summary>
+        /// <param name="segment">Segment address.</param>
+        /// <param name="offset">Offset within segment.</param>
         public Pointer(UInt16 segment, UInt16 offset)
             : this()
         {
@@ -86,21 +91,39 @@ namespace X86Codec
             this.offset = offset;
         }
 
+        /// <summary>
+        /// Gets or sets the segment address.
+        /// </summary>
         public UInt16 Segment
         {
             get { return segment; }
             set { segment = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the offset within the segment.
+        /// </summary>
         public UInt16 Offset
         {
             get { return offset; }
             set { offset = value; }
         }
 
-        public int EffectiveAddress
+        /// <summary>
+        /// Gets the linear (physical) address pointed to by this pointer.
+        /// </summary>
+        /// <exception cref="AddressWrappedException">
+        /// If the linear address is greater than or equal to 1MB.
+        /// </exception>
+        public int LinearAddress
         {
-            get { return segment * 16 + offset; }
+            get
+            {
+                int linearAddress = segment * 16 + offset;
+                if (linearAddress >= 0x100000)
+                    throw new AddressWrappedException();
+                return linearAddress;
+            }
         }
 
         public override string ToString()
@@ -123,20 +146,19 @@ namespace X86Codec
 
             pointer = new Pointer();
 
-            if (s.Length != 9)
-                return false;
-            if (s[4] != ':')
+            int k = s.IndexOf(':');
+            if (k <= 0 || k >= s.Length - 1)
                 return false;
 
             if (!UInt16.TryParse(
-                    s.Substring(0, 4),
+                    s.Substring(0, k),
                     NumberStyles.AllowHexSpecifier,
                     CultureInfo.InvariantCulture,
                     out pointer.segment))
                 return false;
 
             if (!UInt16.TryParse(
-                    s.Substring(5, 4),
+                    s.Substring(k + 1),
                     NumberStyles.AllowHexSpecifier,
                     CultureInfo.InvariantCulture,
                     out pointer.offset))
@@ -145,51 +167,81 @@ namespace X86Codec
             return true;
         }
 
-        public static Pointer operator +(Pointer p, int increment)
+        /// <summary>
+        /// Increments the offset by the given amount, allowing it to wrap
+        /// around 0xFFFF.
+        /// </summary>
+        /// <param name="increment">The amount to increment. A negative value
+        /// specifies decrement.</param>
+        /// <returns>The incremented pointer, possibly wrapped.</returns>
+        public Pointer IncrementWithWrapping(int increment)
         {
-            return new Pointer(p.segment, (ushort)(p.offset + increment));
+            return new Pointer(segment, (ushort)(offset + increment));
         }
 
         /// <summary>
-        /// Returns the difference between the effective address between two
-        /// pointers. The pointers are allowed to be from different segments.
+        /// Increments the offset by the given amount.
+        /// </summary>
+        /// <param name="increment">The amount to increment. A negative value
+        /// specifies decrement.</param>
+        /// <returns>The incremented pointer</returns>
+        /// <exception cref="AddressWrappedException">If the offset would be
+        /// wrapped around 0xFFFF.</exception>
+        public Pointer Increment(int increment)
+        {
+            if ((increment > 0 && increment > 0xFFFF - offset) ||
+                (increment < 0 && increment < -(int)offset))
+            {
+                throw new AddressWrappedException();
+            }
+            // TODO: check result.LinearAddress.
+            return IncrementWithWrapping(increment);
+        }
+
+        /// <summary>
+        /// Same as p.Increment(increment).
+        /// </summary>
+        /// <param name="p"></param>
+        /// <param name="increment"></param>
+        /// <returns></returns>
+        public static Pointer operator +(Pointer p, int increment)
+        {
+            return p.Increment(increment);
+        }
+
+        /// <summary>
+        /// Represents an invalid pointer value (FFFF:FFFF).
+        /// </summary>
+        public static readonly Pointer Invalid = new Pointer(0xFFFF, 0xFFFF);
+
+        /// <summary>
+        /// Returns true if two pointers have the same segment and offset
+        /// values.
         /// </summary>
         /// <param name="a">First pointer.</param>
         /// <param name="b">Second pointer.</param>
-        /// <returns>The difference between the effective addresses.</returns>
-        public static int operator -(Pointer a, Pointer b)
-        {
-#if false
-            if (a.segment != b.segment)
-            {
-                throw new InvalidOperationException(
-                    "Cannot find the difference between two pointers from different segments.");
-            }
-#endif
-            return a.EffectiveAddress - b.EffectiveAddress;
-        }
-
-        public static readonly Pointer Invalid = new Pointer(0xFFFF, 0xFFFF);
-
-        public int CompareTo(Pointer other)
-        {
-            int cmp = (int)this.segment - (int)other.segment;
-            if (cmp == 0)
-                cmp = (int)this.offset - (int)other.offset;
-            return cmp;
-            // return this.EffectiveAddress - other.EffectiveAddress;
-        }
-
+        /// <returns></returns>
         public static bool operator ==(Pointer a, Pointer b)
         {
             return (a.segment == b.segment) && (a.offset == b.offset);
         }
 
+        /// <summary>
+        /// Returns true unless two pointers have the same segment and offset
+        /// values.
+        /// </summary>
+        /// <param name="a">First pointer.</param>
+        /// <param name="b">Second pointer.</param>
+        /// <returns></returns>
         public static bool operator !=(Pointer a, Pointer b)
         {
             return (a.segment != b.segment) || (a.offset != b.offset);
         }
 
+        /// <summary>
+        /// Returns true if two pointers have the same segment and offset
+        /// values.
+        /// </summary>
         public override bool Equals(object obj)
         {
             return (obj is Pointer) && (this == (Pointer)obj);
@@ -197,7 +249,11 @@ namespace X86Codec
 
         public override int GetHashCode()
         {
-            return this.EffectiveAddress.GetHashCode();
+            return this.LinearAddress.GetHashCode();
         }
+    }
+
+    public class AddressWrappedException : Exception
+    {
     }
 }

@@ -76,11 +76,6 @@ namespace Disassembler
             if (begin == end) // empty interval
                 return;
 
-            if (begin == 0x267)
-            {
-                int kk = 1;
-            }
-
             if (ranges.Count == 0)
             {
                 ranges.AddFirst(new Range(begin, end));

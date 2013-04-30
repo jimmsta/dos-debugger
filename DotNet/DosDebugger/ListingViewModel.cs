@@ -37,7 +37,7 @@ namespace DosDebugger
             Dictionary<int, Error> errorMap = new Dictionary<int, Error>();
             foreach (Error error in dasm.Errors)
             {
-                errorMap[error.Location - dasm.BaseAddress] = error;
+                errorMap[dasm.PointerToOffset(error.Location)] = error;
             }
 
             // Display analyzed code and data.
@@ -84,7 +84,14 @@ namespace DosDebugger
                         j++;
 
                     rows.Add(new BlankListingRow(i, address, image.GetBytes(i, j - i)));
-                    address += (j - i);
+                    try
+                    {
+                        address += (j - i);
+                    }
+                    catch (AddressWrappedException)
+                    {
+                        address = Pointer.Invalid;
+                    }
                     i = j;
                 }
             }
@@ -419,7 +426,7 @@ namespace DosDebugger
 
         public override string Text
         {
-            get { return string.Format("loc_{0:X5}", block.Start.EffectiveAddress); }
+            get { return string.Format("loc_{0:X5}", block.Start.LinearAddress); }
         }
 
         public override ListViewItem CreateViewItem()

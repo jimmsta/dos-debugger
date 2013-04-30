@@ -48,7 +48,7 @@ namespace DosDebugger
 
         private static string FormatAddress(Pointer address)
         {
-            return string.Format("{0} ({1:X5})", address, address.EffectiveAddress);
+            return string.Format("{0} ({1:X5})", address, address.LinearAddress);
         }
 
         //public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;

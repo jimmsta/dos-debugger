@@ -95,7 +95,7 @@ namespace Disassembler
             header.InitialSS += segment;
             for (int i = 0; i < relocationTable.Length; i++)
             {
-                int address = relocationTable[i].EffectiveAddress;
+                int address = relocationTable[i].LinearAddress;
                 if (!(address >= 0 && address + 2 <= image.Length))
                     throw new InvalidDataException("The relocation entry is out-of-range.");
 
