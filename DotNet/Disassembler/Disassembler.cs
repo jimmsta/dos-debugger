@@ -148,45 +148,60 @@ namespace Disassembler
             {
                 XRef entry = xrefQueue.Dequeue();
 
-                // Handle indexed jump.
+                // Handle jump table entry (where Target == Invalid).
                 if (entry.Type == XRefType.NearIndexedJump)
                 {
-                    ProcessJumpTableEntry(entry, xrefQueue);
-                    xrefs.Add(entry);
-                    continue;
+                    System.Diagnostics.Debug.Assert(entry.Target == Pointer.Invalid);
+
+                    // Fill the Target field to make it a static xref.
+                    entry = ProcessJumpTableEntry(entry, xrefQueue);
+                    if (entry == null) // end of jump table
+                        continue;
                 }
 
-                // Skip dynamic xrefs (i.e. those where Target == Invalid).
+                // Append the xref entry to the global list of xrefs.
+                globalXRefs.Add(entry);
+
+                // Skip other dynamic xrefs.
                 if (entry.Target == Pointer.Invalid)
-                {
-                    xrefs.Add(entry);
                     continue;
-                }
+
+                Procedure proc;
 
                 // Handle function call.
                 if (entry.Type == XRefType.NearCall ||
                     entry.Type == XRefType.FarCall)
                 {
-                    // Analyze the function if the entry point has not
-                    // yet been analyzed.
-                    if (!procedures.ContainsKey(PointerToOffset(entry.Target)))
-                    {
-                        // Create a procedure at this location.
-                        Procedure proc = new Procedure();
-                        proc.EntryPoint = entry.Target;
+                    // If a procedure with that entry point has already been
+                    // defined, perform some sanity checks but no need to
+                    // analyze again.
+                    if (procedures.TryGetValue(PointerToOffset(entry.Target), out proc))
+                        continue;
 
-                        AnalyzeProcedure(proc, entry, xrefQueue);
-
-                        // Mark the procedure as processed.
-                        procedures[PointerToOffset(entry.Target)] = proc;
-                    }
-                    xrefs.Add(entry);
-                    continue;
+                    // Create a new Procedure object with that entry point.
+                    // TODO: handle empty procedures.
+                    proc = new Procedure();
+                    proc.EntryPoint = entry.Target;
+                    procedures[PointerToOffset(entry.Target)] = proc;
+                }
+                else
+                {
+                    proc = image[entry.Source].Procedure;
                 }
 
-                // Ignore other types of xrefs such as conditional jumps.
-                xrefs.Add(entry);
-                continue;
+                // Process the basic block starting at the target address.
+                BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
+                if (block != null)
+                {
+                    int count = block.Length;
+                    int baseOffset = PointerToOffset(entry.Target);
+                    proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
+                    proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
+                    for (int j = 0; j < count; j++)
+                    {
+                        image[baseOffset + j].Procedure = proc;
+                    }
+                }
             }
 
             // Update the segment statistics.
@@ -258,83 +273,21 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Analyzes a procedure starting from the given location. This
-        /// location should be within the procedure, but is not necessarily
-        /// the entry point of the procedure.
-        /// 
-        /// The analysis does not recurse into procedures called by this
-        /// procedure.
+        /// Fills the Target of an IndexedJump xref heuristically by plugging
+        /// in the jump target stored in DataLocation and performing various
+        /// sanity checks.
         /// </summary>
-        /// <param name="start">Address to start analysis.</param>
-        /// <param name="xrefs">List of procedures called by this 
-        /// procedure.</param>
-        private void AnalyzeProcedure(Procedure proc, XRef start, ICollection<XRef> xrefs)
-        {
-            List<XRef> localXrefs = new List<XRef>();
-
-            // Create a dummy xref for the starting address.
-            localXrefs.Add(new XRef
-            {
-                Source = start.Source,
-                Target = start.Target,
-                Type = XRefType.UserSpecified
-            });
-            
-            // Process each entry point in the queue until there are no more
-            // entry points left.
-            for (int i = 0; i < localXrefs.Count; i++)
-            {
-                XRef entry = localXrefs[i];
-
-                // Skip dynamic xrefs, function calls, and jump tables.
-                if (entry.Target == Pointer.Invalid ||
-                    entry.Type == XRefType.NearCall ||
-                    entry.Type == XRefType.FarCall)
-                {
-                    continue;
-                }
-                //if (entry.Type == XRefType.NearJumpTableEntry)
-                //{
-                //    continue;
-                //}
-
-                // Process this code block assuming no jumps are taken and
-                // function calls and interrupts all return.
-                BasicBlock block = AnalyzeBasicBlock(entry, localXrefs);
-                if (block != null)
-                {
-                    int count = block.Length;
-                    int baseOffset = PointerToOffset(entry.Target);
-                    proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
-                    proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
-                    for (int j = 0; j < count; j++)
-                    {
-                        image[baseOffset + j].Procedure = proc;
-                    }
-                }
-            }
-
-            // Append the local XRef list to the global xref list.
-            localXrefs.RemoveAt(0);
-
-            // TODO: we actually should merge this into the parent function,
-            // i.e. do not attempt to analyze a whole procedure at a time.
-            foreach (XRef x in localXrefs)
-            {
-                xrefs.Add(x);
-            }
-        }
-
-        private void ProcessJumpTableEntry(XRef entry, ICollection<XRef> xrefs)
+        /// <param name="entry">A xref of type IndexedJump whose Target field
+        /// is Invalid.</param>
+        /// <param name="xrefs">Collection to add a new dynamic IndexedJump
+        /// xref to, if any.</param>
+        /// <returns>The updated xref, or null if the jump table ends.</returns>
+        private XRef ProcessJumpTableEntry(XRef entry, ICollection<XRef> xrefs)
         {
             System.Diagnostics.Debug.Assert(
-                entry.Type == XRefType.NearIndexedJump,
-                "Entry type must be NearIndexedJump");
-
-            // TMP: we skip xrefs with known target, because those have
-            // already been processed.
-            if (entry.Target != Pointer.Invalid)
-                return;
+                entry.Type == XRefType.NearIndexedJump &&
+                entry.Target == Pointer.Invalid,
+                "Entry must be NearIndexedJump with unknown target");
 
             // Verify that the location that supposedly stores the jump table
             // entry is not analyzed as anything else. If it is, it indicates
@@ -342,7 +295,7 @@ namespace Disassembler
             int b = PointerToOffset(entry.DataLocation);
             if (image[b].Type != ByteType.Unknown ||
                 image[b + 1].Type != ByteType.Unknown)
-                return;
+                return null;
 
             // Find the target address of the jump table entry.
             ushort jumpOffset = image.GetUInt16(b);
@@ -350,7 +303,21 @@ namespace Disassembler
 
             // Check that the target address looks valid. If it doesn't, it
             // probably indicates that the jump table ends here.
-            // ...
+            if (PointerToOffset(jumpTarget) < 0 || 
+                PointerToOffset(jumpTarget) >= image.Length)
+                return null;
+
+            // TBD: it's always a problem if CS:IP wraps. We need a more
+            // general way to detect and fix it. For this particular case,
+            // we need to check that the jump target is within the space
+            // of this segment.
+            if (entry.DataLocation.Offset >= 0xFFFE)
+            {
+                AddError(entry.DataLocation, ErrorCategory.Error,
+                    "Jump table is too big (jumped from {0}).",
+                    entry.Source);
+                return null;
+            }
 
             // If the jump target is outside the range of the current segment
             // but inside the range of another segment, it likely indicates
@@ -371,17 +338,6 @@ namespace Disassembler
             image[b].Procedure = proc;
             image[b + 1].Procedure = proc;
 
-            // Fill in the Target field of this xref.
-            // i.e. Add a xref from the JMP instruction to the jump target.
-            entry = new XRef
-            {
-                Source = entry.Source,
-                Target = jumpTarget,
-                DataLocation = entry.DataLocation,
-                Type = XRefType.NearIndexedJump
-            };
-            xrefs.Add(entry);
-
             // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
             xrefs.Add(new XRef
@@ -392,9 +348,14 @@ namespace Disassembler
                 Type = XRefType.NearIndexedJump
             });
 
-            // Process the target address. This address should be in the
-            // same procedure that executes the JMP instruction.
-            AnalyzeProcedure(proc, entry, xrefs);
+            // Return the updated xref with Target field filled.
+            return new XRef
+            {
+                Source = entry.Source,
+                Target = jumpTarget,
+                DataLocation = entry.DataLocation,
+                Type = XRefType.NearIndexedJump
+            };
         }
 
         /// <summary>
