@@ -97,7 +97,7 @@ namespace DosDebugger
                 }
                 else
                 {
-                    Range r = proc.ByteRange.BoundingRange;
+                    Range r = proc.Bounds;
                     int k1 = viewModel.FindRowIndex(r.Begin);
                     int k2 = viewModel.FindRowIndex(r.End);
                     DisplayViewport(k1, k2);

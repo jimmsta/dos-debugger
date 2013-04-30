@@ -99,10 +99,10 @@ namespace DosDebugger
             // Fill the BeginIndex and EndIndex of the procedures.
             foreach (Procedure proc in dasm.Procedures)
             {
-                if (!proc.ByteRange.IsEmpty)
+                if (proc.Bounds.Length > 0)
                 {
                     ProcedureItem item = new ProcedureItem(proc);
-                    Range range = proc.ByteRange.BoundingRange;
+                    Range range = proc.Bounds;
                     item.BeginRowIndex = range.Begin;
                     item.EndRowIndex = range.End;
                     // TBD: need to check broken instruction conditions

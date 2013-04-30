@@ -17,6 +17,15 @@ namespace Disassembler
         private Pointer baseAddress;
         private ByteProperties[] attr;
 
+        private List<BasicBlock> blocks = new List<BasicBlock>();
+
+        /// <summary>
+        /// Dictionary that maps the entry point offset of a procedure
+        /// to a Procedure object.
+        /// </summary>
+        private SortedList<int, Procedure> procedures
+            = new SortedList<int, Procedure>();
+
         /// <summary>
         /// Creates a binary image with the given data and base address.
         /// </summary>
@@ -169,8 +178,8 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Groups a continuous range of bytes as one piece that must be
-        /// accessed as a unit.
+        /// Marks a continuous range of bytes as an atomic item of the given
+        /// type.
         /// </summary>
         /// <param name="start"></param>
         /// <param name="end"></param>
@@ -208,10 +217,29 @@ namespace Disassembler
                 attr[i].Address = start + (i - pos1);
                 attr[i].IsLeadByte = (i == pos1);
                 attr[i].Type = type;
-                attr[i].Piece = piece;
+                //attr[i].Piece = piece;
             }
 
             return piece;
+        }
+
+        private bool RangeCoversWholeInstructions(int pos1, int pos2)
+        {
+            if (!attr[pos1].IsLeadByte)
+                return false;
+
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (attr[i].Type != ByteType.Code)
+                    return false;
+            }
+
+            if (pos2 < attr.Length &&
+                attr[pos2].Type == ByteType.Code &&
+                !attr[pos2].IsLeadByte)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -224,7 +252,7 @@ namespace Disassembler
         public BasicBlock CreateBasicBlock(Pointer start, Pointer end)
         {
             if (start.Segment != end.Segment)
-                throw new ArgumentException();
+                throw new ArgumentException("A BasicBlock must be on a single segment.");
 
             int pos1 = PointerToOffset(start);
             int pos2 = PointerToOffset(end);
@@ -233,26 +261,68 @@ namespace Disassembler
             if (pos2 <= pos1 || pos2 > image.Length)
                 throw new ArgumentOutOfRangeException("end");
 
-            // Check that the basic block covers consecutive Piece objects.
-            int i = pos1;
-            while (i < pos2)
+            // Verify that the basic block covers continuous code bytes.
+            if (!RangeCoversWholeInstructions(pos1, pos2))
             {
-                if (!attr[i].IsLeadByte ||
-                    attr[i].Piece == null)
-                    throw new ArgumentException("Some bytes in the basic block are not analyzed.");
-
-                i += attr[i].Piece.Length;
+                throw new ArgumentException("A basic block must consist of whole instructions.");
             }
-            if (i != pos2)
-                throw new ArgumentException();
 
+            // Verify that no existing basic block overlaps with this range.
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (attr[i].BasicBlock != null)
+                    throw new ArgumentException("A existing basic block overlaps with this range.");
+            }
+
+            // Update the mapping from byte to basic block.
             BasicBlock block = new BasicBlock(this, start, end);
-            for (i = pos1; i < pos2; i++)
+            for (int i = pos1; i < pos2; i++)
             {
                 attr[i].BasicBlock = block;
             }
+
+            // Add the block to our internal list of blocks.
+            blocks.Add(block);
             return block;
         }
+
+        public ICollection<Procedure> Procedures
+        {
+            get { return procedures.Values; }
+        }
+
+        public Procedure CreateProcedure(Pointer entryPoint)
+        {
+            if (FindProcedure(entryPoint) != null)
+            {
+                throw new InvalidOperationException(
+                    "A procedure already exists at the given entry point.");
+            }
+
+            Procedure proc = new Procedure(this, entryPoint);
+            this.procedures.Add(PointerToOffset(entryPoint), proc);
+            return proc;
+        }
+
+        /// <summary>
+        /// Finds a procedure at the given entry point. Only the absolute
+        /// position of the entry point is used; its CS:IP combination 
+        /// does not matter.
+        /// </summary>
+        /// <param name="entryPoint"></param>
+        /// <returns></returns>
+        public Procedure FindProcedure(Pointer entryPoint)
+        {
+            Procedure proc;
+            if (procedures.TryGetValue(PointerToOffset(entryPoint), out proc))
+                return proc;
+            else
+                return null;
+        }
+
+        //class ImageByte : ByteProperties
+        //{
+        //}
     }
 #endif
 
@@ -284,7 +354,7 @@ namespace Disassembler
         /// </summary>
         public Procedure Procedure { get; internal set; }
 
-        public Piece Piece { get; internal set; }
+        //public Piece Piece { get; internal set; }
 
         public ByteProperties()
         {
@@ -491,7 +561,7 @@ namespace Disassembler
         /// </summary>
         public Pointer End
         {
-            get{return end;}
+            get { return end; }
             private set { this.end = value; }
         }
 
@@ -507,7 +577,6 @@ namespace Disassembler
             this.end = end;
         }
 
-#if true
         /// <summary>
         /// Splits the basic block into two at the given location.
         /// </summary>
@@ -538,18 +607,6 @@ namespace Disassembler
 
             return newBlock;
         }
-#endif
-
-#if false
-        internal BasicBlock(Pointer start, Pointer end)
-        {
-            if (start.Segment != end.Segment)
-                throw new ArgumentException("A BasicBlock must have the same segment value.");
-
-            this.Start = start;
-            this.End = end;
-        }
-#endif
     }
 
 #if false

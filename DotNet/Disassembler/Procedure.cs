@@ -10,20 +10,30 @@ namespace Disassembler
     /// </summary>
     public class Procedure
     {
-        private Pointer entryPoint;
-        private MultiRange codeRange = new MultiRange();
-        private MultiRange dataRange = new MultiRange();
-        private MultiRange byteRange = new MultiRange();
+        private BinaryImage image;
+        private Range bounds;
 
-        /// <summary>
-        /// Gets or sets the entry point address of the procedure.
-        /// </summary>
-        public Pointer EntryPoint
+        //private MultiRange codeRange = new MultiRange();
+        //private MultiRange dataRange = new MultiRange();
+        //private MultiRange byteRange = new MultiRange();
+
+        public Procedure(BinaryImage image, Pointer entryPoint)
         {
-            get { return this.entryPoint; }
-            set { this.entryPoint = value; }
+            this.image = image;
+            this.EntryPoint = entryPoint;
         }
 
+        /// <summary>
+        /// Gets the entry point address of the procedure.
+        /// </summary>
+        public Pointer EntryPoint { get; private set; }
+
+        public Range Bounds
+        {
+            get { return bounds; }
+        }
+
+#if false
         public MultiRange CodeRange
         {
             get { return codeRange; }
@@ -37,6 +47,77 @@ namespace Disassembler
         public MultiRange ByteRange
         {
             get { return byteRange; }
+        }
+#endif
+
+        /// <summary>
+        /// Adds a basic block to the procedure.
+        /// </summary>
+        /// <param name="block"></param>
+        public void AddBasicBlock(BasicBlock block)
+        {
+            if (block == null)
+                throw new ArgumentNullException("block");
+
+            // Verify that the bytes have not been assigned to any procedure.
+            int pos1 = image.PointerToOffset(block.Start);
+            int pos2 = image.PointerToOffset(block.End);
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (image[i].Procedure != null)
+                    throw new InvalidOperationException("Some of the bytes are already assigned to a procedure.");
+            }
+
+            // Assign the bytes to this procedure.
+            for (int i = pos1; i < pos2; i++)
+            {
+                image[i].Procedure = this;
+            }
+
+            // Update the bounds of this procedure.
+            if (bounds.Length == 0)
+            {
+                bounds = new Range(pos1, pos2);
+            }
+            else
+            {
+                bounds = new Range(
+                    Math.Min(pos1, bounds.Begin),
+                    Math.Max(pos2, bounds.End));
+            }
+        }
+
+        /// <summary>
+        /// Adds a basic block to the procedure.
+        /// </summary>
+        /// <param name="block"></param>
+        public void AddDataBlock(Pointer start, Pointer end)
+        {
+            int pos1 = image.PointerToOffset(start);
+            int pos2 = image.PointerToOffset(end);
+            for (int i = pos1; i < pos2; i++)
+            {
+                if (image[i].Procedure != null)
+                    throw new InvalidOperationException("Some of the bytes are already assigned to a procedure.");
+            }
+
+            // Assign the bytes to this procedure.
+            for (int i = pos1; i < pos2; i++)
+            {
+                image[i].Procedure = this;
+            }
+
+            // Update the bounds of this procedure.
+            if (bounds.Length == 0)
+            {
+                bounds = new Range(pos1, pos2);
+            }
+            else
+            {
+                bounds = new Range(
+                    Math.Min(pos1, bounds.Begin),
+                    Math.Max(pos2, bounds.End));
+            }
         }
     }
 

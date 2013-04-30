@@ -22,12 +22,14 @@ namespace Disassembler
         /// </summary>
         private List<XRef> globalXRefs;
 
+#if false
         /// <summary>
         /// Maintains a dictionary that maps the entry point offset of a
         /// procedure to a Procedure object.
         /// </summary>
         private SortedList<int, Procedure> procedures 
             = new SortedList<int, Procedure>();
+#endif
 
         /// <summary>
         /// Maintains a dictionary that maps a 16-bit segment number to a
@@ -87,7 +89,7 @@ namespace Disassembler
         /// </summary>
         public ICollection<Procedure> Procedures
         {
-            get { return procedures.Values; }
+            get { return image.Procedures; }
         }
 
         public Error[] Errors
@@ -175,14 +177,13 @@ namespace Disassembler
                     // If a procedure with that entry point has already been
                     // defined, perform some sanity checks but no need to
                     // analyze again.
-                    if (procedures.TryGetValue(PointerToOffset(entry.Target), out proc))
+                    proc = image.FindProcedure(entry.Target);
+                    if (proc != null)
                         continue;
 
                     // Create a new Procedure object with that entry point.
                     // TODO: handle empty procedures.
-                    proc = new Procedure();
-                    proc.EntryPoint = entry.Target;
-                    procedures[PointerToOffset(entry.Target)] = proc;
+                    proc = image.CreateProcedure(entry.Target);
                 }
                 else
                 {
@@ -193,14 +194,15 @@ namespace Disassembler
                 BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
                 if (block != null)
                 {
-                    int count = block.Length;
-                    int baseOffset = PointerToOffset(entry.Target);
-                    proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
-                    proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
-                    for (int j = 0; j < count; j++)
-                    {
-                        image[baseOffset + j].Procedure = proc;
-                    }
+                    //int count = block.Length;
+                    //int baseOffset = PointerToOffset(entry.Target);
+                    //proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
+                    //proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
+                    //for (int j = 0; j < count; j++)
+                    //{
+                    //    image[baseOffset + j].Procedure = proc;
+                    //}
+                    proc.AddBasicBlock(block);
                 }
             }
 
@@ -331,12 +333,14 @@ namespace Disassembler
 
             // Mark DataLocation as data and add it to the owning procedure's
             // byte range.
-            image.CreatePiece(entry.DataLocation, entry.DataLocation + 2, ByteType.Data);
+            Piece piece = image.CreatePiece(
+                entry.DataLocation, entry.DataLocation + 2, ByteType.Data);
             Procedure proc = image[entry.Source].Procedure;
-            proc.DataRange.AddInterval(b, b + 2);
-            proc.ByteRange.AddInterval(b, b + 2);
-            image[b].Procedure = proc;
-            image[b + 1].Procedure = proc;
+            proc.AddDataBlock(piece.Start, piece.End);
+            //proc.DataRange.AddInterval(b, b + 2);
+            //proc.ByteRange.AddInterval(b, b + 2);
+            //image[b].Procedure = proc;
+            //image[b + 1].Procedure = proc;
 
             // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
@@ -369,7 +373,11 @@ namespace Disassembler
         /// <param name="calls">Call instructions are added to this list.</param>
         /// <param name="dynamicJumps">Jump instructions with a dynamic target
         /// are added to this list.</param>
-        /// <returns>The number of bytes successfully analyzed as code.</returns>
+        /// <returns>
+        /// A new BasicBlock if one was created during the analysis.
+        /// If analysis failed or an existing block was split into two,
+        /// returns null.
+        /// </returns>
         // TODO: should be roll-back the entire basic block if we 
         // encounters an error on our way? maybe not.
         private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
@@ -411,7 +419,7 @@ namespace Disassembler
                         return null;
                     }
                     BasicBlock newBlock = b.BasicBlock.Split(pos);
-                    return newBlock;
+                    return null; // newBlock;
                 }
             }
 
