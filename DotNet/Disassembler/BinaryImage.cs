@@ -264,6 +264,17 @@ namespace Disassembler
                 return null;
         }
 
+        public UInt16 LargestSegmentThatStartsBefore(int offset)
+        {
+            UInt16 result = 0;
+            foreach (Segment segment in Segments)
+            {
+                if (PointerToOffset(segment.StartAddress) <= offset)
+                    result = segment.SegmentAddress;
+            }
+            return result;
+        }
+
         private bool RangeCoversWholeInstructions(int pos1, int pos2)
         {
             if (!attr[pos1].IsLeadByte)
@@ -513,6 +524,7 @@ namespace Disassembler
     {
         public Pointer StartAddress { get; set; }
         public Pointer EndAddress { get; set; }
+        public UInt16 SegmentAddress { get { return StartAddress.Segment; } }
 
 #if false
         /// <summary>

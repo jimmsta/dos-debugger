@@ -240,15 +240,12 @@ namespace Disassembler
                 image[b + 1].Type != ByteType.Unknown)
                 return null;
 
-            // Find the target address of the jump table entry.
-            ushort jumpOffset = image.GetUInt16(b);
-            Pointer jumpTarget = new Pointer(entry.Source.Segment, jumpOffset);
-
-            // Check that the target address looks valid. If it doesn't, it
-            // probably indicates that the jump table ends here.
-            if (PointerToOffset(jumpTarget) < 0 || 
-                PointerToOffset(jumpTarget) >= image.Length)
+            // If the data location looks like in another segment, stop.
+            if (image.LargestSegmentThatStartsBefore(b)
+                > entry.Source.Segment)
+            {
                 return null;
+            }
 
             // TBD: it's always a problem if CS:IP wraps. We need a more
             // general way to detect and fix it. For this particular case,
@@ -262,10 +259,28 @@ namespace Disassembler
                 return null;
             }
 
+            // Find the target address of the jump table entry.
+            ushort jumpOffset = image.GetUInt16(b);
+            Pointer jumpTarget = new Pointer(entry.Source.Segment, jumpOffset);
+
+            // Check that the target address looks valid. If it doesn't, it
+            // probably indicates that the jump table ends here.
+            if (PointerToOffset(jumpTarget) < 0 || 
+                PointerToOffset(jumpTarget) >= image.Length)
+                return null;
+
             // If the jump target is outside the range of the current segment
-            // but inside the range of another segment, it likely indicates
-            // that the jump table entry is fake, i.e. the jump table ends on
-            // the previous entry.
+            // but inside the range of a later segment, it likely indicates
+            // that the jump table ends here.
+            // TBD: this heuristic is kind of a hack... we should do better.
+#if true
+            if (image.LargestSegmentThatStartsBefore(PointerToOffset(jumpTarget))
+                > entry.Source.Segment)
+            {
+                return null;
+            }
+#endif
+
             // ...
 
             // BUG: We really do need to check that the destination
@@ -278,10 +293,6 @@ namespace Disassembler
                 entry.DataLocation, entry.DataLocation + 2, ByteType.Data);
             Procedure proc = image[entry.Source].Procedure;
             proc.AddDataBlock(piece.Start, piece.End);
-            //proc.DataRange.AddInterval(b, b + 2);
-            //proc.ByteRange.AddInterval(b, b + 2);
-            //image[b].Procedure = proc;
-            //image[b + 1].Procedure = proc;
 
             // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
