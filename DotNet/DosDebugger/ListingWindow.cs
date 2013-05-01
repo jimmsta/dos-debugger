@@ -81,8 +81,8 @@ namespace DosDebugger
             {
                 UInt16 seg = viewModel.Rows[activeRowIndex].Location.Segment;
                 Segment s = document.Disassembler.Image.FindSegment(seg);
-                int k1 = viewModel.FindRowIndex(s.StartAddress);
-                int k2 = viewModel.FindRowIndex(s.EndAddress);
+                int k1 = viewModel.FindRowIndex(s.Start);
+                int k2 = viewModel.FindRowIndex(s.End);
                 DisplayViewport(k1, k2);
                 return;
             }
@@ -98,8 +98,8 @@ namespace DosDebugger
                 else
                 {
                     Range r = proc.Bounds;
-                    int k1 = viewModel.FindRowIndex(r.Begin);
-                    int k2 = viewModel.FindRowIndex(r.End);
+                    int k1 = viewModel.FindRowIndex(new LinearPointer(r.Begin));
+                    int k2 = viewModel.FindRowIndex(new LinearPointer(r.End));
                     DisplayViewport(k1, k2);
                 }
                 return;

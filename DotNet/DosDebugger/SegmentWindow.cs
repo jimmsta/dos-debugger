@@ -39,8 +39,8 @@ namespace DosDebugger
             foreach (Segment segment in document.Disassembler.Image.Segments)
             {
                 ListViewItem item = new ListViewItem();
-                item.Text = FormatAddress(segment.StartAddress);
-                item.SubItems.Add(FormatAddress(segment.EndAddress));
+                item.Text = FormatAddress(segment.Start);
+                item.SubItems.Add(FormatAddress(segment.End));
                 item.Tag = segment;
                 lvSegments.Items.Add(item);
             }
@@ -59,7 +59,7 @@ namespace DosDebugger
                 return;
 
             Segment segment = (Segment)lvSegments.SelectedItems[0].Tag;
-            document.Navigator.SetLocation(segment.StartAddress, this);
+            document.Navigator.SetLocation(segment.Start, this);
         }
     }
 }

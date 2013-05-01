@@ -19,11 +19,11 @@ namespace Disassembler
         private List<BasicBlock> blocks = new List<BasicBlock>();
 
         /// <summary>
-        /// Dictionary that maps the entry point offset of a procedure
-        /// to a Procedure object.
+        /// Dictionary that maps the entry point (linear) address of a
+        /// procedure to a Procedure object.
         /// </summary>
-        private SortedList<int, Procedure> procedures
-            = new SortedList<int, Procedure>();
+        private SortedList<LinearPointer, Procedure> procedures
+            = new SortedList<LinearPointer, Procedure>();
 
         /// <summary>
         /// Dictionary that maps a 16-bit segment address to a Segment
@@ -43,7 +43,9 @@ namespace Disassembler
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            
+            if (baseAddress.LinearAddress.Address + image.Length > 0x100000)
+                throw new ArgumentOutOfRangeException("baseAddress");
+
             this.image = image;
             this.baseAddress = baseAddress;
 
@@ -62,6 +64,16 @@ namespace Disassembler
             get { return image; }
         }
 
+        public LinearPointer Start
+        {
+            get { return baseAddress.LinearAddress; }
+        }
+
+        public LinearPointer End
+        {
+            get { return baseAddress.LinearAddress + image.Length; }
+        }
+
         /// <summary>
         /// Gets the number of bytes in the image.
         /// </summary>
@@ -71,22 +83,24 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Returns an object that wraps the byte at the given offset.
+        /// Returns an object that encapsulates the byte at the given address.
         /// </summary>
-        /// <param name="offset">Offset of the byte to return.</param>
+        /// <param name="address">Address of the byte to return.</param>
         /// <returns></returns>
-        public ByteProperties this[int offset]
+        public ByteProperties this[LinearPointer address]
         {
             get
             {
+                int offset = address - baseAddress.LinearAddress;
                 if (offset < 0 || offset >= attr.Length)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException("address");
                 return attr[offset];
             }
             set
             {
+                int offset = address - baseAddress.LinearAddress;
                 if (offset < 0 || offset >= attr.Length)
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException("address");
                 if (value == null)
                     throw new ArgumentNullException("value");
 
@@ -101,8 +115,8 @@ namespace Disassembler
         /// <returns></returns>
         public ByteProperties this[Pointer address]
         {
-            get { return this[PointerToOffset(address)]; }
-            set { this[PointerToOffset(address)] = value; }
+            get { return this[address.LinearAddress]; }
+            set { this[address.LinearAddress] = value; }
         }
 
         /// <summary>
@@ -113,6 +127,7 @@ namespace Disassembler
             get { return baseAddress; }
         }
 
+#if true
         /// <summary>
         /// Converts a CS:IP pointer to its offset within the executable
         /// image. Note that different CS:IP pointers may correspond to the
@@ -120,17 +135,22 @@ namespace Disassembler
         /// </summary>
         /// <param name="address">The CS:IP address to convert.</param>
         /// <returns>An offset that may be outside the image.</returns>
-        public int PointerToOffset(Pointer address)
+        private int PointerToOffset(Pointer address)
         {
             return address.LinearAddress - baseAddress.LinearAddress;
         }
 
+        private int PointerToOffset(LinearPointer address)
+        {
+            return address - baseAddress.LinearAddress;
+        }
+#endif
+
         /// <summary>
         /// Decodes an instruction at the given address.
         /// </summary>
-        /// <param name="offset"></param>
         /// <param name="address">The address to decode.</param>
-        /// <returns></returns>
+        /// <returns>The decoded instruction.</returns>
         /// <exception cref="ArgumentOutOfRangeException">If address refers
         /// outside the image.</exception>
         public Instruction DecodeInstruction(Pointer address)
@@ -144,10 +164,16 @@ namespace Disassembler
             return instruction;
         }
 
-        public byte[] GetBytes(int offset, int count)
+        public bool IsAddressValid(LinearPointer address)
         {
+            return (address >= Start) && (address < End);
+        }
+
+        public byte[] GetBytes(LinearPointer address, int count)
+        {
+            int offset = PointerToOffset(address);
             if (offset < 0 || offset > image.Length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException("address");
             if (count < 0 || offset + count > image.Length)
                 throw new ArgumentOutOfRangeException("count");
 
@@ -157,19 +183,28 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Reads a 16-bit unsigned integer from the given offset.
+        /// Reads a 16-bit unsigned integer from the given linear address.
         /// </summary>
-        /// <param name="offset">Offset to read.</param>
+        /// <param name="address">Linear address to read from.</param>
         /// <returns>A 16-bit unsigned integer in little endian.
         /// </returns>
-        public UInt16 GetUInt16(int offset)
+        public UInt16 GetUInt16(LinearPointer address)
         {
+            int offset = PointerToOffset(address);
             if (offset < 0 || offset + 1 >= image.Length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException("address");
 
             return (UInt16)(image[offset] | (image[offset + 1] << 8));
         }
 
+        /// <summary>
+        /// Returns true if all the bytes within [start, end) are of type
+        /// 'type'.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public bool CheckByteType(Pointer start, Pointer end, ByteType type)
         {
             int pos1 = PointerToOffset(start);
@@ -231,16 +266,16 @@ namespace Disassembler
             if (segment == null)
             {
                 segment = new Segment();
-                segment.StartAddress = start;
-                segment.EndAddress = end;
+                segment.Start = start;
+                segment.End = end;
                 segments.Add(start.Segment, segment);
             }
             else
             {
-                if (start.LinearAddress < segment.StartAddress.LinearAddress)
-                    segment.StartAddress = start;
-                if (end.LinearAddress > segment.EndAddress.LinearAddress)
-                    segment.EndAddress = end;
+                if (start.LinearAddress < segment.Start.LinearAddress)
+                    segment.Start = start;
+                if (end.LinearAddress > segment.End.LinearAddress)
+                    segment.End = end;
             }
 
             return piece;
@@ -264,19 +299,22 @@ namespace Disassembler
                 return null;
         }
 
-        public UInt16 LargestSegmentThatStartsBefore(int offset)
+        public UInt16 LargestSegmentThatStartsBefore(LinearPointer address)
         {
             UInt16 result = 0;
             foreach (Segment segment in Segments)
             {
-                if (PointerToOffset(segment.StartAddress) <= offset)
+                if (segment.Start.LinearAddress <= address)
                     result = segment.SegmentAddress;
             }
             return result;
         }
 
-        private bool RangeCoversWholeInstructions(int pos1, int pos2)
+        private bool RangeCoversWholeInstructions(LinearPointer startAddress, LinearPointer endAddress)
         {
+            int pos1 = PointerToOffset(startAddress);
+            int pos2 = PointerToOffset(endAddress);
+
             if (!attr[pos1].IsLeadByte)
                 return false;
 
@@ -314,7 +352,7 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("end");
 
             // Verify that the basic block covers continuous code bytes.
-            if (!RangeCoversWholeInstructions(pos1, pos2))
+            if (!RangeCoversWholeInstructions(start.LinearAddress, end.LinearAddress))
             {
                 throw new ArgumentException("A basic block must consist of whole instructions.");
             }
@@ -345,28 +383,26 @@ namespace Disassembler
 
         public Procedure CreateProcedure(Pointer entryPoint)
         {
-            if (FindProcedure(entryPoint) != null)
+            if (FindProcedure(entryPoint.LinearAddress) != null)
             {
                 throw new InvalidOperationException(
                     "A procedure already exists at the given entry point.");
             }
 
             Procedure proc = new Procedure(this, entryPoint);
-            this.procedures.Add(PointerToOffset(entryPoint), proc);
+            this.procedures.Add(entryPoint.LinearAddress, proc);
             return proc;
         }
 
         /// <summary>
-        /// Finds a procedure at the given entry point. Only the absolute
-        /// position of the entry point is used; its CS:IP combination 
-        /// does not matter.
+        /// Finds a procedure at the given entry point.
         /// </summary>
         /// <param name="entryPoint"></param>
         /// <returns></returns>
-        public Procedure FindProcedure(Pointer entryPoint)
+        public Procedure FindProcedure(LinearPointer entryPoint)
         {
             Procedure proc;
-            if (procedures.TryGetValue(PointerToOffset(entryPoint), out proc))
+            if (procedures.TryGetValue(entryPoint, out proc))
                 return proc;
             else
                 return null;
@@ -522,9 +558,9 @@ namespace Disassembler
 
     public class Segment
     {
-        public Pointer StartAddress { get; set; }
-        public Pointer EndAddress { get; set; }
-        public UInt16 SegmentAddress { get { return StartAddress.Segment; } }
+        public Pointer Start { get; set; }
+        public Pointer End { get; set; }
+        public UInt16 SegmentAddress { get { return Start.Segment; } }
 
 #if false
         /// <summary>
@@ -545,7 +581,7 @@ namespace Disassembler
 
         public override string ToString()
         {
-            return string.Format("{0} - {1}", StartAddress, EndAddress);
+            return string.Format("{0} - {1}", Start, End);
         }
     }
 
@@ -643,9 +679,9 @@ namespace Disassembler
             BasicBlock newBlock = new BasicBlock(image, location, end);
 
             // Update the BasicBlock property of bytes in the second block.
-            int pos1 = image.PointerToOffset(location);
-            int pos2 = image.PointerToOffset(end);
-            for (int i = pos1; i < pos2; i++)
+            var pos1 =location.LinearAddress;
+            var pos2 = end.LinearAddress;
+            for (var i = pos1; i < pos2; i++)
             {
                 image[i].BasicBlock = newBlock;
             }

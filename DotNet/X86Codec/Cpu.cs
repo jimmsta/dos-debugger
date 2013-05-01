@@ -71,6 +71,99 @@ namespace X86Codec
     }
 
     /// <summary>
+    /// Represents a pointer that contains a 32-bit flat address.
+    /// </summary>
+    public struct LinearPointer : IComparable<LinearPointer>
+    {
+        private int address;
+
+        public LinearPointer(int address)
+        {
+            //if (address < 0)
+            //    throw new ArgumentOutOfRangeException("address");
+            this.address = address;
+        }
+
+        /// <summary>
+        /// Gets the address this pointer points to. This may be negative.
+        /// </summary>
+        public int Address
+        {
+            get { return address; }
+        }
+
+        public override string ToString()
+        {
+            return address.ToString("X5");
+        }
+
+        public static LinearPointer operator +(LinearPointer a, int offset)
+        {
+            return new LinearPointer(a.address + offset);
+        }
+
+        /// <summary>
+        /// Increments the pointer by one.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <returns></returns>
+        public static LinearPointer operator++(LinearPointer a)
+        {
+            return new LinearPointer(a.address + 1);
+        }
+
+        public static bool operator <(LinearPointer a, LinearPointer b)
+        {
+            return a.address < b.address;
+        }
+
+        public static bool operator >(LinearPointer a, LinearPointer b)
+        {
+            return a.address > b.address;
+        }
+
+        public static bool operator <=(LinearPointer a, LinearPointer b)
+        {
+            return a.address <= b.address;
+        }
+
+        public static bool operator >=(LinearPointer a, LinearPointer b)
+        {
+            return a.address >= b.address;
+        }
+
+        public static int operator -(LinearPointer a, LinearPointer b)
+        {
+            return a.address - b.address;
+        }
+
+        public static bool operator ==(LinearPointer a, LinearPointer b)
+        {
+            return a.address == b.address;
+        }
+
+        public static bool operator !=(LinearPointer a, LinearPointer b)
+        {
+            return a.address != b.address;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is LinearPointer) && ((LinearPointer)obj == this);
+        }
+
+        public override int GetHashCode()
+        {
+            return address.GetHashCode();
+        }
+
+        public int CompareTo(LinearPointer other)
+        {
+            return address.CompareTo(other.address);
+        }
+    }
+
+    /// <summary>
     /// Represents a far pointer consisting of segment and offset components.
     /// For the moment, we only support 16-bit far pointers.
     /// </summary>
@@ -110,20 +203,13 @@ namespace X86Codec
         }
 
         /// <summary>
-        /// Gets the linear (physical) address pointed to by this pointer.
+        /// Gets the linear (physical) address represented by this pointer.
+        /// Note that this address may exceed 1MB, so care should be taken
+        /// when using this address directly to access memory.
         /// </summary>
-        /// <exception cref="AddressWrappedException">
-        /// If the linear address is greater than or equal to 1MB.
-        /// </exception>
-        public int LinearAddress
+        public LinearPointer LinearAddress
         {
-            get
-            {
-                int linearAddress = segment * 16 + offset;
-                if (linearAddress >= 0x100000)
-                    throw new AddressWrappedException();
-                return linearAddress;
-            }
+            get { return new LinearPointer(segment * 16 + offset); }
         }
 
         public override string ToString()

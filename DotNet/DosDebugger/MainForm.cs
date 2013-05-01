@@ -96,7 +96,7 @@ namespace DosDebugger
 
         Document document;
         MZFile mzFile;
-        UInt16 baseSegment = 0; // 0x2920;
+        UInt16 baseSegment = 0xDDDD; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
 
@@ -109,7 +109,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
         }
@@ -136,7 +136,7 @@ namespace DosDebugger
 
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
 
-            GoToLocation(new Pointer(0, 0));
+            GoToLocation(dasm.BaseAddress);
         }
 
 #if false
@@ -436,6 +436,7 @@ namespace DosDebugger
 
         private void ListInstructionsThatChangeSegmentRegisters()
         {
+#if false
             // Find all instructions that change segment registers.
             var attr = dasm.Image;
             for (int i = 0; i < attr.Length; )
@@ -464,6 +465,7 @@ namespace DosDebugger
                     i++;
                 }
             }
+#endif
         }
 
         private void mnuViewDisassembly_Click(object sender, EventArgs e)

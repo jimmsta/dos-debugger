@@ -74,6 +74,7 @@ namespace Disassembler
             }
         }
 
+#if false
         /// <summary>
         /// Converts a CS:IP pointer to its offset within the executable
         /// image. Note that different CS:IP pointers may correspond to the
@@ -85,6 +86,7 @@ namespace Disassembler
         {
             return image.PointerToOffset(location);
         }
+#endif
 
         /// <summary>
         /// Analyzes code starting from the given location. That location
@@ -145,7 +147,7 @@ namespace Disassembler
                     // If a procedure with that entry point has already been
                     // defined, perform some sanity checks but no need to
                     // analyze again.
-                    proc = image.FindProcedure(entry.Target);
+                    proc = image.FindProcedure(entry.Target.LinearAddress);
                     if (proc != null)
                         continue;
 
@@ -205,11 +207,11 @@ namespace Disassembler
             foreach (Segment segment in image.Segments)
             {
                 if (lastSegment != null &&
-                    segment.StartAddress.LinearAddress < lastSegment.EndAddress.LinearAddress)
+                    segment.Start.LinearAddress < lastSegment.End.LinearAddress)
                 {
-                    AddError(segment.StartAddress, ErrorCategory.Error,
+                    AddError(segment.Start, ErrorCategory.Error,
                         "Segment {0:X4} overlaps with segment {1:X4}.",
-                        lastSegment.StartAddress.Segment, segment.StartAddress.Segment);
+                        lastSegment.Start.Segment, segment.Start.Segment);
                 }
                 lastSegment = segment;
             }
@@ -235,7 +237,7 @@ namespace Disassembler
             // Verify that the location that supposedly stores the jump table
             // entry is not analyzed as anything else. If it is, it indicates
             // that the jump table ends here.
-            int b = PointerToOffset(entry.DataLocation);
+            LinearPointer b = entry.DataLocation.LinearAddress;
             if (image[b].Type != ByteType.Unknown ||
                 image[b + 1].Type != ByteType.Unknown)
                 return null;
@@ -265,8 +267,7 @@ namespace Disassembler
 
             // Check that the target address looks valid. If it doesn't, it
             // probably indicates that the jump table ends here.
-            if (PointerToOffset(jumpTarget) < 0 || 
-                PointerToOffset(jumpTarget) >= image.Length)
+            if (!image.IsAddressValid(jumpTarget.LinearAddress))
                 return null;
 
             // If the jump target is outside the range of the current segment
@@ -274,17 +275,20 @@ namespace Disassembler
             // that the jump table ends here.
             // TBD: this heuristic is kind of a hack... we should do better.
 #if true
-            if (image.LargestSegmentThatStartsBefore(PointerToOffset(jumpTarget))
+            if (image.LargestSegmentThatStartsBefore(jumpTarget.LinearAddress)
                 > entry.Source.Segment)
             {
                 return null;
             }
 #endif
 
-            // ...
-
             // BUG: We really do need to check that the destination
             // is valid. If not, we should stop immediately.
+            if (!(image[jumpTarget].Type == ByteType.Unknown ||
+                  image[jumpTarget].Type == ByteType.Code &&
+                  image[jumpTarget].IsLeadByte))
+                return null;
+
             // ...
 
             // Mark DataLocation as data and add it to the owning procedure's

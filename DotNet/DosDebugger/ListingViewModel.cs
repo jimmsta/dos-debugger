@@ -19,7 +19,7 @@ namespace DosDebugger
         private Disassembler16 dasm;
 
         /// <summary>
-        /// Array of the offsets or each row. This array is used to speed up
+        /// Array of the address of each row. This array is used to speed up
         /// row lookup. While this information can be obtained from the rows
         /// collection itself, using a separate array has two benefits:
         /// 1, it utilizes BinarySearch() without the need to create a dummy
@@ -27,23 +27,24 @@ namespace DosDebugger
         /// 2, it saves extra memory indirections and is thus faster.
         /// The cost is of course a little extra memory footprint.
         /// </summary>
-        private int[] rowOffsets;
+        private LinearPointer[] rowAddresses;
 
         public ListingViewModel(Disassembler16 dasm)
         {
             this.dasm = dasm;
 
-            // Make a dictionary from CS:IP to the error at that location.
-            Dictionary<int, Error> errorMap = new Dictionary<int, Error>();
+            // Make a dictionary that maps a location to the error at that location.
+            // TODO: there may be multiple errors at a single location.
+            Dictionary<LinearPointer, Error> errorMap = new Dictionary<LinearPointer, Error>();
             foreach (Error error in dasm.Errors)
             {
-                errorMap[dasm.PointerToOffset(error.Location)] = error;
+                errorMap[error.Location.LinearAddress] = error;
             }
 
             // Display analyzed code and data.
             BinaryImage image = dasm.Image;
             Pointer address = dasm.BaseAddress;
-            for (int i = 0; i < image.Length; )
+            for (var i = image.Start; i < image.End; )
             {
                 ByteProperties b = image[i];
 
@@ -51,23 +52,23 @@ namespace DosDebugger
                 {
                     if (b.BasicBlock != null && b.BasicBlock.Start == b.Address)
                     {
-                        rows.Add(new LabelListingRow(i, b.BasicBlock));
+                        rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
 
-                    Instruction insn = dasm.Image.DecodeInstruction(b.Address);
-                    rows.Add(new CodeListingRow(i, insn, dasm.Image.GetBytes(i, insn.EncodedLength)));
+                    Instruction insn = image.DecodeInstruction(b.Address);
+                    rows.Add(new CodeListingRow(0, insn, image.GetBytes(i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
                 {
-                    int j = i + 1;
-                    while (j < image.Length && 
+                    var j = i + 1;
+                    while (j < image.End && 
                            image[j].Type == ByteType.Data &&
                            !image[j].IsLeadByte)
                         j++;
 
-                    rows.Add(new DataListingRow(i, b.Address, image.GetBytes(i, j - i)));
+                    rows.Add(new DataListingRow(0, b.Address, image.GetBytes(i, j - i)));
                     address = b.Address + (j - i);
                     i = j;
                 }
@@ -77,13 +78,13 @@ namespace DosDebugger
                     {
                     //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
-                    int j = i + 1;
-                    while (j < image.Length &&
+                    var j = i + 1;
+                    while (j < image.End &&
                            !IsLeadByteOfCode(image[j]) &&
                            !IsLeadByteOfData(image[j]))
                         j++;
 
-                    rows.Add(new BlankListingRow(i, address, image.GetBytes(i, j - i)));
+                    rows.Add(new BlankListingRow(0, address, image.GetBytes(i, j - i)));
                     try
                     {
                         address += (j - i);
@@ -96,22 +97,23 @@ namespace DosDebugger
                 }
             }
 
-            // Create a sorted array of the offsets or each row.
-            rowOffsets = new int[rows.Count];
+            // Create a sorted array containing the address of each row.
+            rowAddresses = new LinearPointer[rows.Count];
             for (int i = 0; i < rows.Count; i++)
             {
-                rowOffsets[i] = dasm.PointerToOffset(rows[i].Location);
+                rowAddresses[i] = rows[i].Location.LinearAddress;
             }
 
-            // Fill the BeginIndex and EndIndex of the procedures.
+            // Fill the BeginRowIndex and EndRowIndex of the procedures.
             foreach (Procedure proc in dasm.Procedures)
             {
                 if (proc.Bounds.Length > 0)
                 {
                     ProcedureItem item = new ProcedureItem(proc);
                     Range range = proc.Bounds;
-                    item.BeginRowIndex = range.Begin;
-                    item.EndRowIndex = range.End;
+                    item.BeginRowIndex = FindRowIndex(new LinearPointer(range.Begin));
+                    item.EndRowIndex = FindRowIndex(new LinearPointer(range.End));
+                    // TODO: what if range.End is past the end of the image?
                     // TBD: need to check broken instruction conditions
                     // as well as leading/trailing unanalyzed bytes.
                     procItems.Add(item);
@@ -121,7 +123,7 @@ namespace DosDebugger
             // Create segment items.
             foreach (Segment segment in dasm.Image.Segments)
             {
-                segmentItems.Add(new SegmentItem(segment.StartAddress));
+                segmentItems.Add(new SegmentItem(segment.Start));
             }
         }
 
@@ -141,14 +143,14 @@ namespace DosDebugger
         }
 
         /// <summary>
-        /// Finds the row that occupies the given address. If no row occupies
+        /// Finds the row that covers the given address. If no row occupies
         /// that address, finds the closest row.
         /// </summary>
         /// <param name="address">The address to find.</param>
         /// <returns>ListingRow, or null if the view is empty.</returns>
         public int FindRowIndex(Pointer address)
         {
-            return FindRowIndex(dasm.PointerToOffset(address));
+            return FindRowIndex(address.LinearAddress);
         }
 
         /// <summary>
@@ -157,12 +159,12 @@ namespace DosDebugger
         /// </summary>
         /// <param name="offset">The offset to find.</param>
         /// <returns>ListingRow, or -1 if the view is empty.</returns>
-        public int FindRowIndex(int offset)
+        public int FindRowIndex(LinearPointer address)
         {
-            if (rowOffsets.Length == 0)
+            if (rowAddresses.Length == 0)
                 return -1;
 
-            int k = Array.BinarySearch(rowOffsets, offset);
+            int k = Array.BinarySearch(rowAddresses, address);
             if (k >= 0) // found
             {
                 return k;
