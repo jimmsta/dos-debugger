@@ -50,7 +50,7 @@ namespace DosDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.Start == b.Address)
+                    if (b.BasicBlock != null && b.BasicBlock.Start == b.Address.LinearAddress)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
@@ -418,7 +418,7 @@ namespace DosDebugger
 
         public override Pointer Location
         {
-            get { return block.Start; }
+            get { return block.Image[block.Start].Address; }
         }
 
         public override byte[] Opcode
@@ -428,7 +428,7 @@ namespace DosDebugger
 
         public override string Text
         {
-            get { return string.Format("loc_{0:X5}", block.Start.LinearAddress); }
+            get { return string.Format("loc_{0}", block.Start); }
         }
 
         public override ListViewItem CreateViewItem()

@@ -64,11 +64,17 @@ namespace Disassembler
             get { return image; }
         }
 
+        /// <summary>
+        /// Gets the start address of the loaded image.
+        /// </summary>
         public LinearPointer Start
         {
             get { return baseAddress.LinearAddress; }
         }
 
+        /// <summary>
+        /// Gets the end address of the loaded image.
+        /// </summary>
         public LinearPointer End
         {
             get { return baseAddress.LinearAddress + image.Length; }
@@ -91,32 +97,21 @@ namespace Disassembler
         {
             get
             {
-                int offset = address - baseAddress.LinearAddress;
+                int offset = address - this.Start;
                 if (offset < 0 || offset >= attr.Length)
                     throw new ArgumentOutOfRangeException("address");
                 return attr[offset];
             }
-            set
-            {
-                int offset = address - baseAddress.LinearAddress;
-                if (offset < 0 || offset >= attr.Length)
-                    throw new ArgumentOutOfRangeException("address");
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                attr[offset] = value;
-            }
         }
 
         /// <summary>
-        /// Returns an object that wraps the byte at the given address.
+        /// Returns an object that encapsulates the byte at the given address.
         /// </summary>
         /// <param name="address">Address of the byte to return.</param>
         /// <returns></returns>
         public ByteProperties this[Pointer address]
         {
             get { return this[address.LinearAddress]; }
-            set { this[address.LinearAddress] = value; }
         }
 
         /// <summary>
@@ -258,7 +253,6 @@ namespace Disassembler
                 attr[i].Address = start + (i - pos1);
                 attr[i].IsLeadByte = (i == pos1);
                 attr[i].Type = type;
-                //attr[i].Piece = piece;
             }
 
             // Update the segment bounds.
@@ -272,6 +266,7 @@ namespace Disassembler
             }
             else
             {
+                // TODO: modify this to use MultiRange.
                 if (start.LinearAddress < segment.Start.LinearAddress)
                     segment.Start = start;
                 if (end.LinearAddress > segment.End.LinearAddress)
@@ -290,10 +285,15 @@ namespace Disassembler
             get { return segments.Values; }
         }
 
-        public Segment FindSegment(UInt16 seg)
+        /// <summary>
+        /// Finds a Segment object with the given segment address.
+        /// </summary>
+        /// <param name="segmentAddress">16-bit segment address.</param>
+        /// <returns>A Segment object if found, null otherwise.</returns>
+        public Segment FindSegment(UInt16 segmentAddress)
         {
             Segment segment;
-            if (segments.TryGetValue(seg, out segment))
+            if (segments.TryGetValue(segmentAddress, out segment))
                 return segment;
             else
                 return null;
@@ -339,36 +339,31 @@ namespace Disassembler
         /// <param name="start"></param>
         /// <param name="end"></param>
         /// <returns></returns>
-        public BasicBlock CreateBasicBlock(Pointer start, Pointer end)
+        public BasicBlock CreateBasicBlock(LinearPointer start, LinearPointer end)
         {
-            if (start.Segment != end.Segment)
-                throw new ArgumentException("A BasicBlock must be on a single segment.");
-
-            int pos1 = PointerToOffset(start);
-            int pos2 = PointerToOffset(end);
-            if (pos1 < 0 || pos1 >= image.Length)
+            if (start < this.Start || start > this.End)
                 throw new ArgumentOutOfRangeException("start");
-            if (pos2 <= pos1 || pos2 > image.Length)
+            if (end < start || end > this.End)
                 throw new ArgumentOutOfRangeException("end");
 
             // Verify that the basic block covers continuous code bytes.
-            if (!RangeCoversWholeInstructions(start.LinearAddress, end.LinearAddress))
+            if (!RangeCoversWholeInstructions(start, end))
             {
                 throw new ArgumentException("A basic block must consist of whole instructions.");
             }
 
             // Verify that no existing basic block overlaps with this range.
-            for (int i = pos1; i < pos2; i++)
+            for (var i = start; i < end; i++)
             {
-                if (attr[i].BasicBlock != null)
+                if (this[i].BasicBlock != null)
                     throw new ArgumentException("A existing basic block overlaps with this range.");
             }
 
             // Update the mapping from byte to basic block.
             BasicBlock block = new BasicBlock(this, start, end);
-            for (int i = pos1; i < pos2; i++)
+            for (var i = start; i < end; i++)
             {
-                attr[i].BasicBlock = block;
+                this[i].BasicBlock = block;
             }
 
             // Add the block to our internal list of blocks.
@@ -615,66 +610,53 @@ namespace Disassembler
     public class BasicBlock
     {
         private BinaryImage image;
-        private Pointer start;
-        private Pointer end;
+
+        public BinaryImage Image { get { return image; } }
 
         /// <summary>
         /// Gets the start address of the basic block.
         /// </summary>
-        public Pointer Start
-        {
-            get { return start; }
-            private set { this.start = value; }
-        }
+        public LinearPointer Start { get; private set; }
 
         /// <summary>
         /// Gets the end address of the basic block.
         /// </summary>
-        public Pointer End
-        {
-            get { return end; }
-            private set { this.end = value; }
-        }
+        public LinearPointer End { get; private set; }
 
         public int Length
         {
-            get { return end.LinearAddress - start.LinearAddress; }
+            get { return End - Start; }
         }
 
-        internal BasicBlock(BinaryImage image, Pointer start, Pointer end)
+        internal BasicBlock(BinaryImage image, LinearPointer start, LinearPointer end)
         {
             this.image = image;
-            this.start = start;
-            this.end = end;
+            this.Start = start;
+            this.End = end;
         }
 
         /// <summary>
         /// Splits the basic block into two at the given location.
         /// </summary>
         /// <param name="location"></param>
-        internal BasicBlock Split(Pointer location)
+        internal BasicBlock Split(LinearPointer location)
         {
-            if (location.Segment != start.Segment)
-                throw new ArgumentException("location must be in the block's segment.", "location");
-            if (location.LinearAddress <= start.LinearAddress ||
-                location.LinearAddress >= end.LinearAddress)
+            if (location <= Start || location >= End)
                 throw new ArgumentException("location must be within [start, end).");
             if (!image[location].IsLeadByte)
                 throw new ArgumentException("location must be at piece boundary.");
 
             // Create a new block that covers [location, end).
-            BasicBlock newBlock = new BasicBlock(image, location, end);
+            BasicBlock newBlock = new BasicBlock(image, location, End);
 
             // Update the BasicBlock property of bytes in the second block.
-            var pos1 = location.LinearAddress;
-            var pos2 = end.LinearAddress;
-            for (var i = pos1; i < pos2; i++)
+            for (var i = location; i < End; i++)
             {
                 image[i].BasicBlock = newBlock;
             }
 
             // Update the end position of this block.
-            this.end = location;
+            this.End = location;
 
             return newBlock;
         }

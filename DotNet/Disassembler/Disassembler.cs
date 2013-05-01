@@ -359,13 +359,13 @@ namespace Disassembler
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
                 // Otherwise, split the basic block into two.
-                if (b.BasicBlock.Start.LinearAddress == pos.LinearAddress)
+                if (b.BasicBlock.Start == pos.LinearAddress)
                 {
                     return null;
                 }
                 else
                 {
-                    if (b.BasicBlock.Start.Segment != pos.Segment)
+                    if (image[b.BasicBlock.Start].Address.Segment != pos.Segment)
                     {
                         errors.Add(new Error(pos, string.Format(
                             "Ran into the middle of a block [{0},{1}) from another segment " +
@@ -374,7 +374,7 @@ namespace Disassembler
                             start.Target, start.Source)));
                         return null;
                     }
-                    BasicBlock newBlock = b.BasicBlock.Split(pos);
+                    BasicBlock newBlock = b.BasicBlock.Split(pos.LinearAddress);
                     return null; // newBlock;
                 }
             }
@@ -464,7 +464,7 @@ namespace Disassembler
 
             // Create a basic block unless we failed on the first instruction.
             if (pos.LinearAddress > start.Target.LinearAddress)
-                return image.CreateBasicBlock(start.Target, pos);
+                return image.CreateBasicBlock(start.Target.LinearAddress, pos.LinearAddress);
             else
                 return null;
         }
