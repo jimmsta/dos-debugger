@@ -42,6 +42,7 @@
     <Compile Include="Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Range.cs" />
+    <Compile Include="Segment.cs" />
     <Compile Include="XRef.cs" />
   </ItemGroup>
   <ItemGroup>

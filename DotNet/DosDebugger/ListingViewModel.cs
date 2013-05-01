@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Disassembler;
+using System;
 using System.Collections.Generic;
-using System.Text;
-using Disassembler;
-using X86Codec;
-using System.Windows.Forms;
 using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using X86Codec;
 
 namespace DosDebugger
 {
@@ -50,7 +50,7 @@ namespace DosDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.Start == b.Address.LinearAddress)
+                    if (b.BasicBlock != null && b.BasicBlock.Start == i)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
