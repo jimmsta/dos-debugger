@@ -11,7 +11,7 @@ namespace Disassembler
     public class Procedure
     {
         private BinaryImage image;
-        private Range bounds;
+        private Range<LinearPointer> bounds;
 
         //private MultiRange codeRange = new MultiRange();
         //private MultiRange dataRange = new MultiRange();
@@ -28,7 +28,7 @@ namespace Disassembler
         /// </summary>
         public Pointer EntryPoint { get; private set; }
 
-        public Range Bounds
+        public Range<LinearPointer> Bounds
         {
             get { return bounds; }
         }
@@ -75,15 +75,15 @@ namespace Disassembler
             }
 
             // Update the bounds of this procedure.
-            if (bounds.Length == 0)
+            if (bounds.IsEmpty)
             {
-                bounds = new Range(pos1.Address, pos2.Address);
+                bounds = new Range<LinearPointer>(pos1, pos2);
             }
             else
             {
-                bounds = new Range(
-                    Math.Min(pos1.Address, bounds.Begin),
-                    Math.Max(pos2.Address, bounds.End));
+                bounds = new Range<LinearPointer>(
+                    pos1 < bounds.Begin ? pos1 : bounds.Begin,
+                    pos2 > bounds.End ? pos2 : bounds.End);
             }
         }
 
@@ -108,15 +108,15 @@ namespace Disassembler
             }
 
             // Update the bounds of this procedure.
-            if (bounds.Length == 0)
+            if (bounds.IsEmpty)
             {
-                bounds = new Range(pos1.Address, pos2.Address);
+                bounds = new Range<LinearPointer>(pos1, pos2);
             }
             else
             {
-                bounds = new Range(
-                    Math.Min(pos1.Address, bounds.Begin),
-                    Math.Max(pos2.Address, bounds.End));
+                bounds = new Range<LinearPointer>(
+                    pos1 < bounds.Begin ? pos1 : bounds.Begin,
+                    pos2 > bounds.End ? pos2 : bounds.End);
             }
         }
     }

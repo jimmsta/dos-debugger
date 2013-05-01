@@ -97,9 +97,9 @@ namespace DosDebugger
                 }
                 else
                 {
-                    Range r = proc.Bounds;
-                    int k1 = viewModel.FindRowIndex(new LinearPointer(r.Begin));
-                    int k2 = viewModel.FindRowIndex(new LinearPointer(r.End));
+                    var r = proc.Bounds;
+                    int k1 = viewModel.FindRowIndex(r.Begin);
+                    int k2 = viewModel.FindRowIndex(r.End);
                     DisplayViewport(k1, k2);
                 }
                 return;

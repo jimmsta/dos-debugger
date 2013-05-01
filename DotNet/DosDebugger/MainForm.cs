@@ -96,7 +96,7 @@ namespace DosDebugger
 
         Document document;
         MZFile mzFile;
-        UInt16 baseSegment = 0xDDDD; // 0x2920;
+        UInt16 baseSegment = 0xAAAA; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
 

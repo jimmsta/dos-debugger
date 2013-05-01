@@ -449,23 +449,6 @@ namespace Disassembler
         }
     }
 
-    /// <summary>
-    /// Represents a range of consecutive bytes that constitute a single
-    /// instruction or data item.
-    /// </summary>
-    public class ByteRange
-    {
-        /// <summary>
-        /// Gets or sets the type of the byte range.
-        /// </summary>
-        public ByteType Type { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the number of (consecutive) bytes in the range.
-        /// </summary>
-        public int Length { get; internal set; }
-    }
-
 #if false
     public struct ByteAttribute
     {
@@ -586,14 +569,18 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Represents an instruction or data item that takes up a continous range
-    /// of bytes in a binary image.
+    /// Represents a range of consecutive bytes that constitute a single
+    /// instruction or data item.
     /// </summary>
     public class Piece
     {
         //private BinaryImage image;
         public Pointer Start { get; private set; }
         public Pointer End { get; private set; }
+
+        /// <summary>
+        /// Gets the type of the piece.
+        /// </summary>
         public ByteType Type { get; private set; }
 
         internal Piece(BinaryImage image, Pointer start, Pointer end, ByteType type)
@@ -679,7 +666,7 @@ namespace Disassembler
             BasicBlock newBlock = new BasicBlock(image, location, end);
 
             // Update the BasicBlock property of bytes in the second block.
-            var pos1 =location.LinearAddress;
+            var pos1 = location.LinearAddress;
             var pos2 = end.LinearAddress;
             for (var i = pos1; i < pos2; i++)
             {
@@ -696,12 +683,10 @@ namespace Disassembler
 #if false
     /// <summary>
     /// Specifies a location in a binary image, which may be referenced either
-    /// by its SEG:OFF address or by its relative position (byte offset) from
-    /// the start of the image.
+    /// by its SEG:OFF address or by its linear address.
     /// </summary>
     public struct Location
     {
-        private BinaryImage image;
         private Pointer address;
 
         public Pointer Address
@@ -712,12 +697,11 @@ namespace Disassembler
 
         public int Position
         {
-            get { return address.EffectiveAddress - image.BaseAddress.EffectiveAddress; }
+            get { return address.LinearAddress; }
         }
 
-        public Location(BinaryImage image, Pointer address)
+        public Location(Pointer address)
         {
-            this.image = image;
             this.address = address;
         }
     }

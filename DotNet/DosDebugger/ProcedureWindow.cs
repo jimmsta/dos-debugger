@@ -49,7 +49,7 @@ namespace DosDebugger
                 //item.SubItems.Add(proc.ByteRange.Intervals.Count.ToString());
                 //item.SubItems.Add(proc.ByteRange.Length.ToString());
                 item.SubItems.Add("?");
-                item.SubItems.Add(proc.Bounds.Length.ToString());
+                item.SubItems.Add("?"); // proc.Bounds.Length.ToString());
                 item.Tag = proc;
                 lvProcedures.Items.Add(item);
                 segStat[proc.EntryPoint.Segment] = 1;

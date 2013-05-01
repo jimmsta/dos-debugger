@@ -5,6 +5,7 @@ using System.Text;
 
 namespace Disassembler
 {
+#if false
     /// <summary>
     /// Represents a collection of disjoint ranges.
     /// </summary>
@@ -137,7 +138,9 @@ namespace Disassembler
             }
         }
     }
+#endif
 
+#if false
     /// <summary>
     /// Represents a C++/STL-style range [begin, end) where 'begin' and 'end'
     /// are of type T where T is comparable.
@@ -188,4 +191,61 @@ namespace Disassembler
             return string.Format("[{0}, {1})", begin, end);
         }
     }
+#else
+    /// <summary>
+    /// Represents a C++/STL-style range [begin, end) where 'begin' and 'end'
+    /// are of type T where T is comparable.
+    /// </summary>
+    public struct Range<T> where T : IComparable<T>
+    {
+        private T begin;
+        private T end;
+
+        /// <summary>
+        /// Creates a half-open range with the given start and end points.
+        /// The start point is included in the range, but the end point is
+        /// excluded from the range.
+        /// </summary>
+        /// <param name="begin">The start point, inclusive.</param>
+        /// <param name="end">The end point, exclusive.</param>
+        /// <exception cref="ArgumentException">If start is greater than end.
+        /// </exception>
+        public Range(T begin, T end)
+            : this()
+        {
+            if (begin.CompareTo(end) > 0)
+                throw new ArgumentException("'begin' must be less than or equal to 'end'.");
+
+            this.begin = begin;
+            this.end = end;
+        }
+
+        /// <summary>
+        /// Gets the begin-index of the range, inclusive.
+        /// </summary>
+        public T Begin { get { return begin; } }
+
+        /// <summary>
+        /// Gets the end-index of the range, exclusive.
+        /// </summary>
+        public T End { get { return end; } }
+
+        /// <summary>
+        /// Returns true if the range is empty, i.e. Begin == End.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get { return begin.CompareTo(end) == 0; }
+        }
+
+        /// <summary>
+        /// Converts the range into a string.
+        /// </summary>
+        /// <returns>A string in the format "[start, end)".</returns>
+        public override string ToString()
+        {
+            return string.Format("[{0}, {1})", begin, end);
+        }
+    }
+#endif
 }

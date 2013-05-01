@@ -107,12 +107,12 @@ namespace DosDebugger
             // Fill the BeginRowIndex and EndRowIndex of the procedures.
             foreach (Procedure proc in dasm.Procedures)
             {
-                if (proc.Bounds.Length > 0)
+                if (!proc.Bounds.IsEmpty)
                 {
                     ProcedureItem item = new ProcedureItem(proc);
-                    Range range = proc.Bounds;
-                    item.BeginRowIndex = FindRowIndex(new LinearPointer(range.Begin));
-                    item.EndRowIndex = FindRowIndex(new LinearPointer(range.End));
+                    var range = proc.Bounds;
+                    item.BeginRowIndex = FindRowIndex(range.Begin);
+                    item.EndRowIndex = FindRowIndex(range.End);
                     // TODO: what if range.End is past the end of the image?
                     // TBD: need to check broken instruction conditions
                     // as well as leading/trailing unanalyzed bytes.
