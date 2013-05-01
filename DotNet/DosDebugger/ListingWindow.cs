@@ -99,9 +99,8 @@ namespace DosDebugger
                 }
                 else
                 {
-                    var r = proc.Bounds;
-                    int k1 = viewModel.FindRowIndex(r.Begin);
-                    int k2 = viewModel.FindRowIndex(r.End);
+                    int k1 = viewModel.FindRowIndex(proc.StartAddress);
+                    int k2 = viewModel.FindRowIndex(proc.EndAddress);
                     DisplayViewport(k1, k2);
                 }
                 return;
@@ -173,7 +172,10 @@ namespace DosDebugger
             if (location == Pointer.Invalid)
                 return;
 
-            foreach (XRef xref in document.Disassembler.GetReferencesTo(location))
+            XRef[] xrefs = document.Disassembler.Image.CrossReferences.GetReferencesTo(
+                location.LinearAddress);
+            Array.Sort(xrefs, new XRefLocationComparer());
+            foreach (XRef xref in xrefs)
             {
                 ToolStripMenuItem item = new ToolStripMenuItem();
                 item.Text = string.Format(

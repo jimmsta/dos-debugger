@@ -6,13 +6,13 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a procedure in an executable.
+    /// Contains information about a procedure in an executable.
     /// </summary>
-    public class Procedure
+    public class Procedure : ByteBlock
     {
         private BinaryImage image;
-        private Range<LinearPointer> bounds;
 
+        //private Range<LinearPointer> bounds;
         //private MultiRange codeRange = new MultiRange();
         //private MultiRange dataRange = new MultiRange();
         //private MultiRange byteRange = new MultiRange();
@@ -28,12 +28,12 @@ namespace Disassembler
         /// </summary>
         public Pointer EntryPoint { get; private set; }
 
+#if false
         public Range<LinearPointer> Bounds
         {
             get { return bounds; }
         }
 
-#if false
         public MultiRange CodeRange
         {
             get { return codeRange; }
@@ -75,16 +75,7 @@ namespace Disassembler
             }
 
             // Update the bounds of this procedure.
-            if (bounds.IsEmpty)
-            {
-                bounds = new Range<LinearPointer>(pos1, pos2);
-            }
-            else
-            {
-                bounds = new Range<LinearPointer>(
-                    pos1 < bounds.Begin ? pos1 : bounds.Begin,
-                    pos2 > bounds.End ? pos2 : bounds.End);
-            }
+            this.Extend(block);
         }
 
         /// <summary>
@@ -106,16 +97,7 @@ namespace Disassembler
             }
 
             // Update the bounds of this procedure.
-            if (bounds.IsEmpty)
-            {
-                bounds = new Range<LinearPointer>(start, end);
-            }
-            else
-            {
-                bounds = new Range<LinearPointer>(
-                    start < bounds.Begin ? start : bounds.Begin,
-                    end > bounds.End ? end : bounds.End);
-            }
+            this.Extend(new ByteBlock(start, end));
         }
     }
 

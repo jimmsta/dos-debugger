@@ -10,7 +10,7 @@ namespace Disassembler
     /// takes care of book-keeping; it does not analyze the image. The 
     /// analysis is done by Disassembler.
     /// </summary>
-    public class BinaryImage // might rename to Module
+    public class BinaryImage : ByteBlock // might rename to Module
     {
         private byte[] image;
         private Pointer baseAddress;
@@ -33,6 +33,11 @@ namespace Disassembler
             = new SortedList<UInt16, Segment>();
 
         /// <summary>
+        /// Maintains a collection of cross references in this image.
+        /// </summary>
+        private XRefCollection xrefs;
+
+        /// <summary>
         /// Creates a binary image with the given data and base address.
         /// </summary>
         /// <param name="image"></param>
@@ -40,11 +45,13 @@ namespace Disassembler
         /// <exception cref="ArgumentNullException">If image is null.
         /// </exception>
         public BinaryImage(byte[] image, Pointer baseAddress)
+            : base(baseAddress.LinearAddress, baseAddress.LinearAddress + image.Length)
         {
             if (image == null)
                 throw new ArgumentNullException("image");
             if (baseAddress.LinearAddress.Address + image.Length > 0x100000)
-                throw new ArgumentOutOfRangeException("baseAddress");
+                throw new ArgumentOutOfRangeException("baseAddress",
+                    "The image will not fit in 1MB address space.");
 
             this.image = image;
             this.baseAddress = baseAddress;
@@ -54,6 +61,8 @@ namespace Disassembler
             {
                 attr[i] = new ByteProperties();
             }
+
+            this.xrefs = new XRefCollection(this);
         }
 
         /// <summary>
@@ -65,30 +74,6 @@ namespace Disassembler
         }
 
         /// <summary>
-        /// Gets the start address of the loaded image.
-        /// </summary>
-        public LinearPointer Start
-        {
-            get { return baseAddress.LinearAddress; }
-        }
-
-        /// <summary>
-        /// Gets the end address of the loaded image.
-        /// </summary>
-        public LinearPointer End
-        {
-            get { return baseAddress.LinearAddress + image.Length; }
-        }
-
-        /// <summary>
-        /// Gets the number of bytes in the image.
-        /// </summary>
-        public int Length
-        {
-            get { return image.Length; }
-        }
-
-        /// <summary>
         /// Returns an object that encapsulates the byte at the given address.
         /// </summary>
         /// <param name="address">Address of the byte to return.</param>
@@ -97,7 +82,7 @@ namespace Disassembler
         {
             get
             {
-                int offset = address - this.Start;
+                int offset = address - this.StartAddress;
                 if (offset < 0 || offset >= attr.Length)
                     throw new ArgumentOutOfRangeException("address");
                 return attr[offset];
@@ -161,7 +146,7 @@ namespace Disassembler
 
         public bool IsAddressValid(LinearPointer address)
         {
-            return (address >= Start) && (address < End);
+            return (address >= StartAddress) && (address < EndAddress);
         }
 
         public byte[] GetBytes(LinearPointer address, int count)
@@ -336,9 +321,9 @@ namespace Disassembler
         /// <returns></returns>
         public BasicBlock CreateBasicBlock(LinearPointer start, LinearPointer end)
         {
-            if (start < this.Start || start > this.End)
+            if (start < this.StartAddress || start > this.EndAddress)
                 throw new ArgumentOutOfRangeException("start");
-            if (end < start || end > this.End)
+            if (end < start || end > this.EndAddress)
                 throw new ArgumentOutOfRangeException("end");
 
             // Verify that the basic block covers continuous code bytes.
@@ -396,6 +381,11 @@ namespace Disassembler
                 return proc;
             else
                 return null;
+        }
+
+        public XRefCollection CrossReferences
+        {
+            get { return xrefs; }
         }
 
         //class ImageByte : ByteProperties

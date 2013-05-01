@@ -31,6 +31,11 @@ namespace Disassembler
         public int Length { get { return EndAddress - StartAddress; } }
 
         /// <summary>
+        /// Returns true if this byte block is empty.
+        /// </summary>
+        public bool IsEmpty { get { return StartAddress == EndAddress; } }
+
+        /// <summary>
         /// Create an empty range with start and end addresses set to zero.
         /// </summary>
         /// <param name="start"></param>
@@ -51,6 +56,25 @@ namespace Disassembler
 
             this.StartAddress = start;
             this.EndAddress = end;
+        }
+
+        protected void Extend(ByteBlock block)
+        {
+            if (block.Length > 0)
+            {
+                if (this.Length == 0)
+                {
+                    this.StartAddress = block.StartAddress;
+                    this.EndAddress = block.EndAddress;
+                }
+                else
+                {
+                    if (block.StartAddress < this.StartAddress)
+                        this.StartAddress = block.StartAddress;
+                    if (block.EndAddress > this.EndAddress)
+                        this.EndAddress = block.EndAddress;
+                }
+            }
         }
     }
 }

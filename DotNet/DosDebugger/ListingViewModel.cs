@@ -43,8 +43,8 @@ namespace DosDebugger
 
             // Display analyzed code and data.
             BinaryImage image = dasm.Image;
-            Pointer address = dasm.BaseAddress;
-            for (var i = image.Start; i < image.End; )
+            Pointer address = image.BaseAddress;
+            for (var i = image.StartAddress; i < image.EndAddress; )
             {
                 ByteProperties b = image[i];
 
@@ -63,7 +63,7 @@ namespace DosDebugger
                 else if (IsLeadByteOfData(b))
                 {
                     var j = i + 1;
-                    while (j < image.End && 
+                    while (j < image.EndAddress && 
                            image[j].Type == ByteType.Data &&
                            !image[j].IsLeadByte)
                         j++;
@@ -79,7 +79,7 @@ namespace DosDebugger
                     //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
                     var j = i + 1;
-                    while (j < image.End &&
+                    while (j < image.EndAddress &&
                            !IsLeadByteOfCode(image[j]) &&
                            !IsLeadByteOfData(image[j]))
                         j++;
@@ -109,7 +109,7 @@ namespace DosDebugger
             // TODO: display an error for empty procedures.
             foreach (Procedure proc in dasm.Procedures)
             {
-                if (proc.Bounds.IsEmpty) // if proc.StartAddress < proc.EndAddress
+                if (proc.IsEmpty)
                     continue;
 
                 ProcedureItem item = new ProcedureItem(proc);
@@ -170,9 +170,9 @@ namespace DosDebugger
             if (rowAddresses.Length == 0 ||
                 address < rowAddresses[0])
                 throw new ArgumentOutOfRangeException("address");
-            if (address > dasm.Image.End)
+            if (address > dasm.Image.EndAddress)
                 throw new ArgumentOutOfRangeException("address");
-            if (address == dasm.Image.End)
+            if (address == dasm.Image.EndAddress)
                 return rowAddresses.Length;
 
             int k = Array.BinarySearch(rowAddresses, address);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
+using System.Diagnostics;
 
 namespace Disassembler
 {
@@ -49,43 +50,6 @@ namespace Disassembler
         public override string ToString()
         {
             return string.Format("{0} -> {1} ({2})", Source, Target, Type);
-        }
-    }
-
-    /// <summary>
-    /// Maintains a collection of cross references and provides easy access
-    /// to xrefs by type and location.
-    /// </summary>
-    public class XRefManager
-    {
-        private List<XRef> xrefs;
-
-        public XRefManager()
-        {
-            xrefs = new List<XRef>();
-        }
-
-        public void Add(XRef xref)
-        {
-            xrefs.Add(xref);
-        }
-
-        public IEnumerable<XRef> FindReferencesTo(Pointer target)
-        {
-            foreach (XRef xref in xrefs)
-            {
-                if (xref.Target == target)
-                    yield return xref;
-            }
-        }
-
-        public IEnumerable<XRef> FindReferencesFrom(Pointer source)
-        {
-            foreach (XRef xref in xrefs)
-            {
-                if (xref.Source == source)
-                    yield return xref;
-            }
         }
     }
 
@@ -139,27 +103,254 @@ namespace Disassembler
 #endif
 
         /// <summary>
-        /// The word at the Target location appears to contain the relative
-        /// offset to a JMPN instruction that refers to a jump-table. The
-        /// location of the JMPN instruction is stored in Source.
-        /// </summary>
-        //NearJumpTableEntry,
-
-        /// <summary>
         /// A JMPN instruction refers to this location indirectly through
         /// a word-sized jump table entry. The address of the jump table
         /// entry is stored in the DataLocation field of the XRef object.
         /// </summary>
         NearIndexedJump,
 
-        //NearJumpTableTarget,
-
-#if false
-    ENTRY_FAR_JUMP_TABLE        = 8,    /* the dword at this location appears to represent
-                                         * an absolute address (seg:ptr) of a JUMP FAR
-                                         * instruction.
-                                         */
-#endif
+        /// <summary>
+        /// A JMPF instruction refers to this location indirectly through
+        /// a dword-sized jump table entry. The address of the jump table
+        /// entry is stored in the DataLocation field of the XRef object.
+        /// </summary>
+        /* FarIndexedJump, */
     }
 
+    public class XRefLocationComparer : IComparer<XRef>
+    {
+        public int Compare(XRef x, XRef y)
+        {
+            int cmp = x.Source.LinearAddress.CompareTo(y.Source.LinearAddress);
+            if (cmp == 0)
+                cmp = x.Target.LinearAddress.CompareTo(y.Target.LinearAddress);
+            if (cmp == 0)
+                cmp = x.DataLocation.LinearAddress.CompareTo(y.DataLocation.LinearAddress);
+            return cmp;
+        }
+    }
+
+    /// <summary>
+    /// Maintains a collection of cross references and provides methods to
+    /// find xrefs by source or target efficiently.
+    /// </summary>
+    public class XRefCollection : ICollection<XRef>
+    {
+        private BinaryImage image;
+
+        /// <summary>
+        /// List of cross references contained in this collection. This list
+        /// have the same number of items as ListNext.
+        /// </summary>
+        private List<XRef> ListData = new List<XRef>();
+
+        /// <summary>
+        /// Contains the node link for each cross reference in xrefs array.
+        /// That is, <code>ListData[ListNext[i].Incoming].Target = ListData[i].Target</code>,
+        /// and <code>ListData[ListNext[i].Outgoing].Source = ListData[i].Source</code>.
+        /// </summary>
+        private List<XRefLink> ListLink = new List<XRefLink>();
+
+        /// <summary>
+        /// Contains the index of the first xref pointing to or from each
+        /// address in the image. That is, 
+        /// <code>xrefs[ListHead[addr].Incoming].Target = addr</code>, and
+        /// <code>xrefs[ListHead[addr].Outgoing].Source = addr</code>.
+        /// An extra item is placed at the end to represent dynamic xrefs,
+        /// i.e. those with source or target equal to FFFF:FFFF.
+        /// </summary>
+        private XRefLink[] ListHead;
+
+        private readonly int DynamicIndex;
+
+        /// <summary>
+        /// Represents a node in the cross reference map. For performance
+        /// reason, the actual node data (XRef object) is placed separately
+        /// in the NodeData[] list. Therefore this structure only contains
+        /// the node link fields.
+        /// </summary>
+        struct XRefLink
+        {
+            /// <summary>
+            /// Index of the next xref node that points to Target; -1 if none.
+            /// </summary>
+            public int NextIncoming;
+
+            /// <summary>
+            /// Index of the next xref node that points from Source; -1 if none.
+            /// </summary>
+            public int NextOutgoing;
+        }
+
+        /// <summary>
+        /// Creates a cross reference collection for the given image.
+        /// </summary>
+        /// <param name="image"></param>
+        public XRefCollection(BinaryImage image)
+        {
+            this.image = image;
+            this.DynamicIndex = image.Length;
+            this.ListHead = new XRefLink[image.Length + 1];
+            Clear();
+        }
+
+        /// <summary>
+        /// Clears all the cross references stored in this collection.
+        /// </summary>
+        public void Clear()
+        {
+            ListData.Clear();
+            ListLink.Clear();
+            for (int i = 0; i < ListHead.Length; i++)
+            {
+                ListHead[i].NextIncoming = -1;
+                ListHead[i].NextOutgoing = -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the number of cross references in this collection.
+        /// </summary>
+        public int Count
+        {
+            get { return ListData.Count; }
+        }
+
+        private int PointerToOffset(LinearPointer address)
+        {
+            int i = address - image.StartAddress;
+            if (i < 0 || i >= image.Length)
+            {
+                throw new ArgumentException(string.Format(
+                    "The address {0} is out of the range of the image.",
+                    address));
+            }
+            return i;
+        }
+
+        private int PointerToOffset(Pointer address)
+        {
+            if (address == Pointer.Invalid)
+                return DynamicIndex;
+
+            int i = address.LinearAddress - image.StartAddress;
+            if (i < 0 || i >= image.Length)
+            {
+                throw new ArgumentException(string.Format(
+                    "The address {0} is out of the range of the image.",
+                    address));
+            }
+            return i;
+        }
+
+        public void Add(XRef xref)
+        {
+            if (xref == null)
+                throw new ArgumentNullException("xref");
+            if (xref.Source == Pointer.Invalid && xref.Target == Pointer.Invalid)
+                throw new ArgumentException("can't have both source and target invalid");
+
+            int nodeIndex = ListData.Count;
+
+            XRefLink nodeLink = new XRefLink();
+
+            int iSource = PointerToOffset(xref.Source);
+            nodeLink.NextOutgoing = ListHead[iSource].NextOutgoing;
+            ListHead[iSource].NextOutgoing = nodeIndex;
+
+            int iTarget = PointerToOffset(xref.Target);
+            nodeLink.NextIncoming = ListHead[iTarget].NextIncoming;
+            ListHead[iTarget].NextIncoming = nodeIndex;
+
+            // Since XRefLink is a struct, we must add it after updating all
+            // its fields.
+            ListLink.Add(nodeLink);
+            ListData.Add(xref);
+        }
+
+        /// <summary>
+        /// Gets a list of xrefs with dynamic target (i.e. target == Invalid).
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<XRef> GetDynamicReferences()
+        {
+            for (int i = ListHead[0].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            {
+                Debug.Assert(ListData[i].Target == Pointer.Invalid);
+                yield return ListData[i];
+            }
+        }
+
+        /// <summary>
+        /// Gets all cross references that points to 'target', in the order
+        /// that they were added.
+        /// </summary>
+        /// <param name="target"></param>
+        /// <returns></returns>
+        public XRef[] GetReferencesTo(LinearPointer target)
+        {
+            int k = PointerToOffset(target);
+
+            // Count the number of items to return.
+            int n = 0;
+            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            {
+                Debug.Assert(ListData[i].Target.LinearAddress == target);
+                n++;
+            }
+
+            // Fill the result in reverse order of the linked list.
+            XRef[] result = new XRef[n];
+            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            {
+                result[--n] = ListData[i];
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Gets all cross references that points from 'source'.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public IEnumerable<XRef> GetReferencesFrom(LinearPointer source)
+        {
+            int k = PointerToOffset(source);
+            for (int i = ListHead[k].NextOutgoing; i >= 0; i = ListLink[i].NextOutgoing)
+            {
+                Debug.Assert(ListData[i].Source.LinearAddress == source);
+                yield return ListData[i];
+            }
+        }
+
+        public bool Contains(XRef item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void CopyTo(XRef[] array, int arrayIndex)
+        {
+            ListData.CopyTo(array, arrayIndex);
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        public bool Remove(XRef item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<XRef> GetEnumerator()
+        {
+            return ListData.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return ListData.GetEnumerator();
+        }
+    }
 }

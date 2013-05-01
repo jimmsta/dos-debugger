@@ -20,7 +20,8 @@ namespace Disassembler
         /// addresses to the queue of entry points, so that they can be 
         /// analyzed later.
         /// </summary>
-        private List<XRef> globalXRefs;
+        //private List<XRef> globalXRefs;
+        //private XRefCollection xrefCollection ;
 
         /// <summary>
         /// -Maintains a dictionary that maps an offset to an Error object
@@ -31,7 +32,7 @@ namespace Disassembler
         public Disassembler16(byte[] image, Pointer baseAddress)
         {
             this.image = new BinaryImage(image, baseAddress);
-            this.globalXRefs = new List<XRef>();
+            //this.xrefCollection = new XRefCollection(this.image);
         }
 
         /// <summary>
@@ -40,15 +41,6 @@ namespace Disassembler
         public BinaryImage Image
         {
             get { return image; }
-        }
-
-        /// <summary>
-        /// Gets the base address of the executable image. This address 
-        /// always has zero offset.
-        /// </summary>
-        public Pointer BaseAddress
-        {
-            get { return image.BaseAddress; }
         }
 
         /// <summary>
@@ -63,15 +55,6 @@ namespace Disassembler
         public Error[] Errors
         {
             get { return errors.ToArray(); }
-        }
-
-        public IEnumerable<XRef> GetReferencesTo(Pointer location)
-        {
-            foreach (XRef xref in globalXRefs)
-            {
-                if (xref.Target == location)
-                    yield return xref;
-            }
         }
 
 #if false
@@ -98,7 +81,7 @@ namespace Disassembler
         /// this procedure.</param>
         public void Analyze(Pointer start)
         {
-            List<XRef> xrefs = globalXRefs;
+            //List<XRef> xrefs = globalXRefs;
             PriorityQueue<XRef> xrefQueue =
                 new PriorityQueue<XRef>(new XRefPriorityComparer());
 
@@ -132,7 +115,7 @@ namespace Disassembler
                 }
 
                 // Append the xref entry to the global list of xrefs.
-                globalXRefs.Add(entry);
+                image.CrossReferences.Add(entry);
 
                 // Skip other dynamic xrefs.
                 if (entry.Target == Pointer.Invalid)

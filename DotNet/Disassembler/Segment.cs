@@ -7,17 +7,9 @@ namespace Disassembler
 {
     public class Segment : ByteBlock
     {
-        // private Range<LinearPointer> bounds;
         private UInt16 segmentAddress;
 
-        //public Pointer Start { get; set; }
-        //public Pointer End { get; set; }
         public UInt16 SegmentAddress { get { return segmentAddress; } }
-
-        // public Range<LinearPointer> Bounds
-        // {
-        //     get { return bounds; }
-        // }
 
         public Segment(UInt16 segmentAddress)
         {
@@ -44,29 +36,9 @@ namespace Disassembler
         // segment.MinimumAddress = SEG:OFF
         // segment.MaximumAddress = SEG:OFF
 
-#if false
-        /// <summary>
-        /// Gets the smallest range that covers this segment. The indices
-        /// of the range are offsets within the binary image.
-        /// </summary>
-        // TBD: we need to subtract the BaseAddress!!
-        public Range Bounds
-        {
-            get
-            {
-                return new Range(
-                    StartAddress.EffectiveAddress,
-                    EndAddress.EffectiveAddress);
-            }
-        }
-#endif
-
         public void Extend(LinearPointer start, LinearPointer end)
         {
-            if (start < this.StartAddress)
-                this.StartAddress = start;
-            if (end > this.EndAddress)
-                this.EndAddress = end;
+            base.Extend(new ByteBlock(start, end));
         }
 
         public override string ToString()

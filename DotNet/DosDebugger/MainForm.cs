@@ -136,7 +136,7 @@ namespace DosDebugger
 
             this.Text = "DOS Disassembler - " + System.IO.Path.GetFileName(fileName);
 
-            GoToLocation(dasm.BaseAddress);
+            GoToLocation(dasm.Image.BaseAddress);
         }
 
 #if false
