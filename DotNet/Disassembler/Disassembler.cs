@@ -206,9 +206,10 @@ namespace Disassembler
             Segment lastSegment = null;
             foreach (Segment segment in image.Segments)
             {
-                if (lastSegment != null && segment.Start < lastSegment.End)
+                if (lastSegment != null && segment.StartAddress < lastSegment.EndAddress)
                 {
-                    AddError(segment.StartAddress, ErrorCategory.Error,
+                    AddError(segment.StartAddress.ToFarPointer(segment.SegmentAddress),
+                        ErrorCategory.Error,
                         "Segment {0:X4} overlaps with segment {1:X4}.",
                         lastSegment.SegmentAddress, segment.SegmentAddress);
                 }
@@ -295,7 +296,7 @@ namespace Disassembler
             Piece piece = image.CreatePiece(
                 entry.DataLocation, entry.DataLocation + 2, ByteType.Data);
             Procedure proc = image[entry.Source].Procedure;
-            proc.AddDataBlock(piece.Start, piece.End);
+            proc.AddDataBlock(piece.StartAddress, piece.EndAddress);
 
             // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
@@ -358,18 +359,18 @@ namespace Disassembler
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
                 // Otherwise, split the basic block into two.
-                if (b.BasicBlock.Start == pos.LinearAddress)
+                if (b.BasicBlock.StartAddress == pos.LinearAddress)
                 {
                     return null;
                 }
                 else
                 {
-                    if (image[b.BasicBlock.Start].Address.Segment != pos.Segment)
+                    if (image[b.BasicBlock.StartAddress].Address.Segment != pos.Segment)
                     {
                         errors.Add(new Error(pos, string.Format(
                             "Ran into the middle of a block [{0},{1}) from another segment " +
                             "when processing block {2} referred from {3}",
-                            b.BasicBlock.Start, b.BasicBlock.End,
+                            b.BasicBlock.StartAddress, b.BasicBlock.EndAddress,
                             start.Target, start.Source)));
                         return null;
                     }

@@ -92,6 +92,11 @@ namespace X86Codec
             get { return address; }
         }
 
+        public Pointer ToFarPointer(UInt16 segmentAddress)
+        {
+            return new Pointer(segmentAddress, this);
+        }
+
         public override string ToString()
         {
             return address.ToString("X5");

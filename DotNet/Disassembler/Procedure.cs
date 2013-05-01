@@ -60,8 +60,8 @@ namespace Disassembler
                 throw new ArgumentNullException("block");
 
             // Verify that the bytes have not been assigned to any procedure.
-            LinearPointer pos1 = block.Start;
-            LinearPointer pos2 = block.End;
+            LinearPointer pos1 = block.StartAddress;
+            LinearPointer pos2 = block.EndAddress;
             for (var i = pos1; i < pos2; i++)
             {
                 if (image[i].Procedure != null)

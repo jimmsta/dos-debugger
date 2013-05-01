@@ -35,6 +35,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ByteBlock.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="BinaryImage.cs" />
     <Compile Include="MZLoader.cs" />

@@ -81,8 +81,8 @@ namespace DosDebugger
             {
                 UInt16 seg = viewModel.Rows[activeRowIndex].Location.Segment;
                 Segment s = document.Disassembler.Image.FindSegment(seg);
-                int k1 = viewModel.FindRowIndex(s.Start);
-                int k2 = viewModel.FindRowIndex(s.End);
+                int k1 = viewModel.FindRowIndex(s.StartAddress);
+                int k2 = viewModel.FindRowIndex(s.EndAddress);
                 DisplayViewport(k1, k2);
                 return;
             }
@@ -93,6 +93,8 @@ namespace DosDebugger
                 Procedure proc = document.Disassembler.Image[address].Procedure;
                 if (proc == null)
                 {
+                    // TBD: if the current row is not part of a procedure,
+                    // what should be display?
                     DisplayViewport(0, viewModel.Rows.Count);
                 }
                 else

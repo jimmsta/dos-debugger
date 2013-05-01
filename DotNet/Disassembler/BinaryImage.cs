@@ -299,7 +299,7 @@ namespace Disassembler
             UInt16 result = 0;
             foreach (Segment segment in Segments)
             {
-                if (segment.Start <= address)
+                if (segment.StartAddress <= address)
                     result = segment.SegmentAddress;
             }
             return result;
@@ -530,56 +530,10 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Represents a continuous range of bytes.
-    /// </summary>
-    public class ByteRange
-    {
-        /// <summary>
-        /// Gets the start address of the range. This address is included in
-        /// the range.
-        /// </summary>
-        public LinearPointer Start { get; protected set; }
-
-        /// <summary>
-        /// Gets the end address of the range. This address is excluded from
-        /// the range.
-        /// </summary>
-        public LinearPointer End { get; protected set; }
-
-        /// <summary>
-        /// Gets the number of bytes in the range.
-        /// </summary>
-        public int Length { get { return End - Start; } }
-
-        /// <summary>
-        /// Create an empty range with start and end addresses set to zero.
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        public ByteRange()
-        {
-        }
-
-        /// <summary>
-        /// Create a range with the given start and end addresses.
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        public ByteRange(LinearPointer start, LinearPointer end)
-        {
-            if (start > end)
-                throw new ArgumentException("start must be less than or equal to end.");
-
-            this.Start = start;
-            this.End = end;
-        }
-    }
-
-    /// <summary>
     /// Represents a range of consecutive bytes that constitute a single
     /// instruction or data item.
     /// </summary>
-    public class Piece : ByteRange
+    public class Piece : ByteBlock
     {
         //private BinaryImage image;
 
@@ -616,7 +570,7 @@ namespace Disassembler
     /// resulting control flow graph won't have too many nodes that merely
     /// call another function. 
     /// </remarks>
-    public class BasicBlock : ByteRange
+    public class BasicBlock : ByteBlock
     {
         private BinaryImage image;
 
@@ -634,22 +588,22 @@ namespace Disassembler
         /// <param name="location"></param>
         internal BasicBlock Split(LinearPointer location)
         {
-            if (location <= Start || location >= End)
+            if (location <= StartAddress || location >= EndAddress)
                 throw new ArgumentException("location must be within [start, end).");
             if (!image[location].IsLeadByte)
                 throw new ArgumentException("location must be at piece boundary.");
 
             // Create a new block that covers [location, end).
-            BasicBlock newBlock = new BasicBlock(image, location, End);
+            BasicBlock newBlock = new BasicBlock(image, location, EndAddress);
 
             // Update the BasicBlock property of bytes in the second block.
-            for (var i = location; i < End; i++)
+            for (var i = location; i < EndAddress; i++)
             {
                 image[i].BasicBlock = newBlock;
             }
 
             // Update the end position of this block.
-            this.End = location;
+            this.EndAddress = location;
 
             return newBlock;
         }

@@ -39,16 +39,17 @@ namespace DosDebugger
             foreach (Segment segment in document.Disassembler.Image.Segments)
             {
                 ListViewItem item = new ListViewItem();
-                item.Text = FormatAddress(segment.StartAddress);
-                item.SubItems.Add(FormatAddress(segment.StartAddress + segment.Length));
+                item.Text = FormatAddress(segment.StartAddress, segment.SegmentAddress);
+                item.SubItems.Add(FormatAddress(segment.EndAddress - 1, segment.SegmentAddress));
                 item.Tag = segment;
                 lvSegments.Items.Add(item);
             }
         }
 
-        private static string FormatAddress(Pointer address)
+        private static string FormatAddress(LinearPointer address, UInt16 segment)
         {
-            return string.Format("{0} ({1:X5})", address, address.LinearAddress);
+            return string.Format(
+                "{0} ({1:X5})", new Pointer(segment, address), address);
         }
 
         //public event EventHandler<NavigationRequestedEventArgs> NavigationRequested;
@@ -59,7 +60,8 @@ namespace DosDebugger
                 return;
 
             Segment segment = (Segment)lvSegments.SelectedItems[0].Tag;
-            document.Navigator.SetLocation(segment.StartAddress, this);
+            document.Navigator.SetLocation(
+                segment.StartAddress.ToFarPointer(segment.SegmentAddress), this);
         }
     }
 }

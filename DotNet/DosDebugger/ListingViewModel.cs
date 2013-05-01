@@ -50,7 +50,7 @@ namespace DosDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.Start == i)
+                    if (b.BasicBlock != null && b.BasicBlock.StartAddress == i)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
@@ -104,26 +104,28 @@ namespace DosDebugger
                 rowAddresses[i] = rows[i].Location.LinearAddress;
             }
 
-            // Fill the BeginRowIndex and EndRowIndex of the procedures.
+            // Create a ProcedureItem view object for each non-empty
+            // procedure.
+            // TODO: display an error for empty procedures.
             foreach (Procedure proc in dasm.Procedures)
             {
-                if (!proc.Bounds.IsEmpty)
-                {
-                    ProcedureItem item = new ProcedureItem(proc);
-                    var range = proc.Bounds;
-                    item.BeginRowIndex = FindRowIndex(range.Begin);
-                    item.EndRowIndex = FindRowIndex(range.End);
-                    // TODO: what if range.End is past the end of the image?
-                    // TBD: need to check broken instruction conditions
-                    // as well as leading/trailing unanalyzed bytes.
-                    procItems.Add(item);
-                }
+                if (proc.Bounds.IsEmpty) // if proc.StartAddress < proc.EndAddress
+                    continue;
+
+                ProcedureItem item = new ProcedureItem(proc);
+                //var range = proc.Bounds;
+                //item.FirstRowIndex = FindRowIndex(range.Begin);
+                //item.LastRowIndex = FindRowIndex(range.End - 1);
+                
+                // TBD: need to check broken instruction conditions
+                // as well as leading/trailing unanalyzed bytes.
+                procItems.Add(item);
             }
 
             // Create segment items.
             foreach (Segment segment in dasm.Image.Segments)
             {
-                segmentItems.Add(new SegmentItem(segment.StartAddress));
+                segmentItems.Add(new SegmentItem(segment));
             }
         }
 
@@ -154,19 +156,30 @@ namespace DosDebugger
         }
 
         /// <summary>
-        /// Finds the row that occupies the given offset. If no row occupies
-        /// that offset, finds the closest row.
+        /// Finds the first row that covers the given address.
         /// </summary>
-        /// <param name="offset">The offset to find.</param>
-        /// <returns>ListingRow, or -1 if the view is empty.</returns>
+        /// <param name="address">The address to find.</param>
+        /// <returns>Index of the row found, which may be rows.Count if the
+        /// address is past the end of the list.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The view model is
+        /// empty, or address is smaller than the address of the first row.
+        /// </exception>
+        /// TODO: maybe we should split this to FindRowLowerBound and FindRowUpperBound
         public int FindRowIndex(LinearPointer address)
         {
-            if (rowAddresses.Length == 0)
-                return -1;
+            if (rowAddresses.Length == 0 ||
+                address < rowAddresses[0])
+                throw new ArgumentOutOfRangeException("address");
+            if (address > dasm.Image.End)
+                throw new ArgumentOutOfRangeException("address");
+            if (address == dasm.Image.End)
+                return rowAddresses.Length;
 
             int k = Array.BinarySearch(rowAddresses, address);
-            if (k >= 0) // found
+            if (k >= 0) // found; find first one
             {
+                while (k > 0 && rowAddresses[k - 1] == address)
+                    k--;
                 return k;
             }
             else // not found, but would be inserted at ~k
@@ -418,7 +431,7 @@ namespace DosDebugger
 
         public override Pointer Location
         {
-            get { return block.Image[block.Start].Address; }
+            get { return block.Image[block.StartAddress].Address; }
         }
 
         public override byte[] Opcode
@@ -428,7 +441,7 @@ namespace DosDebugger
 
         public override string Text
         {
-            get { return string.Format("loc_{0}", block.Start); }
+            get { return string.Format("loc_{0}", block.StartAddress); }
         }
 
         public override ListViewItem CreateViewItem()
@@ -450,10 +463,17 @@ namespace DosDebugger
 
         public Procedure Procedure { get; private set; }
 
-        // [begin,end) index of the listing rows that belong to
-        // this procedure.
-        public int BeginRowIndex;
-        public int EndRowIndex;
+        /// <summary>
+        /// Gets or sets the index of the first row to display for this
+        /// procedure. Note that this row may not belong to this procedure.
+        /// </summary>
+        //public int FirstRowIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index of the last row to display for this
+        /// procedure. Note that this row may not belong to this procedure.
+        /// </summary>
+        //public int LastRowIndex { get; set; }
 
         public override string ToString()
         {
@@ -463,14 +483,15 @@ namespace DosDebugger
 
     class SegmentItem
     {
-        public SegmentItem(Pointer segmentStart)
+        
+        public SegmentItem(Segment segment)
         {
-            this.SegmentStart = segmentStart;
+            this.SegmentStart = segment.StartAddress.ToFarPointer(segment.SegmentAddress);
         }
 
         public Pointer SegmentStart { get; private set; }
 
-        public UInt16 Segment
+        public UInt16 SegmentAddress
         {
             get { return SegmentStart.Segment; }
         }

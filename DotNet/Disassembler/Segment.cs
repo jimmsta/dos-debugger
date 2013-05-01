@@ -5,7 +5,7 @@ using X86Codec;
 
 namespace Disassembler
 {
-    public class Segment : ByteRange
+    public class Segment : ByteBlock
     {
         // private Range<LinearPointer> bounds;
         private UInt16 segmentAddress;
@@ -30,10 +30,12 @@ namespace Disassembler
             this.segmentAddress = segmentAddress;
         }
 
+#if false
         public Pointer StartAddress
         {
-            get { return new Pointer(segmentAddress, Start); }
+            get { return new Pointer(segmentAddress, StartAddress); }
         }
+#endif
 
         // class Segment : MultiRange
         // segment.Bounds.Length = ...
@@ -61,10 +63,10 @@ namespace Disassembler
 
         public void Extend(LinearPointer start, LinearPointer end)
         {
-            if (start < this.Start)
-                this.Start = start;
-            if (end > this.End)
-                this.End = end;
+            if (start < this.StartAddress)
+                this.StartAddress = start;
+            if (end > this.EndAddress)
+                this.EndAddress = end;
         }
 
         public override string ToString()
@@ -72,8 +74,8 @@ namespace Disassembler
             if (Length == 0)
                 return "(empty)";
 
-            Pointer p1 = new Pointer(segmentAddress, Start);
-            Pointer p2 = new Pointer(segmentAddress, End - 1);
+            Pointer p1 = new Pointer(segmentAddress, StartAddress);
+            Pointer p2 = new Pointer(segmentAddress, EndAddress - 1);
             return string.Format("[{0}, {1}]", p1, p2);
         }
     }
