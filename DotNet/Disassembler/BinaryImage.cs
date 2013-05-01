@@ -10,7 +10,7 @@ namespace Disassembler
     /// takes care of book-keeping; it does not analyze the image. The 
     /// analysis is done by Disassembler.
     /// </summary>
-    public class BinaryImage
+    public class BinaryImage // might rename to Module
     {
         private byte[] image;
         private Pointer baseAddress;
@@ -244,7 +244,7 @@ namespace Disassembler
                 throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
 
             // Create a Piece object for this range of bytes.
-            Piece piece = new Piece(this, start, end, type);
+            Piece piece = new Piece(this, start.LinearAddress, end.LinearAddress, type);
 
             // Mark the byte range as 'type' and associate it with the Piece
             // object.
@@ -259,18 +259,13 @@ namespace Disassembler
             Segment segment = FindSegment(start.Segment);
             if (segment == null)
             {
-                segment = new Segment();
-                segment.Start = start;
-                segment.End = end;
+                segment = new Segment(start.Segment, start.LinearAddress, end.LinearAddress);
                 segments.Add(start.Segment, segment);
             }
             else
             {
                 // TODO: modify this to use MultiRange.
-                if (start.LinearAddress < segment.Start.LinearAddress)
-                    segment.Start = start;
-                if (end.LinearAddress > segment.End.LinearAddress)
-                    segment.End = end;
+                segment.Extend(start.LinearAddress, end.LinearAddress);
             }
 
             return piece;
@@ -304,7 +299,7 @@ namespace Disassembler
             UInt16 result = 0;
             foreach (Segment segment in Segments)
             {
-                if (segment.Start.LinearAddress <= address)
+                if (segment.Start <= address)
                     result = segment.SegmentAddress;
             }
             return result;
@@ -534,11 +529,35 @@ namespace Disassembler
         Data,
     }
 
-    public class Segment
+    public class Segment : ByteRange
     {
-        public Pointer Start { get; set; }
-        public Pointer End { get; set; }
-        public UInt16 SegmentAddress { get { return Start.Segment; } }
+       // private Range<LinearPointer> bounds;
+        private UInt16 segmentAddress;
+
+        //public Pointer Start { get; set; }
+        //public Pointer End { get; set; }
+        public UInt16 SegmentAddress { get { return segmentAddress; } }
+
+       // public Range<LinearPointer> Bounds
+       // {
+       //     get { return bounds; }
+       // }
+
+        public Segment(UInt16 segmentAddress)
+        {
+            this.segmentAddress = segmentAddress;
+        }
+
+        public Segment(UInt16 segmentAddress, LinearPointer start, LinearPointer end)
+            : base(start, end)
+        {
+            this.segmentAddress = segmentAddress;
+        }
+
+        public Pointer StartAddress
+        {
+            get { return new Pointer(segmentAddress, Start); }
+        }
 
 #if false
         /// <summary>
@@ -557,9 +576,68 @@ namespace Disassembler
         }
 #endif
 
+        public void Extend(LinearPointer start, LinearPointer end)
+        {
+            if (start < this.Start)
+                this.Start = start;
+            if (end > this.End)
+                this.End = end;
+        }
+
         public override string ToString()
         {
-            return string.Format("{0} - {1}", Start, End);
+            if (Length == 0)
+                return "(empty)";
+
+            Pointer p1 = new Pointer(segmentAddress, Start);
+            Pointer p2 = new Pointer(segmentAddress, End - 1);
+            return string.Format("[{0}, {1}]", p1, p2);
+        }
+    }
+
+    /// <summary>
+    /// Represents a continuous range of bytes identified
+    /// </summary>
+    public class ByteRange
+    {
+        /// <summary>
+        /// Gets the start address of the range. This address is included in
+        /// the range.
+        /// </summary>
+        public LinearPointer Start { get; protected set; }
+
+        /// <summary>
+        /// Gets the end address of the range. This address is excluded from
+        /// the range.
+        /// </summary>
+        public LinearPointer End { get; protected set; }
+
+        /// <summary>
+        /// Gets the number of bytes in the range.
+        /// </summary>
+        public int Length { get { return End - Start; } }
+
+        /// <summary>
+        /// Create an empty range with start and end addresses set to zero.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        public ByteRange()
+        {
+        }
+
+        /// <summary>
+        /// Create a range with the given start and end addresses.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        public ByteRange(LinearPointer start, LinearPointer end)
+        {
+            if (start > end)
+                throw new ArgumentException("start must be less than or equal to end.");
+
+            this.Start = start;
+            this.End = end;
         }
     }
 
@@ -567,21 +645,18 @@ namespace Disassembler
     /// Represents a range of consecutive bytes that constitute a single
     /// instruction or data item.
     /// </summary>
-    public class Piece
+    public class Piece : ByteRange
     {
         //private BinaryImage image;
-        public Pointer Start { get; private set; }
-        public Pointer End { get; private set; }
 
         /// <summary>
         /// Gets the type of the piece.
         /// </summary>
         public ByteType Type { get; private set; }
 
-        internal Piece(BinaryImage image, Pointer start, Pointer end, ByteType type)
+        internal Piece(BinaryImage image, LinearPointer start, LinearPointer end, ByteType type)
+            : base(start, end)
         {
-            this.Start = start;
-            this.End = end;
             this.Type = type;
         }
     }
@@ -607,32 +682,16 @@ namespace Disassembler
     /// resulting control flow graph won't have too many nodes that merely
     /// call another function. 
     /// </remarks>
-    public class BasicBlock
+    public class BasicBlock : ByteRange
     {
         private BinaryImage image;
 
         public BinaryImage Image { get { return image; } }
 
-        /// <summary>
-        /// Gets the start address of the basic block.
-        /// </summary>
-        public LinearPointer Start { get; private set; }
-
-        /// <summary>
-        /// Gets the end address of the basic block.
-        /// </summary>
-        public LinearPointer End { get; private set; }
-
-        public int Length
-        {
-            get { return End - Start; }
-        }
-
         internal BasicBlock(BinaryImage image, LinearPointer start, LinearPointer end)
+            : base(start, end)
         {
             this.image = image;
-            this.Start = start;
-            this.End = end;
         }
 
         /// <summary>

@@ -206,12 +206,11 @@ namespace Disassembler
             Segment lastSegment = null;
             foreach (Segment segment in image.Segments)
             {
-                if (lastSegment != null &&
-                    segment.Start.LinearAddress < lastSegment.End.LinearAddress)
+                if (lastSegment != null && segment.Start < lastSegment.End)
                 {
-                    AddError(segment.Start, ErrorCategory.Error,
+                    AddError(segment.StartAddress, ErrorCategory.Error,
                         "Segment {0:X4} overlaps with segment {1:X4}.",
-                        lastSegment.Start.Segment, segment.Start.Segment);
+                        lastSegment.SegmentAddress, segment.SegmentAddress);
                 }
                 lastSegment = segment;
             }

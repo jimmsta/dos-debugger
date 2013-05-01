@@ -123,7 +123,7 @@ namespace DosDebugger
             // Create segment items.
             foreach (Segment segment in dasm.Image.Segments)
             {
-                segmentItems.Add(new SegmentItem(segment.Start));
+                segmentItems.Add(new SegmentItem(segment.StartAddress));
             }
         }
 

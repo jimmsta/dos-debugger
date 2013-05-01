@@ -91,18 +91,16 @@ namespace Disassembler
         /// Adds a basic block to the procedure.
         /// </summary>
         /// <param name="block"></param>
-        public void AddDataBlock(Pointer start, Pointer end)
+        public void AddDataBlock(LinearPointer start, LinearPointer end)
         {
-            var pos1 = start.LinearAddress;
-            var pos2 = end.LinearAddress;
-            for (var i = pos1; i < pos2; i++)
+            for (var i = start; i < end; i++)
             {
                 if (image[i].Procedure != null)
                     throw new InvalidOperationException("Some of the bytes are already assigned to a procedure.");
             }
 
             // Assign the bytes to this procedure.
-            for (var i = pos1; i < pos2; i++)
+            for (var i = start; i < end; i++)
             {
                 image[i].Procedure = this;
             }
@@ -110,13 +108,13 @@ namespace Disassembler
             // Update the bounds of this procedure.
             if (bounds.IsEmpty)
             {
-                bounds = new Range<LinearPointer>(pos1, pos2);
+                bounds = new Range<LinearPointer>(start, end);
             }
             else
             {
                 bounds = new Range<LinearPointer>(
-                    pos1 < bounds.Begin ? pos1 : bounds.Begin,
-                    pos2 > bounds.End ? pos2 : bounds.End);
+                    start < bounds.Begin ? start : bounds.Begin,
+                    end > bounds.End ? end : bounds.End);
             }
         }
     }

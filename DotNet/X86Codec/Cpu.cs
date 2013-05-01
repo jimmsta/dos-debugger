@@ -102,6 +102,11 @@ namespace X86Codec
             return new LinearPointer(a.address + offset);
         }
 
+        public static LinearPointer operator -(LinearPointer a, int offset)
+        {
+            return new LinearPointer(a.address - offset);
+        }
+
         /// <summary>
         /// Increments the pointer by one.
         /// </summary>
@@ -182,6 +187,22 @@ namespace X86Codec
         {
             this.segment = segment;
             this.offset = offset;
+        }
+
+        /// <summary>
+        /// Creates a far pointer from a linear address and a segment address.
+        /// </summary>
+        /// <param name="segment">Segment address.</param>
+        /// <param name="offset">Offset within segment.</param>
+        public Pointer(UInt16 segment, LinearPointer address)
+            : this()
+        {
+            int offset = address.Address - segment * 16;
+            if (offset < 0 || offset > 0xFFFF)
+                throw new ArgumentException("The supplied linear address is not contained in the given segment.");
+
+            this.segment = segment;
+            this.offset = (UInt16)offset;
         }
 
         /// <summary>
