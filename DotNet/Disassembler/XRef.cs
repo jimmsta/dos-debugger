@@ -117,6 +117,7 @@ namespace Disassembler
         /* FarIndexedJump, */
     }
 
+    // TODO: make this a Comparison delegate
     public class XRefLocationComparer : IComparer<XRef>
     {
         public int Compare(XRef x, XRef y)
@@ -287,8 +288,9 @@ namespace Disassembler
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public XRef[] GetReferencesTo(LinearPointer target)
+        public IEnumerable<XRef> GetReferencesTo(LinearPointer target)
         {
+#if false
             int k = PointerToOffset(target);
 
             // Count the number of items to return.
@@ -306,6 +308,14 @@ namespace Disassembler
                 result[--n] = ListData[i];
             }
             return result;
+#else
+            int k = PointerToOffset(target);
+            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            {
+                Debug.Assert(ListData[i].Target.LinearAddress == target);
+                yield return ListData[i];
+            }
+#endif
         }
 
         /// <summary>

@@ -139,6 +139,11 @@ namespace DosDebugger
             return (b.Type == ByteType.Data && b.IsLeadByte);
         }
 
+        public BinaryImage Image
+        {
+            get { return dasm.Image; }
+        }
+
         public List<ListingRow> Rows
         {
             get { return rows; }

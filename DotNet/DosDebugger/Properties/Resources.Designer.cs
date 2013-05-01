@@ -93,9 +93,29 @@ namespace DosDebugger.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap IncomingLink {
+            get {
+                object obj = ResourceManager.GetObject("IncomingLink", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap MessageIcon {
             get {
                 object obj = ResourceManager.GetObject("MessageIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap OutgoingLink {
+            get {
+                object obj = ResourceManager.GetObject("OutgoingLink", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

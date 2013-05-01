@@ -477,6 +477,7 @@
             // cbBookmarks
             // 
             this.cbBookmarks.Items.AddRange(new object[] {
+            "AD3A:76FA check xref context menu",
             "0000:1C38 simple routine",
             "0000:17FC complex routine",
             "2CF3:0AB4 large jump table",

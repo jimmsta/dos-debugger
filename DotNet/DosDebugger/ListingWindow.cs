@@ -15,7 +15,11 @@ namespace DosDebugger
         public ListingWindow()
         {
             InitializeComponent();
+            this.monoFont = new Font(FontFamily.GenericMonospace, mnuListing.Font.Size);
+            // TODO: dispose monoFont when no longer used
         }
+
+        private Font monoFont;
 
         private Document document;
         private ListingViewModel viewModel;
@@ -157,10 +161,6 @@ namespace DosDebugger
 
         private void contextMenuListing_Opening(object sender, CancelEventArgs e)
         {
-            // TODO: need to dispose() unused items.
-#if true
-            mnuListingGoToXRef.Enabled = false;
-
             if (lvListing.SelectedIndices.Count == 0)
             {
                 e.Cancel = true;
@@ -172,25 +172,68 @@ namespace DosDebugger
             if (location == Pointer.Invalid)
                 return;
 
-            XRef[] xrefs = document.Disassembler.Image.CrossReferences.GetReferencesTo(
-                location.LinearAddress);
-            Array.Sort(xrefs, new XRefLocationComparer());
+            var image = document.Disassembler.Image;
+            List<XRef> xrefs = new List<XRef>();
+
+            // Fill xrefs to this location.
+            xrefs.AddRange(image.CrossReferences.GetReferencesTo(location.LinearAddress));
+            xrefs.Sort(new XRefLocationComparer());
             foreach (XRef xref in xrefs)
             {
-                ToolStripMenuItem item = new ToolStripMenuItem();
-                item.Text = string.Format(
-                    "{0} {1}", xref.Source, xref.Type);
-                item.Click += mnuListingGoToXRefItem_Click;
-                item.Tag = xref.Source;
-                mnuListingGoToXRef.DropDownItems.Add(item);
+                mnuListing.Items.Add(CreateXRefMenuItem(xref.Source));   
             }
-            mnuListingGoToXRef.Enabled = mnuListingGoToXRef.HasDropDownItems;
-#endif
+            mnuListingIncomingXRefs.Text = ReplaceFirstWord(
+                mnuListingIncomingXRefs.Text,
+                xrefs.Count == 0 ? "No" : xrefs.Count.ToString());
+
+            // Fill xrefs from this location.
+            xrefs.Clear();
+            xrefs.AddRange(image.CrossReferences.GetReferencesFrom(location.LinearAddress));
+            xrefs.Sort(new XRefLocationComparer());
+            int i = mnuListing.Items.IndexOf(mnuListingOutgoingXRefs);
+            foreach (XRef xref in xrefs)
+            {
+                mnuListing.Items.Insert(++i, CreateXRefMenuItem(xref.Target));
+            }
+            mnuListingOutgoingXRefs.Text = ReplaceFirstWord(
+                mnuListingOutgoingXRefs.Text,
+                xrefs.Count == 0 ? "No" : xrefs.Count.ToString());
+        }
+
+        private ToolStripMenuItem CreateXRefMenuItem(Pointer location)
+        {
+            ToolStripMenuItem item = new ToolStripMenuItem();
+            if (location == Pointer.Invalid)
+            {
+                item.Text = string.Format("{0}  (Dynamic)", location);
+                item.Enabled = false;
+            }
+            else
+            {
+                Instruction instruction = viewModel.Image.DecodeInstruction(location);
+                item.Text = string.Format("{0}  {1}", location, instruction);
+                item.Enabled = true;
+            }
+            item.Font = monoFont;
+            item.Tag = location;
+            item.Click += mnuListingGoToXRefItem_Click;
+            return item;
+        }
+
+        private static string ReplaceFirstWord(string s, string newWord)
+        {
+            int k = s.IndexOf(' ');
+            return newWord + s.Substring(k);
         }
 
         private void contextMenuListing_Closed(object sender, ToolStripDropDownClosedEventArgs e)
         {
-            mnuListingGoToXRef.DropDownItems.ClearAndDispose();
+            mnuListing.Items.ClearAndDispose(
+                mnuListing.Items.IndexOf(mnuListingOutgoingXRefs) + 1,
+                mnuListing.Items.IndexOf(mnuListingIncomingXRefs) - 1);
+            mnuListing.Items.ClearAndDispose(
+                mnuListing.Items.IndexOf(mnuListingIncomingXRefs) + 1,
+                mnuListing.Items.Count);
         }
 
         private void mnuListingGoToXRefItem_Click(object sender, EventArgs e)

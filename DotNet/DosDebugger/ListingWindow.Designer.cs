@@ -34,8 +34,10 @@
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.contextMenuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.mnuListingGoToXRef = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuListing = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.mnuListingOutgoingXRefs = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
+            this.mnuListingIncomingXRefs = new System.Windows.Forms.ToolStripMenuItem();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.cbSegments = new System.Windows.Forms.ComboBox();
             this.cbProcedures = new System.Windows.Forms.ComboBox();
@@ -45,7 +47,7 @@
             this.mnuScopeSegment = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuScopeExecutable = new System.Windows.Forms.ToolStripMenuItem();
             this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.contextMenuListing.SuspendLayout();
+            this.mnuListing.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -58,7 +60,7 @@
             this.columnHeader2,
             this.columnHeader3});
             this.tableLayoutPanel1.SetColumnSpan(this.lvListing, 2);
-            this.lvListing.ContextMenuStrip = this.contextMenuListing;
+            this.lvListing.ContextMenuStrip = this.mnuListing;
             this.lvListing.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvListing.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvListing.FullRowSelect = true;
@@ -91,20 +93,37 @@
             this.columnHeader3.Text = "Disassembly";
             this.columnHeader3.Width = 380;
             // 
-            // contextMenuListing
+            // mnuListing
             // 
-            this.contextMenuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuListingGoToXRef});
-            this.contextMenuListing.Name = "contextMenuListing";
-            this.contextMenuListing.Size = new System.Drawing.Size(177, 28);
-            this.contextMenuListing.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuListing_Closed);
-            this.contextMenuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
+            this.mnuListing.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuListingOutgoingXRefs,
+            this.toolStripMenuItem1,
+            this.mnuListingIncomingXRefs});
+            this.mnuListing.Name = "contextMenuListing";
+            this.mnuListing.Size = new System.Drawing.Size(242, 80);
+            this.mnuListing.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuListing_Closed);
+            this.mnuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
             // 
-            // mnuListingGoToXRef
+            // mnuListingOutgoingXRefs
             // 
-            this.mnuListingGoToXRef.Name = "mnuListingGoToXRef";
-            this.mnuListingGoToXRef.Size = new System.Drawing.Size(176, 24);
-            this.mnuListingGoToXRef.Text = "Go to Reference";
+            this.mnuListingOutgoingXRefs.Enabled = false;
+            this.mnuListingOutgoingXRefs.Image = global::DosDebugger.Properties.Resources.OutgoingLink;
+            this.mnuListingOutgoingXRefs.Name = "mnuListingOutgoingXRefs";
+            this.mnuListingOutgoingXRefs.Size = new System.Drawing.Size(241, 24);
+            this.mnuListingOutgoingXRefs.Text = "? XRefs From This Location";
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(228, 6);
+            // 
+            // mnuListingIncomingXRefs
+            // 
+            this.mnuListingIncomingXRefs.Enabled = false;
+            this.mnuListingIncomingXRefs.Image = global::DosDebugger.Properties.Resources.IncomingLink;
+            this.mnuListingIncomingXRefs.Name = "mnuListingIncomingXRefs";
+            this.mnuListingIncomingXRefs.Size = new System.Drawing.Size(241, 24);
+            this.mnuListingIncomingXRefs.Text = "? XRefs To This Location";
             // 
             // tableLayoutPanel1
             // 
@@ -212,7 +231,7 @@
             this.Name = "ListingWindow";
             this.Text = "Disassembly";
             this.Load += new System.EventHandler(this.ListingWindow_Load);
-            this.contextMenuListing.ResumeLayout(false);
+            this.mnuListing.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
@@ -227,8 +246,7 @@
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.ColumnHeader columnHeader2;
         private System.Windows.Forms.ColumnHeader columnHeader3;
-        private System.Windows.Forms.ContextMenuStrip contextMenuListing;
-        private System.Windows.Forms.ToolStripMenuItem mnuListingGoToXRef;
+        private System.Windows.Forms.ContextMenuStrip mnuListing;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.ComboBox cbSegments;
         private System.Windows.Forms.ComboBox cbProcedures;
@@ -238,5 +256,8 @@
         private System.Windows.Forms.ToolStripMenuItem mnuScopeProcedure;
         private System.Windows.Forms.ToolStripMenuItem mnuScopeSegment;
         private System.Windows.Forms.ToolStripMenuItem mnuScopeExecutable;
+        private System.Windows.Forms.ToolStripMenuItem mnuListingOutgoingXRefs;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem mnuListingIncomingXRefs;
     }
 }

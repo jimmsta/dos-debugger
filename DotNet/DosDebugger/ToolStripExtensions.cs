@@ -7,14 +7,27 @@ namespace DosDebugger
 {
     public static class ToolStripExtensions
     {
-        public static void ClearAndDispose(this ToolStripItemCollection items)
+        public static void ClearAndDispose(this ToolStripItemCollection items,
+            int startIndex, int endIndex)
         {
-            for (int i = items.Count - 1; i >= 0; i--)
+            if (items == null)
+                throw new ArgumentNullException("items");
+            if (startIndex < 0 || startIndex > items.Count)
+                throw new ArgumentOutOfRangeException("startIndex");
+            if (endIndex < startIndex || endIndex > items.Count)
+                throw new ArgumentOutOfRangeException("endIndex");
+
+            for (int i = endIndex - 1; i >= startIndex; i--)
             {
                 ToolStripItem item = items[i];
                 items.RemoveAt(i);
                 item.Dispose();
             }
+        }
+
+        public static void ClearAndDispose(this ToolStripItemCollection items)
+        {
+            ClearAndDispose(items, 0, items.Count);
         }
     }
 }
