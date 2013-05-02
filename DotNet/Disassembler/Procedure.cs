@@ -115,6 +115,7 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<Procedure> GetCallers()
         {
+#if false
             SortedDictionary<LinearPointer, Procedure> procList =
                 new SortedDictionary<LinearPointer, Procedure>();
 
@@ -126,6 +127,19 @@ namespace Disassembler
             }
 
             return procList.Values;
+#else
+            Pointer last = Pointer.Invalid;
+            foreach (XRef xCall in procMap.callGraph.GetReferencesTo(EntryPoint.LinearAddress))
+            {
+                if (xCall.Source != last)
+                {
+                    Procedure caller = procMap.Find(xCall.Source.LinearAddress);
+                    Debug.Assert(caller != null);
+                    yield return caller;
+                    last = xCall.Source;
+                }
+            }
+#endif
         }
 
         /// <summary>
@@ -134,6 +148,7 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<Procedure> GetCallees()
         {
+#if false
             SortedDictionary<LinearPointer, Procedure> procList =
                 new SortedDictionary<LinearPointer, Procedure>();
 
@@ -145,6 +160,19 @@ namespace Disassembler
             }
 
             return procList.Values;
+#else
+            Pointer last = Pointer.Invalid;
+            foreach (XRef xCall in procMap.callGraph.GetReferencesFrom(EntryPoint.LinearAddress))
+            {
+                if (xCall.Target != last)
+                {
+                    Procedure callee = procMap.Find(xCall.Target.LinearAddress);
+                    Debug.Assert(callee != null);
+                    yield return callee;
+                    last = xCall.Target;
+                }
+            }
+#endif
         }
     }
 

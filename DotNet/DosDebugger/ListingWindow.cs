@@ -172,31 +172,29 @@ namespace DosDebugger
                 return;
 
             var image = document.Disassembler.Image;
-            List<XRef> xrefs = new List<XRef>();
 
             // Fill xrefs to this location.
-            xrefs.AddRange(image.CrossReferences.GetReferencesTo(location.LinearAddress));
-            xrefs.Sort(XRef.CompareByLocation);
-            foreach (XRef xref in xrefs)
+            int n = 0;
+            foreach (XRef xref in image.CrossReferences.GetReferencesTo(location.LinearAddress))
             {
-                mnuListing.Items.Add(CreateXRefMenuItem(xref.Source));   
+                mnuListing.Items.Add(CreateXRefMenuItem(xref.Source));
+                n++;
             }
             mnuListingIncomingXRefs.Text = ReplaceFirstWord(
                 mnuListingIncomingXRefs.Text,
-                xrefs.Count == 0 ? "No" : xrefs.Count.ToString());
+                n == 0 ? "No" : n.ToString());
 
             // Fill xrefs from this location.
-            xrefs.Clear();
-            xrefs.AddRange(image.CrossReferences.GetReferencesFrom(location.LinearAddress));
-            xrefs.Sort(XRef.CompareByLocation);
             int i = mnuListing.Items.IndexOf(mnuListingOutgoingXRefs);
-            foreach (XRef xref in xrefs)
+            n = 0;
+            foreach (XRef xref in image.CrossReferences.GetReferencesFrom(location.LinearAddress))
             {
                 mnuListing.Items.Insert(++i, CreateXRefMenuItem(xref.Target));
+                n++;
             }
             mnuListingOutgoingXRefs.Text = ReplaceFirstWord(
                 mnuListingOutgoingXRefs.Text,
-                xrefs.Count == 0 ? "No" : xrefs.Count.ToString());
+                n == 0 ? "No" : n.ToString());
         }
 
         private ToolStripMenuItem CreateXRefMenuItem(Pointer location)

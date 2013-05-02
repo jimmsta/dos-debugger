@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections.ObjectModel;
 
 namespace Disassembler
@@ -53,11 +52,24 @@ namespace Disassembler
             public int NextOutgoing;
         }
 
+        Comparison<TEdge> compareEdges;
+
         /// <summary>
-        /// Creates an empty directed graph.
+        /// Creates an empty directed graph. The edges adjacent to each node
+        /// are not sorted, and will be returned in unspecified order when
+        /// enumerated.
         /// </summary>
         public Graph()
         {
+        }
+
+        /// <summary>
+        /// Creates a directed graph with the supplied comparison routine to
+        /// sort the adjacent edges of a node.
+        /// </summary>
+        public Graph(Comparison<TEdge> edgeComparison)
+        {
+            this.compareEdges = edgeComparison;
         }
 
         /// <summary>
@@ -93,14 +105,62 @@ namespace Disassembler
             EdgeLink nodeLink = new EdgeLink();
 
             EdgeLink headLink = GetListHead(edge.Source);
-            nodeLink.NextOutgoing = headLink.NextOutgoing;
-            headLink.NextOutgoing = nodeIndex;
-            ListHead[edge.Source] = headLink;
+            if (compareEdges == null)
+            {
+                nodeLink.NextOutgoing = headLink.NextOutgoing;
+                headLink.NextOutgoing = nodeIndex;
+                ListHead[edge.Source] = headLink;
+            }
+            else
+            {
+                int i = headLink.NextOutgoing, prev = -1;
+                while (i >= 0 && compareEdges(edge, edgeData[i]) >= 0)
+                {
+                    prev = i;
+                    i = edgeLink[i].NextOutgoing;
+                }
+                nodeLink.NextOutgoing = i;
+                if (prev >= 0)
+                {
+                    EdgeLink prevLink = edgeLink[prev];
+                    prevLink.NextOutgoing = nodeIndex;
+                    edgeLink[prev] = prevLink;
+                }
+                else
+                {
+                    headLink.NextOutgoing = nodeIndex;
+                    ListHead[edge.Source] = headLink;
+                }
+            }
 
             headLink = GetListHead(edge.Target);
-            nodeLink.NextIncoming = headLink.NextIncoming;
-            headLink.NextIncoming = nodeIndex;
-            ListHead[edge.Target] = headLink;
+            if (compareEdges == null)
+            {
+                nodeLink.NextIncoming = headLink.NextIncoming;
+                headLink.NextIncoming = nodeIndex;
+                ListHead[edge.Target] = headLink;
+            }
+            else
+            {
+                int i = headLink.NextIncoming, prev = -1;
+                while (i >= 0 && compareEdges(edge, edgeData[i]) >= 0)
+                {
+                    prev = i;
+                    i = edgeLink[i].NextIncoming;
+                }
+                nodeLink.NextIncoming = i;
+                if (prev >= 0)
+                {
+                    EdgeLink prevLink = edgeLink[prev];
+                    prevLink.NextIncoming = nodeIndex;
+                    edgeLink[prev] = prevLink;
+                }
+                else
+                {
+                    headLink.NextIncoming = nodeIndex;
+                    ListHead[edge.Target] = headLink;
+                }
+            }
 
             // Since XRefLink is a struct, we must add it after updating all
             // its fields.
@@ -117,7 +177,7 @@ namespace Disassembler
         {
             for (int i = GetListHead(target).NextIncoming; i >= 0; i = edgeLink[i].NextIncoming)
             {
-                //Debug.Assert(ListData[i].Target.LinearAddress == target);
+                //Debug.Assert(edgeData[i].Target.Equals(target));
                 yield return edgeData[i];
             }
         }
@@ -131,7 +191,7 @@ namespace Disassembler
         {
             for (int i = GetListHead(source).NextOutgoing; i >= 0; i = edgeLink[i].NextOutgoing)
             {
-                //Debug.Assert(ListData[i].Source.LinearAddress == source);
+                //Debug.Assert(edgeData[i].Source.Equals(source));
                 yield return edgeData[i];
             }
         }

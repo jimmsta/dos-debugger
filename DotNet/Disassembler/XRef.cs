@@ -195,7 +195,7 @@ namespace Disassembler
         public XRefCollection(Range<LinearPointer> addressRange)
         {
             this.addressRange = addressRange;
-            this.graph = new Graph<LinearPointer, XRef>();
+            this.graph = new Graph<LinearPointer, XRef>(XRef.CompareByLocation);
         }
 
         /// <summary>
