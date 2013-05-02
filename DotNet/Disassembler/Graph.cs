@@ -13,45 +13,37 @@ namespace Disassembler
     public class Graph<TNode, TEdge> where TEdge : IGraphEdge<TNode>
     {
         /// <summary>
-        /// List of edges. This list has the same number of items as ListNext.
+        /// List of edges. This list has the same number of items as
+        /// NextIncoming[] and NextOutgoing[].
         /// </summary>
-        List<TEdge> edgeData = new List<TEdge>();
+        List<TEdge> edges = new List<TEdge>();
 
         /// <summary>
-        /// Contains the 'next' link of both vertices of each edge in the
-        /// graph. That is, 
-        /// <code>EdgeData[EdgeLink[i].NextIncoming].Target = EdgeData[i].Target</code>, and
-        /// <code>EdgeData[EdgeLink[i].NextOutgoing].Source = EdgeData[i].Source</code>.
+        /// NextIncoming[i] = index of the next edge that points into
+        /// edgeData[i].Target.
         /// </summary>
-        List<EdgeLink> edgeLink = new List<EdgeLink>();
+        List<int> NextIncoming = new List<int>();
 
         /// <summary>
-        /// Contains the index of the first edge pointing to or from each
-        /// node. That is, 
-        /// <code>edgeData[ListHead[node].NextIncoming].Target = node</code>, and
-        /// <code>edgeData[ListHead[node].NextOutgoing].Source = node</code>.
+        /// NextOutgoing[i] = index of the next edge that points from
+        /// edgeData[i].Source.
         /// </summary>
-        Dictionary<TNode, EdgeLink> ListHead = new Dictionary<TNode, EdgeLink>();
+        List<int> NextOutgoing = new List<int>();
 
         /// <summary>
-        /// Represents a node in the cross reference map. For performance
-        /// reason, the actual node data (XRef object) is placed separately
-        /// in the NodeData[] list. Therefore this structure only contains
-        /// the node link fields.
+        /// FirstIncoming[v] = index of the first edge that points into v.
         /// </summary>
-        struct EdgeLink
-        {
-            /// <summary>
-            /// Index of the next xref node that points to Target; -1 if none.
-            /// </summary>
-            public int NextIncoming;
+        Dictionary<TNode, int> FirstIncoming = new Dictionary<TNode, int>();
 
-            /// <summary>
-            /// Index of the next xref node that points from Source; -1 if none.
-            /// </summary>
-            public int NextOutgoing;
-        }
+        /// <summary>
+        /// FirstOutgoing[v] = index of the first edge that points from v.
+        /// </summary>
+        Dictionary<TNode, int> FirstOutgoing = new Dictionary<TNode, int>();
 
+        /// <summary>
+        /// Comparer to sort the adjacent edges into or out of a node.
+        /// If this member is null, the edges are not sorted.
+        /// </summary>
         Comparison<TEdge> compareEdges;
 
         /// <summary>
@@ -77,95 +69,76 @@ namespace Disassembler
         /// </summary>
         public void Clear()
         {
-            edgeData.Clear();
-            edgeLink.Clear();
-            ListHead.Clear();
+            edges.Clear();
+            NextIncoming.Clear();
+            NextOutgoing.Clear();
+            FirstIncoming.Clear();
+            FirstOutgoing.Clear();
         }
 
         public ReadOnlyCollection<TEdge> Edges
         {
-            get { return new ReadOnlyCollection<TEdge>(edgeData); }
-        }
-
-        private EdgeLink GetListHead(TNode node)
-        {
-            EdgeLink headLink;
-            if (!ListHead.TryGetValue(node, out headLink))
-            {
-                headLink.NextOutgoing = -1;
-                headLink.NextIncoming = -1;
-            }
-            return headLink;
+            get { return new ReadOnlyCollection<TEdge>(edges); }
         }
 
         public void AddEdge(TEdge edge)
         {
-            int nodeIndex = edgeData.Count;
+            int nodeIndex = edges.Count;
+            edges.Add(edge);
+            NextOutgoing.Add(-1);
+            NextIncoming.Add(-1);
 
-            EdgeLink nodeLink = new EdgeLink();
-
-            EdgeLink headLink = GetListHead(edge.Source);
             if (compareEdges == null)
             {
-                nodeLink.NextOutgoing = headLink.NextOutgoing;
-                headLink.NextOutgoing = nodeIndex;
-                ListHead[edge.Source] = headLink;
+                NextOutgoing[nodeIndex] = FirstOutgoing.GetValueOrDefault(edge.Source, -1);
+                FirstOutgoing[edge.Source] = nodeIndex;
             }
             else
             {
-                int i = headLink.NextOutgoing, prev = -1;
-                while (i >= 0 && compareEdges(edge, edgeData[i]) >= 0)
+                int i = FirstOutgoing.GetValueOrDefault(edge.Source, -1);
+                int prev = -1;
+                while (i >= 0 && compareEdges(edge, edges[i]) >= 0)
                 {
                     prev = i;
-                    i = edgeLink[i].NextOutgoing;
+                    i = NextOutgoing[i];
                 }
-                nodeLink.NextOutgoing = i;
+
                 if (prev >= 0)
                 {
-                    EdgeLink prevLink = edgeLink[prev];
-                    prevLink.NextOutgoing = nodeIndex;
-                    edgeLink[prev] = prevLink;
+                    NextOutgoing[prev] = nodeIndex;
                 }
                 else
                 {
-                    headLink.NextOutgoing = nodeIndex;
-                    ListHead[edge.Source] = headLink;
+                    FirstOutgoing[edge.Source] = nodeIndex;
                 }
+                NextOutgoing[nodeIndex] = i;
             }
 
-            headLink = GetListHead(edge.Target);
             if (compareEdges == null)
             {
-                nodeLink.NextIncoming = headLink.NextIncoming;
-                headLink.NextIncoming = nodeIndex;
-                ListHead[edge.Target] = headLink;
+                NextIncoming[nodeIndex] = FirstIncoming.GetValueOrDefault(edge.Target, -1);
+                FirstIncoming[edge.Target] = nodeIndex;
             }
             else
             {
-                int i = headLink.NextIncoming, prev = -1;
-                while (i >= 0 && compareEdges(edge, edgeData[i]) >= 0)
+                int i = FirstIncoming.GetValueOrDefault(edge.Target, -1);
+                int prev = -1;
+                while (i >= 0 && compareEdges(edge, edges[i]) >= 0)
                 {
                     prev = i;
-                    i = edgeLink[i].NextIncoming;
+                    i = NextIncoming[i];
                 }
-                nodeLink.NextIncoming = i;
+
                 if (prev >= 0)
                 {
-                    EdgeLink prevLink = edgeLink[prev];
-                    prevLink.NextIncoming = nodeIndex;
-                    edgeLink[prev] = prevLink;
+                    NextIncoming[prev] = nodeIndex;
                 }
                 else
                 {
-                    headLink.NextIncoming = nodeIndex;
-                    ListHead[edge.Target] = headLink;
+                    FirstIncoming[edge.Target] = nodeIndex;
                 }
+                NextIncoming[nodeIndex] = i;
             }
-
-            // Since XRefLink is a struct, we must add it after updating all
-            // its fields.
-            edgeLink.Add(nodeLink);
-            edgeData.Add(edge);
         }
 
         /// <summary>
@@ -175,10 +148,12 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<TEdge> GetIncomingEdges(TNode target)
         {
-            for (int i = GetListHead(target).NextIncoming; i >= 0; i = edgeLink[i].NextIncoming)
+            for (int i = FirstIncoming.GetValueOrDefault(target, -1); 
+                 i >= 0; 
+                 i = NextIncoming[i])
             {
                 //Debug.Assert(edgeData[i].Target.Equals(target));
-                yield return edgeData[i];
+                yield return edges[i];
             }
         }
 
@@ -189,10 +164,12 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<TEdge> GetOutgoingEdges(TNode source)
         {
-            for (int i = GetListHead(source).NextOutgoing; i >= 0; i = edgeLink[i].NextOutgoing)
+            for (int i = FirstOutgoing.GetValueOrDefault(source, -1); 
+                 i >= 0; 
+                 i = NextOutgoing[i])
             {
                 //Debug.Assert(edgeData[i].Source.Equals(source));
-                yield return edgeData[i];
+                yield return edges[i];
             }
         }
     }
@@ -201,5 +178,21 @@ namespace Disassembler
     {
         TNode Source { get; }
         TNode Target { get; }
+    }
+
+    public static class DictionaryExtensions
+    {
+        public static TValue GetValueOrDefault<TKey, TValue>(
+            this IDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
+        {
+            if (dictionary == null)
+                throw new ArgumentNullException("dictionary");
+
+            TValue value;
+            if (dictionary.TryGetValue(key, out value))
+                return value;
+            else
+                return defaultValue;
+        }
     }
 }

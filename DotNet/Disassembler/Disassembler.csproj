@@ -84,6 +84,10 @@
     <Compile Include="XRef.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Util\Util-v2.0.csproj">
+      <Project>{70014904-13e0-4afa-a6dd-0ec93100c3c7}</Project>
+      <Name>Util-v2.0</Name>
+    </ProjectReference>
     <ProjectReference Include="..\X86Codec\X86Codec.csproj">
       <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>
       <Name>X86Codec</Name>
