@@ -112,6 +112,15 @@ namespace DosDebugger
             string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
+
+#if true
+            CallGraphWindow f = new CallGraphWindow();
+            LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x14FE;
+            f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
+            f.WindowState = FormWindowState.Maximized;
+            f.ShowDialog(this);
+            Application.Exit();
+#endif
         }
 
         private void DoLoadFile(string fileName)
@@ -378,6 +387,7 @@ namespace DosDebugger
             CallGraphWindow f = new CallGraphWindow();
             LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x14FE;
             f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
+            f.WindowState = FormWindowState.Maximized;
             f.Show(this);
 #if false
             PriorityQueue<int> q = new PriorityQueue<int>();

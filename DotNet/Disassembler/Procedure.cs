@@ -17,6 +17,8 @@ namespace Disassembler
         private BinaryImage image;
         private ProcedureCollection procMap;
 
+        //private Range<LinearPointer> addressRange;
+
         //private Range<LinearPointer> bounds;
         //private MultiRange codeRange = new MultiRange();
         //private MultiRange dataRange = new MultiRange();
@@ -33,6 +35,16 @@ namespace Disassembler
         /// Gets the entry point address of the procedure.
         /// </summary>
         public Pointer EntryPoint { get; private set; }
+
+        /// <summary>
+        /// Gets the linear address range of this procedure. The procedure
+        /// may not cover every byte in this address range, and the entry
+        /// point may not be at the beginning of the address range.
+        /// </summary>
+        public Range<LinearPointer> AddressRange
+        {
+            get { return new Range<LinearPointer>(this.StartAddress, this.EndAddress); }
+        }
 
 #if false
         public Range<LinearPointer> Bounds

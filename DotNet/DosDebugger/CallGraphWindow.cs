@@ -36,6 +36,45 @@ namespace DosDebugger
             // However, we also need to remove cycles.
         }
 
+        private static int FitWithin(int x, int min, int max)
+        {
+            if (x < min)
+                x = min;
+            if (x > max)
+                x = max;
+            return x;
+        }
+
+        private void UpdateNodeRadius(int minRadius, int maxRadius)
+        {
+            const int lengthLB = 16;
+            const int lengthUB = 0x100000;
+
+            int minLength = lengthUB;
+            int maxLength = lengthLB;
+            foreach (CallGraphNode node in graph.Nodes)
+            {
+                int length = node.Procedure.Length;
+                if (length < minLength)
+                    minLength = length;
+                if (length > maxLength)
+                    maxLength = length;
+            }
+            minLength = FitWithin(minLength, lengthLB, lengthUB);
+            maxLength = FitWithin(maxLength, lengthLB, lengthUB);
+            double log_min = Math.Log(minLength);
+            double log_max = Math.Log(maxLength);
+
+            foreach (CallGraphNode node in graph.Nodes)
+            {
+                int length = node.Procedure.Length;
+                length = FitWithin(length, lengthLB, lengthUB);
+
+                double ratio = (Math.Log(length) - log_min) / (log_max - log_min);
+                node.Radius = minRadius + (int)(ratio * (maxRadius - minRadius));
+            }
+        }
+
         /// <summary>
         /// Draws the call graph randomly on the form. This is a benchmark of
         /// how messy it can be.
@@ -43,47 +82,84 @@ namespace DosDebugger
         private void DrawGraphRandomly()
         {
             int i = 0;
-            int numItemsInRow = 10;
+            int itemSize = 100;
+            int numItemsInRow = 12;
+            int minRadius = itemSize / 16;
+            int maxRadius = itemSize / 4;
+
+            UpdateNodeRadius(minRadius, maxRadius);
+
             this.SuspendLayout();
             foreach (CallGraphNode node in graph.Nodes)
             {
-                int x = 50 + (i % numItemsInRow) * 100;
-                int y = 50 + (i / numItemsInRow) * 100;
-                node.Location = new Point(x, y);
+                int x = itemSize / 2 + (i % numItemsInRow) * itemSize;
+                int y = itemSize / 2 + (i / numItemsInRow) * itemSize;
+                node.Center = new Point(x, y);
+#if false
                 Label label = new Label();
-                label.Location = node.Location;
-                label.Text = node.Procedure.EntryPoint.ToString();
+                label.Location = node.Center;
+                label.Text = ""; //  node.Procedure.EntryPoint.ToString();
                 this.Controls.Add(label);
-                node.Label = label;
+                //node.Label = label;
+#endif
+
                 i++;
-                //;
             }
-
-            // Connect nodes.
-            using (Graphics g = Graphics.FromHwnd(this.Handle))
-            {
-                foreach (CallGraphEdge edge in graph.Edges)
-                {
-                    Point p1 = edge.Source.Location;
-                    Point p2 = edge.Target.Location;
-                    g.DrawLine(Pens.Black, p1, p2);
-                    //edge.Source.Label.ForeColor = Color.Blue;
-                    //edge.Target.Label.ForeColor = Color.Blue;
-                }
-            }
-
+            panelCanvas.Location = new Point(0, 0);
+            panelCanvas.Width = numItemsInRow * itemSize;
+            panelCanvas.Height = (i + numItemsInRow - 1) / numItemsInRow * itemSize;
             this.ResumeLayout();
         }
 
         private void CallGraphWindow_Paint(object sender, PaintEventArgs e)
         {
+#if false
             Graphics g = e.Graphics;
             g.TranslateTransform(this.AutoScrollPosition.X, this.AutoScrollPosition.Y);
             foreach (CallGraphEdge edge in graph.Edges)
             {
-                Point p1 = edge.Source.Location;
-                Point p2 = edge.Target.Location;
+                Point p1 = edge.Source.Center;
+                Point p2 = edge.Target.Center;
                 g.DrawLine(Pens.Black, p1, p2);
+                //edge.Source.Label.ForeColor = Color.Blue;
+                //edge.Target.Label.ForeColor = Color.Blue;
+            }
+            foreach (CallGraphNode node in graph.Nodes)
+            {
+                Rectangle rect = new Rectangle(
+                    x: node.Center.X - node.Radius,
+                    y: node.Center.Y - node.Radius,
+                    width: node.Radius * 2,
+                    height: node.Radius * 2
+                    );
+                g.FillEllipse(Brushes.White, rect);
+                g.DrawEllipse(Pens.Black, rect);
+            }
+#endif
+        }
+
+        private void panelCanvas_Paint(object sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            //g.TranslateTransform(this.AutoScrollPosition.X, this.AutoScrollPosition.Y);
+            foreach (CallGraphEdge edge in graph.Edges)
+            {
+                Point p1 = edge.Source.Center;
+                Point p2 = edge.Target.Center;
+                g.DrawLine(Pens.Black, p1, p2);
+                //edge.Source.Label.ForeColor = Color.Blue;
+                //edge.Target.Label.ForeColor = Color.Blue;
+            }
+            foreach (CallGraphNode node in graph.Nodes)
+            {
+                Rectangle rect = new Rectangle(
+                    x: node.Center.X - node.Radius,
+                    y: node.Center.Y - node.Radius,
+                    width: node.Radius * 2,
+                    height: node.Radius * 2
+                    );
+                g.FillEllipse(Brushes.White, rect);
+                g.DrawEllipse(Pens.Black, rect);
             }
         }
     }
@@ -91,8 +167,9 @@ namespace DosDebugger
     class CallGraphNode
     {
         public Procedure Procedure;
-        public Point Location; // (x,y) on screen
-        public Label Label;
+        public Point Center; // (x,y) on screen
+        public int Radius;
+        //public Label Label;
     }
 
     class CallGraphEdge : IGraphEdge<CallGraphNode>
