@@ -74,9 +74,7 @@
     <Compile Include="ByteBlock.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="BinaryImage.cs" />
-    <Compile Include="Graph.cs" />
     <Compile Include="MZLoader.cs" />
-    <Compile Include="PriorityQueue.cs" />
     <Compile Include="Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Range.cs" />

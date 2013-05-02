@@ -375,6 +375,7 @@ namespace DosDebugger
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+#if false
             PriorityQueue<int> q = new PriorityQueue<int>();
             int[] testArray = new int[]
             {
@@ -385,6 +386,7 @@ namespace DosDebugger
 
             for (int i = 0; i < testArray.Length; i++)
                 testArray[i] = q.Dequeue();
+#endif
         }
 
         /// <summary>

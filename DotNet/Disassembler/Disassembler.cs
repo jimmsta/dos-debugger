@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
+using Util.Data;
 
 namespace Disassembler
 {
