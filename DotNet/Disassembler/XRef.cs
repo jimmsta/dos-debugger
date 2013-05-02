@@ -14,37 +14,49 @@ namespace Disassembler
     public class XRef
     {
         /// <summary>
-        /// Gets or sets the target address being referenced. This may be
+        /// Gets the target address being referenced. This may be
         /// <code>Pointer.Invalid</code> if the target address cannot be
         /// determined, such as in a dynamic jump or call.
         /// </summary>
-        public Pointer Target { get; set; }
+        public Pointer Target { get; private set; }
 
         /// <summary>
-        /// Gets or sets the source address that refers to target. This may
-        /// be <code>Pointer.Invalid</code> if the source address cannot be
+        /// Gets the source address that refers to target. This may be
+        /// <code>Pointer.Invalid</code> if the source address cannot be
         /// determined, such as in the entry routine of a program.
         /// </summary>
-        public Pointer Source { get; set; }
+        public Pointer Source { get; private set; }
 
         /// <summary>
-        /// Gets or sets the type of cross-reference.
+        /// Gets the type of this cross-reference.
         /// </summary>
-        public XRefType Type { get; set; }
+        public XRefType Type { get; private set; }
 
         /// <summary>
-        /// Gets or sets the address of the associated data item. This is
-        /// only relevant if Type is NearIndexedJump or FarIndexedJump, where
-        /// DataLocation contains the address of the jump table entry.
+        /// Gets the address of the associated data item. This is relevant
+        /// if Type is NearIndexedJump or FarIndexedJump, where DataLocation
+        /// contains the address of the jump table entry.
         /// </summary>
-        public Pointer DataLocation { get; set; }
+        public Pointer DataLocation { get; private set; }
 
         public XRef()
         {
             this.Source = Pointer.Invalid;
             this.Target = Pointer.Invalid;
             this.DataLocation = Pointer.Invalid;
-            this.Type = XRefType.UserSpecified;
+        }
+
+        public XRef(XRefType type, Pointer source, Pointer target, Pointer dataLocation)
+        {
+            this.Source = source;
+            this.Target = target;
+            this.Type = type;
+            this.DataLocation = dataLocation;
+        }
+
+        public XRef(XRefType type, Pointer source, Pointer target)
+            : this(type, source, target, Pointer.Invalid)
+        {
         }
 
         public override string ToString()
@@ -83,10 +95,17 @@ namespace Disassembler
     /// </summary>
     public enum XRefType
     {
+#if false
         /// <summary>
         /// User specified entry point (such as program start).
         /// </summary>
         UserSpecified,
+#endif
+
+        /// <summary>
+        /// Indicates that the XRef object is invalid.
+        /// </summary>
+        None = 0,
 
         /// <summary>
         /// A JMPN instruction refers to this location.

@@ -82,17 +82,16 @@ namespace Disassembler
         public void Analyze(Pointer start)
         {
             //List<XRef> xrefs = globalXRefs;
-            PriorityQueue<XRef> xrefQueue = 
+            PriorityQueue<XRef> xrefQueue =
                 new PriorityQueue<XRef>(XRef.CompareByPriority);
 
             // Create a a dummy xref entry using the user-supplied starting
             // address.
-            xrefQueue.Enqueue(new XRef
-            {
-                Target = start,
-                Source = Pointer.Invalid,
-                Type = XRefType.FarCall, // should this be UserSpecified?
-            });
+            xrefQueue.Enqueue(new XRef(
+                type: XRefType.FarCall, // should this be UserSpecified?
+                source: Pointer.Invalid,
+                target: start
+            ));
 
             // Analyze each cross reference in order of their priority.
             // In particular, if the xref is an indexed jump, we delay its
@@ -275,22 +274,20 @@ namespace Disassembler
 
             // Add a dynamic xref from the JMP instruction to the next jump
             // table entry.
-            xrefs.Add(new XRef
-            {
-                Source = entry.Source,
-                Target = Pointer.Invalid,
-                DataLocation = entry.DataLocation + 2,
-                Type = XRefType.NearIndexedJump
-            });
+            xrefs.Add(new XRef(
+                type: XRefType.NearIndexedJump,
+                source: entry.Source,
+                target: Pointer.Invalid,
+                dataLocation: entry.DataLocation
+            ));
 
             // Return the updated xref with Target field filled.
-            return new XRef
-            {
-                Source = entry.Source,
-                Target = jumpTarget,
-                DataLocation = entry.DataLocation,
-                Type = XRefType.NearIndexedJump
-            };
+            return new XRef(
+                type: XRefType.NearIndexedJump,
+                source: entry.Source,
+                target: jumpTarget,
+                dataLocation: entry.DataLocation
+            );
         }
 
         /// <summary>
@@ -414,12 +411,11 @@ namespace Disassembler
                     // truely necessary to add these xrefs?
                     if (xref.Type == XRefType.ConditionalJump)
                     {
-                        xrefs.Add(new XRef
-                        {
-                            Type = XRefType.ConditionalJump,
-                            Source = insn.Location,
-                            Target = pos
-                        });
+                        xrefs.Add(new XRef(
+                            type: XRefType.ConditionalJump,
+                            source: insn.Location,
+                            target: pos
+                        ));
                     }
 
                     // Finish basic block unless this is a CALL instruction.
@@ -524,23 +520,21 @@ namespace Disassembler
             if (instruction.Operands[0] is RelativeOperand) // near jump/call to relative address
             {
                 RelativeOperand opr = (RelativeOperand)instruction.Operands[0];
-                return new XRef
-                {
-                    Source = start,
-                    Target = start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset),
-                    Type = bcjType
-                };
+                return new XRef(
+                    type: bcjType,
+                    source: start,
+                    target: start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset)
+                );
             }
-            
+
             if (instruction.Operands[0] is PointerOperand) // far jump/call to absolute address
             {
                 PointerOperand opr = (PointerOperand)instruction.Operands[0];
-                return new XRef
-                {
-                    Source = start,
-                    Target = opr.Value,
-                    Type = bcjType
-                };
+                return new XRef(
+                    type: bcjType,
+                    source: start,
+                    target: opr.Value
+                );
             }
 
             if (instruction.Operands[0] is MemoryOperand) // indirect jump/call
@@ -568,13 +562,12 @@ namespace Disassembler
                     opr.Base != Register.None &&
                     opr.Index == Register.None)
                 {
-                    return new XRef
-                    {
-                        Source = start,
-                        Target = Pointer.Invalid,
-                        DataLocation = new Pointer(start.Segment, (UInt16)opr.Displacement),
-                        Type = XRefType.NearIndexedJump
-                    };
+                    return new XRef(
+                        type: XRefType.NearIndexedJump,
+                        source: start,
+                        target: Pointer.Invalid,
+                        dataLocation: new Pointer(start.Segment, (UInt16)opr.Displacement)
+                    );
                 }
             }
 
@@ -582,12 +575,11 @@ namespace Disassembler
             AddError(start, ErrorCategory.Message,
                 "Cannot determine target of {0} instruction.", op);
 
-            return new XRef
-            {
-                Source = start,
-                Target = Pointer.Invalid,
-                Type = bcjType
-            };
+            return new XRef(
+                type: bcjType,
+                source: start,
+                target: Pointer.Invalid
+            );
         }
 
 #if false
