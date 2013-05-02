@@ -239,6 +239,14 @@ namespace Disassembler
         }
 
         /// <summary>
+        /// Returns true if the given value is within the half-open range.
+        /// </summary>
+        public bool Contains(T value)
+        {
+            return (value.CompareTo(begin) >= 0) && (value.CompareTo(end) < 0);
+        }
+
+        /// <summary>
         /// Converts the range into a string.
         /// </summary>
         /// <returns>A string in the format "[start, end)".</returns>

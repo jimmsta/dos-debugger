@@ -137,7 +137,8 @@ namespace Disassembler
     /// </summary>
     public class XRefCollection : ICollection<XRef>
     {
-        private BinaryImage image;
+        //private BinaryImage image;
+        private Range<LinearPointer> addressRange;
 
         /// <summary>
         /// List of cross references contained in this collection. This list
@@ -187,11 +188,11 @@ namespace Disassembler
         /// Creates a cross reference collection for the given image.
         /// </summary>
         /// <param name="image"></param>
-        public XRefCollection(BinaryImage image)
+        public XRefCollection(Range<LinearPointer> addressRange)
         {
-            this.image = image;
-            this.DynamicIndex = image.Length;
-            this.ListHead = new XRefLink[image.Length + 1];
+            this.addressRange = addressRange;
+            this.DynamicIndex = addressRange.End - addressRange.Begin;
+            this.ListHead = new XRefLink[DynamicIndex + 1];
             Clear();
         }
 
@@ -219,29 +220,19 @@ namespace Disassembler
 
         private int PointerToOffset(LinearPointer address)
         {
-            int i = address - image.StartAddress;
-            if (i < 0 || i >= image.Length)
+            if (!addressRange.Contains(address))
             {
-                throw new ArgumentException(string.Format(
-                    "The address {0} is out of the range of the image.",
-                    address));
+                throw new ArgumentOutOfRangeException("address");
             }
-            return i;
+            return address - addressRange.Begin;
         }
 
         private int PointerToOffset(Pointer address)
         {
             if (address == Pointer.Invalid)
                 return DynamicIndex;
-
-            int i = address.LinearAddress - image.StartAddress;
-            if (i < 0 || i >= image.Length)
-            {
-                throw new ArgumentException(string.Format(
-                    "The address {0} is out of the range of the image.",
-                    address));
-            }
-            return i;
+            else
+                return PointerToOffset(address.LinearAddress);
         }
 
         public void Add(XRef xref)

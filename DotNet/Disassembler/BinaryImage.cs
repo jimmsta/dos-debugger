@@ -62,7 +62,8 @@ namespace Disassembler
                 attr[i] = new ByteProperties();
             }
 
-            this.xrefs = new XRefCollection(this);
+            this.xrefs = new XRefCollection(
+                new Range<LinearPointer>(this.StartAddress, this.EndAddress));
         }
 
         /// <summary>
@@ -523,7 +524,7 @@ namespace Disassembler
     /// Represents a range of consecutive bytes that constitute a single
     /// instruction or data item.
     /// </summary>
-    public class Piece : ByteBlock
+    public class Piece : ByteBlock // may rename to Unit, with Location and Length
     {
         //private BinaryImage image;
 
@@ -576,6 +577,7 @@ namespace Disassembler
         /// Splits the basic block into two at the given location.
         /// </summary>
         /// <param name="location"></param>
+        /// TODO: how does this sync with Procedure.BasicBlocks?
         internal BasicBlock Split(LinearPointer location)
         {
             if (location <= StartAddress || location >= EndAddress)

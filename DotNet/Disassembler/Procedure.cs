@@ -54,6 +54,7 @@ namespace Disassembler
         /// Adds a basic block to the procedure.
         /// </summary>
         /// <param name="block"></param>
+        // TODO: what to do if the block is Split ?
         public void AddBasicBlock(BasicBlock block)
         {
             if (block == null)

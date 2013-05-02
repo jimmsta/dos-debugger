@@ -417,6 +417,9 @@ namespace Disassembler
 
                     // If the instruction is a conditional jump, add xref to
                     // the 'no-jump' branch.
+                    // TODO: adding a no-jump xref causes confusion when we
+                    // browse xrefs in the disassembly listing window. Is it
+                    // truely necessary to add these xrefs?
                     if (xref.Type == XRefType.ConditionalJump)
                     {
                         xrefs.Add(new XRef
