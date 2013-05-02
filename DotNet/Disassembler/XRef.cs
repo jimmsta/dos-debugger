@@ -181,7 +181,6 @@ namespace Disassembler
     /// </summary>
     public class XRefCollection : ICollection<XRef>
     {
-        //private BinaryImage image;
         private Range<LinearPointer> addressRange;
 
         /// <summary>
@@ -364,6 +363,13 @@ namespace Disassembler
             // its fields.
             ListLink.Add(nodeLink);
             ListData.Add(xref);
+
+            // Raise the XRefAdded event.
+            if (XRefAdded != null)
+            {
+                XRefAddedEventArgs e = new XRefAddedEventArgs(xref);
+                XRefAdded(this, e);
+            }
         }
 
         /// <summary>
@@ -410,6 +416,10 @@ namespace Disassembler
             }
         }
 
+        public event EventHandler<XRefAddedEventArgs> XRefAdded;
+
+        #region ICollection Interface Implementation
+
         public bool Contains(XRef item)
         {
             throw new NotImplementedException();
@@ -438,6 +448,18 @@ namespace Disassembler
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return ListData.GetEnumerator();
+        }
+
+        #endregion
+    }
+
+    public class XRefAddedEventArgs : EventArgs
+    {
+        public XRef XRef { get; private set; }
+
+        public XRefAddedEventArgs(XRef xref)
+        {
+            this.XRef = xref;
         }
     }
 }

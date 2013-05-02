@@ -19,11 +19,9 @@ namespace Disassembler
         private List<BasicBlock> blocks = new List<BasicBlock>();
 
         /// <summary>
-        /// Dictionary that maps the entry point (linear) address of a
-        /// procedure to a Procedure object.
+        /// Maintains a collection of procedures contained in this image.
         /// </summary>
-        private SortedList<LinearPointer, Procedure> procedures
-            = new SortedList<LinearPointer, Procedure>();
+        private ProcedureCollection procedures;
 
         /// <summary>
         /// Dictionary that maps a 16-bit segment address to a Segment
@@ -62,8 +60,8 @@ namespace Disassembler
                 attr[i] = new ByteProperties();
             }
 
-            this.xrefs = new XRefCollection(
-                new Range<LinearPointer>(this.StartAddress, this.EndAddress));
+            this.xrefs = new XRefCollection(this.AddressRange);
+            this.procedures = new ProcedureCollection(this);
         }
 
         /// <summary>
@@ -72,6 +70,11 @@ namespace Disassembler
         public byte[] Image
         {
             get { return image; }
+        }
+
+        public Range<LinearPointer> AddressRange
+        {
+            get { return new Range<LinearPointer>(StartAddress, EndAddress); }
         }
 
         /// <summary>
@@ -352,36 +355,9 @@ namespace Disassembler
             return block;
         }
 
-        public ICollection<Procedure> Procedures
+        public ProcedureCollection Procedures
         {
-            get { return procedures.Values; }
-        }
-
-        public Procedure CreateProcedure(Pointer entryPoint)
-        {
-            if (FindProcedure(entryPoint.LinearAddress) != null)
-            {
-                throw new InvalidOperationException(
-                    "A procedure already exists at the given entry point.");
-            }
-
-            Procedure proc = new Procedure(this, entryPoint);
-            this.procedures.Add(entryPoint.LinearAddress, proc);
-            return proc;
-        }
-
-        /// <summary>
-        /// Finds a procedure at the given entry point.
-        /// </summary>
-        /// <param name="entryPoint"></param>
-        /// <returns></returns>
-        public Procedure FindProcedure(LinearPointer entryPoint)
-        {
-            Procedure proc;
-            if (procedures.TryGetValue(entryPoint, out proc))
-                return proc;
-            else
-                return null;
+            get { return procedures; }
         }
 
         public XRefCollection CrossReferences

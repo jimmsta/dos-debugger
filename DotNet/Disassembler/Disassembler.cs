@@ -113,12 +113,12 @@ namespace Disassembler
                         continue;
                 }
 
-                // Append the xref entry to the global list of xrefs.
-                image.CrossReferences.Add(entry);
-
                 // Skip other dynamic xrefs.
                 if (entry.Target == Pointer.Invalid)
+                {
+                    image.CrossReferences.Add(entry);
                     continue;
+                }
 
                 Procedure proc;
 
@@ -129,13 +129,19 @@ namespace Disassembler
                     // If a procedure with that entry point has already been
                     // defined, perform some sanity checks but no need to
                     // analyze again.
-                    proc = image.FindProcedure(entry.Target.LinearAddress);
+                    proc = image.Procedures.Find(entry.Target.LinearAddress);
                     if (proc != null)
+                    {
+                        image.CrossReferences.Add(entry);
                         continue;
+                    }
 
                     // Create a new Procedure object with that entry point.
-                    // TODO: handle empty procedures.
-                    proc = image.CreateProcedure(entry.Target);
+                    // TODO: we may be calling into the middle of an already
+                    // defined procedure. This can happen if two procedures
+                    // share a chunk of code. We need to handle this later.
+                    proc = new Procedure(image, entry.Target);
+                    image.Procedures.Add(proc);
                 }
                 else
                 {
@@ -156,6 +162,8 @@ namespace Disassembler
                     //}
                     proc.AddBasicBlock(block);
                 }
+
+                image.CrossReferences.Add(entry);
             }
 
             // Update the segment statistics.

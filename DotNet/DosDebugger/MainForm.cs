@@ -109,7 +109,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
         }
