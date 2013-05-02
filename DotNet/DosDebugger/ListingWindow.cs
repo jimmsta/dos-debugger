@@ -177,7 +177,7 @@ namespace DosDebugger
 
             // Fill xrefs to this location.
             xrefs.AddRange(image.CrossReferences.GetReferencesTo(location.LinearAddress));
-            xrefs.Sort(new XRefLocationComparer());
+            xrefs.Sort(XRef.CompareByLocation);
             foreach (XRef xref in xrefs)
             {
                 mnuListing.Items.Add(CreateXRefMenuItem(xref.Source));   
@@ -189,7 +189,7 @@ namespace DosDebugger
             // Fill xrefs from this location.
             xrefs.Clear();
             xrefs.AddRange(image.CrossReferences.GetReferencesFrom(location.LinearAddress));
-            xrefs.Sort(new XRefLocationComparer());
+            xrefs.Sort(XRef.CompareByLocation);
             int i = mnuListing.Items.IndexOf(mnuListingOutgoingXRefs);
             foreach (XRef xref in xrefs)
             {

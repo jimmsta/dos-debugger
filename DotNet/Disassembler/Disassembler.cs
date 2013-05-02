@@ -82,8 +82,8 @@ namespace Disassembler
         public void Analyze(Pointer start)
         {
             //List<XRef> xrefs = globalXRefs;
-            PriorityQueue<XRef> xrefQueue =
-                new PriorityQueue<XRef>(new XRefPriorityComparer());
+            PriorityQueue<XRef> xrefQueue = 
+                new PriorityQueue<XRef>(XRef.CompareByPriority);
 
             // Create a a dummy xref entry using the user-supplied starting
             // address.
@@ -169,14 +169,6 @@ namespace Disassembler
              */
             VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
 #endif
-        }
-
-        class XRefPriorityComparer : IComparer<XRef>
-        {
-            public int Compare(XRef x, XRef y)
-            {
-                return (int)x.Type - (int)y.Type;
-            }
         }
 
         /// <summary>
@@ -630,6 +622,11 @@ namespace Disassembler
             : this(location, message, ErrorCategory.Error)
         {
         }
+
+        public static int CompareByLocation(Error x, Error y)
+        {
+            return x.Location.LinearAddress.CompareTo(y.Location.LinearAddress);
+        }
     }
 
     [Flags]
@@ -639,14 +636,6 @@ namespace Disassembler
         Error = 1,
         Warning = 2,
         Message = 4,
-    }
-
-    public class ErrorLocationComparer : IComparer<Error>
-    {
-        public int Compare(Error x, Error y)
-        {
-            return x.Location.ToString().CompareTo(y.Location.ToString());
-        }
     }
 }
 

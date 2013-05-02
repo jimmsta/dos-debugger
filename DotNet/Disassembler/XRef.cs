@@ -51,6 +51,30 @@ namespace Disassembler
         {
             return string.Format("{0} -> {1} ({2})", Source, Target, Type);
         }
+
+        /// <summary>
+        /// Compares two XRef objects by source, target, and data location,
+        /// in descending priority.
+        /// </summary>
+        public static int CompareByLocation(XRef x, XRef y)
+        {
+            int cmp = x.Source.LinearAddress.CompareTo(y.Source.LinearAddress);
+            if (cmp == 0)
+                cmp = x.Target.LinearAddress.CompareTo(y.Target.LinearAddress);
+            if (cmp == 0)
+                cmp = x.DataLocation.LinearAddress.CompareTo(y.DataLocation.LinearAddress);
+            return cmp;
+        }
+
+        /// <summary>
+        /// Compares two XRef objects by priority (precedence). An XRef object
+        /// with a smaller numeric Type value has higher precedence, and 
+        /// compare smaller (as in a min-priority queue).
+        /// </summary>
+        public static int CompareByPriority(XRef x, XRef y)
+        {
+            return (int)x.Type - (int)y.Type;
+        }
     }
 
     /// <summary>
@@ -115,20 +139,6 @@ namespace Disassembler
         /// entry is stored in the DataLocation field of the XRef object.
         /// </summary>
         /* FarIndexedJump, */
-    }
-
-    // TODO: make this a Comparison delegate
-    public class XRefLocationComparer : IComparer<XRef>
-    {
-        public int Compare(XRef x, XRef y)
-        {
-            int cmp = x.Source.LinearAddress.CompareTo(y.Source.LinearAddress);
-            if (cmp == 0)
-                cmp = x.Target.LinearAddress.CompareTo(y.Target.LinearAddress);
-            if (cmp == 0)
-                cmp = x.DataLocation.LinearAddress.CompareTo(y.DataLocation.LinearAddress);
-            return cmp;
-        }
     }
 
     /// <summary>

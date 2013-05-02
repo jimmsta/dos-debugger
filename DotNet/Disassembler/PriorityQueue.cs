@@ -22,9 +22,25 @@ namespace Disassembler
     /// </remarks>
     public class PriorityQueue<T> : ICollection<T>
     {
-        IComparer<T> comparer;
+        Comparison<T> compare;
         List<T> list;
 
+        /// <summary>
+        /// Creates a priority queue using the given comparison delegate to
+        /// compare priority. Since this is a min-priority queue, a smaller
+        /// element has a higher priority.
+        /// </summary>
+        /// <param name="comparer"></param>
+        public PriorityQueue(Comparison<T> compare)
+        {
+            if (compare == null)
+                throw new ArgumentNullException("compare");
+
+            this.list = new List<T>();
+            this.compare = compare;
+        }
+
+#if false
         /// <summary>
         /// Creates a priority queue using the given comparer to compare for
         /// priority. Since this is a min-priority queue, a smaller element
@@ -37,16 +53,17 @@ namespace Disassembler
                 throw new ArgumentNullException("comparer");
 
             this.list = new List<T>();
-            this.comparer = comparer;
+            this.compare = comparer.Compare;
         }
+#endif
 
         /// <summary>
         /// Creates a priority queue using the default comparer for T to
-        /// compare for priority. Since this is a min-priority queue, a
-        /// smaller element has a higher priority.
+        /// compare priority. Since this is a min-priority queue, a smaller
+        /// element has a higher priority.
         /// </summary>
         public PriorityQueue()
-            : this(Comparer<T>.Default)
+            : this(Comparer<T>.Default.Compare)
         {
         }
 
@@ -58,6 +75,9 @@ namespace Disassembler
             get { return list.Count; }
         }
 
+        /// <summary>
+        /// Returns true if the priority queue is empty.
+        /// </summary>
         public bool IsEmpty
         {
             get { return list.Count == 0; }
@@ -111,7 +131,7 @@ namespace Disassembler
             while (k > 0)
             {
                 int parent = (k - 1) / 2;
-                if (comparer.Compare(list[parent], list[k]) > 0)
+                if (compare(list[parent], list[k]) > 0)
                 {
                     Swap(k, parent);
                     k = parent;
@@ -148,9 +168,9 @@ namespace Disassembler
                 int right = 2 * k + 2;
 
                 int smallest = k;
-                if (left < count && comparer.Compare(list[left], list[smallest]) < 0)
+                if (left < count && compare(list[left], list[smallest]) < 0)
                     smallest = left;
-                if (right < count && comparer.Compare(list[right], list[smallest]) < 0)
+                if (right < count && compare(list[right], list[smallest]) < 0)
                     smallest = right;
 
                 if (smallest != k)

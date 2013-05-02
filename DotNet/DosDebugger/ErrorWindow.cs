@@ -35,7 +35,7 @@ namespace DosDebugger
 
             Disassembler16 dasm = document.Disassembler;
             errors = dasm.Errors;
-            Array.Sort(errors, new ErrorLocationComparer());
+            Array.Sort(errors, Error.CompareByLocation);
             DisplayErrors();
 #if false
             foreach (Error error in errors)
