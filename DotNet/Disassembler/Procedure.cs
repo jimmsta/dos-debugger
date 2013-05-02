@@ -9,18 +9,23 @@ namespace Disassembler
     /// <summary>
     /// Contains information about a procedure in an executable.
     /// </summary>
+    // As this class interacts a lot with ProcedureCollection, it's easier
+    // to think of this class as a 'wrapper' around a procedure defined in
+    // ProcedureCollection/ProcedureMap.
     public class Procedure : ByteBlock
     {
         private BinaryImage image;
+        private ProcedureCollection procMap;
 
         //private Range<LinearPointer> bounds;
         //private MultiRange codeRange = new MultiRange();
         //private MultiRange dataRange = new MultiRange();
         //private MultiRange byteRange = new MultiRange();
 
-        public Procedure(BinaryImage image, Pointer entryPoint)
+        internal Procedure(BinaryImage image, ProcedureCollection procMap, Pointer entryPoint)
         {
             this.image = image;
+            this.procMap = procMap;
             this.EntryPoint = entryPoint;
         }
 
@@ -101,6 +106,46 @@ namespace Disassembler
             // Update the bounds of this procedure.
             this.Extend(new ByteBlock(start, end));
         }
+
+        /// <summary>
+        /// Enumerates the procedures that calls this procedure. The
+        /// procedures are returned in order of their entry point address.
+        /// Each procedure is returned only once.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Procedure> GetCallers()
+        {
+            SortedDictionary<LinearPointer, Procedure> procList =
+                new SortedDictionary<LinearPointer, Procedure>();
+
+            foreach (XRef xCall in procMap.callGraph.GetReferencesTo(EntryPoint.LinearAddress))
+            {
+                Procedure caller = procMap.Find(xCall.Source.LinearAddress);
+                Debug.Assert(caller != null);
+                procList[caller.EntryPoint.LinearAddress] = caller;
+            }
+
+            return procList.Values;
+        }
+
+        /// <summary>
+        /// Enumerates the procedures called by this procedure.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Procedure> GetCallees()
+        {
+            SortedDictionary<LinearPointer, Procedure> procList =
+                new SortedDictionary<LinearPointer, Procedure>();
+
+            foreach (XRef xCall in procMap.callGraph.GetReferencesFrom(EntryPoint.LinearAddress))
+            {
+                Procedure callee = procMap.Find(xCall.Target.LinearAddress);
+                Debug.Assert(callee != null);
+                procList[callee.EntryPoint.LinearAddress] = callee;
+            }
+
+            return procList.Values;
+        }
     }
 
 #if false
@@ -156,7 +201,7 @@ namespace Disassembler
         /// between two procedures and keeping track all (or any) of them
         /// in real time is not useful.
         /// </remarks>
-        XRefCollection callGraph;
+        internal XRefCollection callGraph;
 
         public ProcedureCollection(BinaryImage image)
         {
@@ -209,15 +254,26 @@ namespace Disassembler
                 return null;
         }
 
-        public void Add(Procedure proc)
+        public Procedure Create(Pointer entryPoint)
         {
-            if (procMap.ContainsKey(proc.EntryPoint.LinearAddress))
+            if (!image.AddressRange.Contains(entryPoint.LinearAddress))
+            {
+                throw new ArgumentOutOfRangeException("entryPoint");
+            }
+            if (procMap.ContainsKey(entryPoint.LinearAddress))
             {
                 throw new InvalidOperationException(
-                    "A procedure already exists at the given entry point.");
+                    "A procedure already exists with the given entry point address.");
             }
 
-            procMap.Add(proc.EntryPoint.LinearAddress, proc);
+            Procedure proc = new Procedure(image, this, entryPoint);
+            procMap.Add(entryPoint.LinearAddress, proc);
+            return proc;
+        }
+
+        public void Add(Procedure item)
+        {
+            throw new NotImplementedException();
         }
 
         public void Clear()

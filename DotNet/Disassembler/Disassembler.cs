@@ -140,8 +140,7 @@ namespace Disassembler
                     // TODO: we may be calling into the middle of an already
                     // defined procedure. This can happen if two procedures
                     // share a chunk of code. We need to handle this later.
-                    proc = new Procedure(image, entry.Target);
-                    image.Procedures.Add(proc);
+                    proc = image.Procedures.Create(entry.Target);
                 }
                 else
                 {

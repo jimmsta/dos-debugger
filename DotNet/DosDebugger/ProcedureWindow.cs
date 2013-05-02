@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows.Forms;
 using Disassembler;
+using System.Drawing;
+using X86Codec;
 
 namespace DosDebugger
 {
@@ -11,9 +13,13 @@ namespace DosDebugger
     {
         private Document document;
 
+        // TODO: dispose monoFont when no longer used
+        private Font monoFont;
+
         public ProcedureWindow()
         {
             InitializeComponent();
+            this.monoFont = new Font(FontFamily.GenericMonospace, mnuContext.Font.Size);
         }
 
         internal Document Document
@@ -61,6 +67,66 @@ namespace DosDebugger
                 Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
                 document.Navigator.SetLocation(proc.EntryPoint, this);
             }
+        }
+
+        private void mnuContext_Opening(object sender, CancelEventArgs e)
+        {
+            if (lvProcedures.SelectedIndices.Count == 0)
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            Procedure proc = (Procedure)lvProcedures.SelectedItems[0].Tag;
+
+            // Display procedures calling this procedure.
+            int i = mnuContext.Items.IndexOf(mnuContextCallers);
+            int n = 0;
+            foreach (Procedure caller in proc.GetCallers())
+            {
+                mnuContext.Items.Insert(++i, CreateContextMenuItem(caller));
+                n++;
+            }
+            mnuContextCallers.Text =
+                string.Format("Called By {0} Procedures", n);
+
+            // Display procedures called by this procedure.
+            i = mnuContext.Items.IndexOf(mnuContextCallees);
+            n = 0;
+            foreach (Procedure callee in proc.GetCallees())
+            {
+                mnuContext.Items.Insert(++i, CreateContextMenuItem(callee));
+                n++;
+            }
+            mnuContextCallees.Text =
+                string.Format("Calling {0} Procedures", n);
+        }
+
+        private ToolStripItem CreateContextMenuItem(Procedure proc)
+        {
+            ToolStripMenuItem item = new ToolStripMenuItem();
+            item.Text = string.Format("{0}  sub_{1}",
+                proc.EntryPoint, proc.EntryPoint.LinearAddress);
+            item.Font = monoFont;
+            item.Tag = proc;
+            item.Click += mnuContextItem_Click;
+            return item;
+        }
+        
+        void mnuContextItem_Click(object sender, EventArgs e)
+        {
+            Procedure proc = (Procedure)((ToolStripMenuItem)sender).Tag;
+            document.Navigator.SetLocation(proc.EntryPoint, this);
+        }
+
+        private void mnuContext_Closed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            mnuContext.Items.ClearAndDispose(
+                mnuContext.Items.IndexOf(mnuContextCallees) + 1,
+                mnuContext.Items.IndexOf(mnuContextCallers) - 1);
+            mnuContext.Items.ClearAndDispose(
+                mnuContext.Items.IndexOf(mnuContextCallers) + 1,
+                mnuContext.Items.Count);
         }
     }
 
