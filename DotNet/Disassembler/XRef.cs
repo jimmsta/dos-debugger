@@ -1,10 +1,4 @@
-﻿#if true
-#define SPARSE_XREF_COLLECTION
-#else
-#undef SPARSE_XREF_COLLECTION
-#endif
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
@@ -17,7 +11,7 @@ namespace Disassembler
     /// A xref between code and code is analog to an edge in a Control Flow 
     /// Graph.
     /// </summary>
-    public class XRef
+    public class XRef : IGraphEdge<LinearPointer>
     {
         /// <summary>
         /// Gets the target address being referenced. This may be
@@ -102,6 +96,16 @@ namespace Disassembler
         {
             return (int)x.Type - (int)y.Type;
         }
+
+        LinearPointer IGraphEdge<LinearPointer>.Source
+        {
+            get { return this.Source.LinearAddress; }
+        }
+
+        LinearPointer IGraphEdge<LinearPointer>.Target
+        {
+            get { return this.Target.LinearAddress; }
+        }
     }
 
     /// <summary>
@@ -182,57 +186,7 @@ namespace Disassembler
     public class XRefCollection : ICollection<XRef>
     {
         private Range<LinearPointer> addressRange;
-
-        /// <summary>
-        /// List of cross references contained in this collection. This list
-        /// have the same number of items as ListNext.
-        /// </summary>
-        private List<XRef> ListData = new List<XRef>();
-
-        /// <summary>
-        /// Contains the node link for each cross reference in xrefs array.
-        /// That is, <code>ListData[ListNext[i].Incoming].Target = ListData[i].Target</code>,
-        /// and <code>ListData[ListNext[i].Outgoing].Source = ListData[i].Source</code>.
-        /// </summary>
-        private List<XRefLink> ListLink = new List<XRefLink>();
-
-        /// <summary>
-        /// Contains the index of the first xref pointing to or from each
-        /// address in the image. That is, 
-        /// <code>xrefs[ListHead[addr].Incoming].Target = addr</code>, and
-        /// <code>xrefs[ListHead[addr].Outgoing].Source = addr</code>.
-        /// An extra item is placed at the end to represent dynamic xrefs,
-        /// i.e. those with source or target equal to FFFF:FFFF.
-        /// </summary>
-        /// <remarks>
-        /// If the XRef collection is sparse, we might as well use a 
-        /// Dictionary(Of LinearPointer, XRefLink) to store ListHead.
-        /// </remarks>
-#if SPARSE_XREF_COLLECTION
-        private Dictionary<LinearPointer, XRefLink> ListHead;
-#else
-        private XRefLink[] ListHead;
-        private readonly int DynamicIndex;
-#endif
-
-        /// <summary>
-        /// Represents a node in the cross reference map. For performance
-        /// reason, the actual node data (XRef object) is placed separately
-        /// in the NodeData[] list. Therefore this structure only contains
-        /// the node link fields.
-        /// </summary>
-        struct XRefLink
-        {
-            /// <summary>
-            /// Index of the next xref node that points to Target; -1 if none.
-            /// </summary>
-            public int NextIncoming;
-
-            /// <summary>
-            /// Index of the next xref node that points from Source; -1 if none.
-            /// </summary>
-            public int NextOutgoing;
-        }
+        private Graph<LinearPointer, XRef> graph;
 
         /// <summary>
         /// Creates a cross reference collection for the given image.
@@ -241,13 +195,7 @@ namespace Disassembler
         public XRefCollection(Range<LinearPointer> addressRange)
         {
             this.addressRange = addressRange;
-#if SPARSE_XREF_COLLECTION
-            this.ListHead = new Dictionary<LinearPointer, XRefLink>();
-#else
-            this.DynamicIndex = addressRange.End - addressRange.Begin;
-            this.ListHead = new XRefLink[DynamicIndex + 1];
-#endif
-            Clear();
+            this.graph = new Graph<LinearPointer, XRef>();
         }
 
         /// <summary>
@@ -255,17 +203,7 @@ namespace Disassembler
         /// </summary>
         public void Clear()
         {
-            ListData.Clear();
-            ListLink.Clear();
-#if SPARSE_XREF_COLLECTION
-            ListHead.Clear();
-#else
-            for (int i = 0; i < ListHead.Length; i++)
-            {
-                ListHead[i].NextIncoming = -1;
-                ListHead[i].NextOutgoing = -1;
-            }
-#endif
+            graph.Clear();
         }
 
         /// <summary>
@@ -273,96 +211,31 @@ namespace Disassembler
         /// </summary>
         public int Count
         {
-            get { return ListData.Count; }
-        }
-
-#if SPARSE_XREF_COLLECTION
-#else
-        private int PointerToOffset(LinearPointer address)
-        {
-            if (!addressRange.Contains(address))
-            {
-                throw new ArgumentOutOfRangeException("address");
-            }
-            return address - addressRange.Begin;
-        }
-
-        private int PointerToOffset(Pointer address)
-        {
-            if (address == Pointer.Invalid)
-                return DynamicIndex;
-            else
-                return PointerToOffset(address.LinearAddress);
-        }
-#endif
-
-        private XRefLink GetListHead(LinearPointer address)
-        {
-#if SPARSE_XREF_COLLECTION
-            XRefLink headLink;
-            if (!ListHead.TryGetValue(address, out headLink))
-            {
-                headLink.NextOutgoing = -1;
-                headLink.NextIncoming = -1;
-            }
-            return headLink;
-#else
-            return ListHead[PointerToOffset(address)];
-#endif
-        }
-
-        private XRefLink GetListHead(Pointer address)
-        {
-#if SPARSE_XREF_COLLECTION
-            XRefLink headLink;
-            if (!ListHead.TryGetValue(address.LinearAddress, out headLink))
-            {
-                headLink.NextOutgoing = -1;
-                headLink.NextIncoming = -1;
-            }
-            return headLink;
-#else
-            return ListHead[PointerToOffset(address)];
-#endif
+            get { return graph.Edges.Count; }
         }
 
         public void Add(XRef xref)
         {
             if (xref == null)
+            {
                 throw new ArgumentNullException("xref");
+            }
             if (xref.Source == Pointer.Invalid && xref.Target == Pointer.Invalid)
+            {
                 throw new ArgumentException("can't have both source and target invalid");
+            }
+            if (xref.Source != Pointer.Invalid)
+            {
+                if (!addressRange.Contains(xref.Source.LinearAddress))
+                    throw new ArgumentException("xref.Source is out of range.");
+            }
+            if (xref.Target != Pointer.Invalid)
+            {
+                if (!addressRange.Contains(xref.Target.LinearAddress))
+                    throw new ArgumentException("xref.Target is out of range.");
+            }
 
-            int nodeIndex = ListData.Count;
-
-            XRefLink nodeLink = new XRefLink();
-
-#if SPARSE_XREF_COLLECTION
-            LinearPointer iSource = xref.Source.LinearAddress;
-            XRefLink headLink = GetListHead(xref.Source);
-            nodeLink.NextOutgoing = headLink.NextOutgoing;
-            headLink.NextOutgoing = nodeIndex;
-            ListHead[iSource] = headLink;
-
-            LinearPointer iTarget = xref.Target.LinearAddress;
-            headLink = GetListHead(xref.Target);
-            nodeLink.NextIncoming = headLink.NextIncoming;
-            headLink.NextIncoming = nodeIndex;
-            ListHead[iTarget] = headLink;
-#else
-            int iSource = PointerToOffset(xref.Source);
-            nodeLink.NextOutgoing = ListHead[iSource].NextOutgoing;
-            ListHead[iSource].NextOutgoing = nodeIndex;
-
-            int iTarget = PointerToOffset(xref.Target);
-            nodeLink.NextIncoming = ListHead[iTarget].NextIncoming;
-            ListHead[iTarget].NextIncoming = nodeIndex;
-#endif
-
-            // Since XRefLink is a struct, we must add it after updating all
-            // its fields.
-            ListLink.Add(nodeLink);
-            ListData.Add(xref);
+            graph.AddEdge(xref);
 
             // Raise the XRefAdded event.
             if (XRefAdded != null)
@@ -378,13 +251,7 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetDynamicReferences()
         {
-            for (int i = GetListHead(Pointer.Invalid).NextIncoming; 
-                 i >= 0; 
-                 i = ListLink[i].NextIncoming)
-            {
-                Debug.Assert(ListData[i].Target == Pointer.Invalid);
-                yield return ListData[i];
-            }
+            return graph.GetIncomingEdges(Pointer.Invalid.LinearAddress);
         }
 
         /// <summary>
@@ -395,11 +262,11 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetReferencesTo(LinearPointer target)
         {
-            for (int i = GetListHead(target).NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            if (!addressRange.Contains(target))
             {
-                Debug.Assert(ListData[i].Target.LinearAddress == target);
-                yield return ListData[i];
+                throw new ArgumentOutOfRangeException("target");
             }
+            return graph.GetIncomingEdges(target);
         }
 
         /// <summary>
@@ -409,11 +276,11 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetReferencesFrom(LinearPointer source)
         {
-            for (int i = GetListHead(source).NextOutgoing; i >= 0; i = ListLink[i].NextOutgoing)
+            if (!addressRange.Contains(source))
             {
-                Debug.Assert(ListData[i].Source.LinearAddress == source);
-                yield return ListData[i];
+                throw new ArgumentOutOfRangeException("source");
             }
+            return graph.GetOutgoingEdges(source);
         }
 
         public event EventHandler<XRefAddedEventArgs> XRefAdded;
@@ -427,7 +294,7 @@ namespace Disassembler
 
         public void CopyTo(XRef[] array, int arrayIndex)
         {
-            ListData.CopyTo(array, arrayIndex);
+            graph.Edges.CopyTo(array, arrayIndex);
         }
 
         public bool IsReadOnly
@@ -442,12 +309,12 @@ namespace Disassembler
 
         public IEnumerator<XRef> GetEnumerator()
         {
-            return ListData.GetEnumerator();
+            return graph.Edges.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return ListData.GetEnumerator();
+            return graph.Edges.GetEnumerator();
         }
 
         #endregion
