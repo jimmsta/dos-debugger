@@ -278,7 +278,7 @@ namespace Disassembler
                 type: XRefType.NearIndexedJump,
                 source: entry.Source,
                 target: Pointer.Invalid,
-                dataLocation: entry.DataLocation
+                dataLocation: entry.DataLocation + 2
             ));
 
             // Return the updated xref with Target field filled.

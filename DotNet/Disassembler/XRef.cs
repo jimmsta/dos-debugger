@@ -1,4 +1,10 @@
-﻿using System;
+﻿#if true
+#define SPARSE_XREF_COLLECTION
+#else
+#undef SPARSE_XREF_COLLECTION
+#endif
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
@@ -201,11 +207,14 @@ namespace Disassembler
         /// </summary>
         /// <remarks>
         /// If the XRef collection is sparse, we might as well use a 
-        /// Dictionary(Of LinearAddress, int) to store ListHead.
+        /// Dictionary(Of LinearPointer, XRefLink) to store ListHead.
         /// </remarks>
+#if SPARSE_XREF_COLLECTION
+        private Dictionary<LinearPointer, XRefLink> ListHead;
+#else
         private XRefLink[] ListHead;
-
         private readonly int DynamicIndex;
+#endif
 
         /// <summary>
         /// Represents a node in the cross reference map. For performance
@@ -233,8 +242,12 @@ namespace Disassembler
         public XRefCollection(Range<LinearPointer> addressRange)
         {
             this.addressRange = addressRange;
+#if SPARSE_XREF_COLLECTION
+            this.ListHead = new Dictionary<LinearPointer, XRefLink>();
+#else
             this.DynamicIndex = addressRange.End - addressRange.Begin;
             this.ListHead = new XRefLink[DynamicIndex + 1];
+#endif
             Clear();
         }
 
@@ -245,11 +258,15 @@ namespace Disassembler
         {
             ListData.Clear();
             ListLink.Clear();
+#if SPARSE_XREF_COLLECTION
+            ListHead.Clear();
+#else
             for (int i = 0; i < ListHead.Length; i++)
             {
                 ListHead[i].NextIncoming = -1;
                 ListHead[i].NextOutgoing = -1;
             }
+#endif
         }
 
         /// <summary>
@@ -260,6 +277,8 @@ namespace Disassembler
             get { return ListData.Count; }
         }
 
+#if SPARSE_XREF_COLLECTION
+#else
         private int PointerToOffset(LinearPointer address)
         {
             if (!addressRange.Contains(address))
@@ -276,6 +295,37 @@ namespace Disassembler
             else
                 return PointerToOffset(address.LinearAddress);
         }
+#endif
+
+        private XRefLink GetListHead(LinearPointer address)
+        {
+#if SPARSE_XREF_COLLECTION
+            XRefLink headLink;
+            if (!ListHead.TryGetValue(address, out headLink))
+            {
+                headLink.NextOutgoing = -1;
+                headLink.NextIncoming = -1;
+            }
+            return headLink;
+#else
+            return ListHead[PointerToOffset(address)];
+#endif
+        }
+
+        private XRefLink GetListHead(Pointer address)
+        {
+#if SPARSE_XREF_COLLECTION
+            XRefLink headLink;
+            if (!ListHead.TryGetValue(address.LinearAddress, out headLink))
+            {
+                headLink.NextOutgoing = -1;
+                headLink.NextIncoming = -1;
+            }
+            return headLink;
+#else
+            return ListHead[PointerToOffset(address)];
+#endif
+        }
 
         public void Add(XRef xref)
         {
@@ -288,6 +338,19 @@ namespace Disassembler
 
             XRefLink nodeLink = new XRefLink();
 
+#if SPARSE_XREF_COLLECTION
+            LinearPointer iSource = xref.Source.LinearAddress;
+            XRefLink headLink = GetListHead(xref.Source);
+            nodeLink.NextOutgoing = headLink.NextOutgoing;
+            headLink.NextOutgoing = nodeIndex;
+            ListHead[iSource] = headLink;
+
+            LinearPointer iTarget = xref.Target.LinearAddress;
+            headLink = GetListHead(xref.Target);
+            nodeLink.NextIncoming = headLink.NextIncoming;
+            headLink.NextIncoming = nodeIndex;
+            ListHead[iTarget] = headLink;
+#else
             int iSource = PointerToOffset(xref.Source);
             nodeLink.NextOutgoing = ListHead[iSource].NextOutgoing;
             ListHead[iSource].NextOutgoing = nodeIndex;
@@ -295,6 +358,7 @@ namespace Disassembler
             int iTarget = PointerToOffset(xref.Target);
             nodeLink.NextIncoming = ListHead[iTarget].NextIncoming;
             ListHead[iTarget].NextIncoming = nodeIndex;
+#endif
 
             // Since XRefLink is a struct, we must add it after updating all
             // its fields.
@@ -308,7 +372,9 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetDynamicReferences()
         {
-            for (int i = ListHead[0].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            for (int i = GetListHead(Pointer.Invalid).NextIncoming; 
+                 i >= 0; 
+                 i = ListLink[i].NextIncoming)
             {
                 Debug.Assert(ListData[i].Target == Pointer.Invalid);
                 yield return ListData[i];
@@ -323,32 +389,11 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetReferencesTo(LinearPointer target)
         {
-#if false
-            int k = PointerToOffset(target);
-
-            // Count the number of items to return.
-            int n = 0;
-            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
-            {
-                Debug.Assert(ListData[i].Target.LinearAddress == target);
-                n++;
-            }
-
-            // Fill the result in reverse order of the linked list.
-            XRef[] result = new XRef[n];
-            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
-            {
-                result[--n] = ListData[i];
-            }
-            return result;
-#else
-            int k = PointerToOffset(target);
-            for (int i = ListHead[k].NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
+            for (int i = GetListHead(target).NextIncoming; i >= 0; i = ListLink[i].NextIncoming)
             {
                 Debug.Assert(ListData[i].Target.LinearAddress == target);
                 yield return ListData[i];
             }
-#endif
         }
 
         /// <summary>
@@ -358,8 +403,7 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetReferencesFrom(LinearPointer source)
         {
-            int k = PointerToOffset(source);
-            for (int i = ListHead[k].NextOutgoing; i >= 0; i = ListLink[i].NextOutgoing)
+            for (int i = GetListHead(source).NextOutgoing; i >= 0; i = ListLink[i].NextOutgoing)
             {
                 Debug.Assert(ListData[i].Source.LinearAddress == source);
                 yield return ListData[i];

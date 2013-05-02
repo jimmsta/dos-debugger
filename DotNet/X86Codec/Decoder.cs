@@ -694,6 +694,10 @@ namespace X86Codec
                 get { return (OpcodeExtension)(-(short)this.Operation); }
             }
 
+            // TODO: Create an OperandSpecificationCollection to avoid the
+            // need to repeatedly create and destroy arrays.
+            // In the big picture, we had better find a better way to
+            // store these operand specifications.
             public O[] Operands
             {
                 get
