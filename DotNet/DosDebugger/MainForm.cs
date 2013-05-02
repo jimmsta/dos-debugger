@@ -109,7 +109,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\Q.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
         }
@@ -375,6 +375,10 @@ namespace DosDebugger
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+            CallGraphWindow f = new CallGraphWindow();
+            LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x14FE;
+            f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
+            f.Show(this);
 #if false
             PriorityQueue<int> q = new PriorityQueue<int>();
             int[] testArray = new int[]

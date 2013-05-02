@@ -70,6 +70,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -78,6 +79,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CallGraphWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CallGraphWindow.Designer.cs">
+      <DependentUpon>CallGraphWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Document.cs" />
     <Compile Include="ErrorWindow.cs">
       <SubType>Form</SubType>
@@ -133,6 +140,9 @@
       <DependentUpon>ToolWindow.cs</DependentUpon>
     </Compile>
     <Compile Include="ViewModel.cs" />
+    <EmbeddedResource Include="CallGraphWindow.resx">
+      <DependentUpon>CallGraphWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ErrorWindow.resx">
       <DependentUpon>ErrorWindow.cs</DependentUpon>
     </EmbeddedResource>
