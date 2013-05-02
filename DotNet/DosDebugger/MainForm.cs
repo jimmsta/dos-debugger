@@ -522,6 +522,7 @@ namespace DosDebugger
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            // Save dock panel layout.
             try
             {
                 SaveDockPanelLayout();
@@ -529,6 +530,14 @@ namespace DosDebugger
             catch (Exception)
             {
             }
+
+            // Dispose tool windows.
+            using (procWindow) { }
+            using (errorWindow) { }
+            using (segmentWindow) { }
+            using (listingWindow) { }
+            using (propertiesWindow) { }
+            using (hexWindow) { }
         }
     }
 }

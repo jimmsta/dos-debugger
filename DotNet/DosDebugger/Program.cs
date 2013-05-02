@@ -15,6 +15,7 @@ namespace DosDebugger
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
+            Properties.Resources.ResourceManager.ReleaseAllResources();
         }
     }
 }

@@ -52,6 +52,7 @@
             this.Name = "PropertiesWindow";
             this.TabText = "Properties";
             this.Text = "PropertiesWindow";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.PropertiesWindow_FormClosed);
             this.ResumeLayout(false);
 
         }
