@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
@@ -18,7 +17,7 @@ namespace DosDebugger
         }
 
         private Document document;
-        private ListingViewModel listingView;
+        //private ListingViewModel listingView;
 
         internal Document Document
         {
@@ -32,6 +31,9 @@ namespace DosDebugger
 
         public void UpdateUI()
         {
+            // This routine is a huge memory eater.
+            return;
+#if false
             richTextBox1.Clear();
             if (document == null)
                 return;
@@ -77,6 +79,7 @@ namespace DosDebugger
             //richTextBox1.Visible = true;
             //textDocument.Unfreeze();
             //textDocument.EndEditCollection();
+#endif
 #endif
 #endif
         }

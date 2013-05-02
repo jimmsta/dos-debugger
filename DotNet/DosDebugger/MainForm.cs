@@ -205,11 +205,12 @@ namespace DosDebugger
 
             // Display status.
             txtStatus.Text = string.Format(
-                "{3} segments, {0} procedures, {1} instructions, {2} errors",
+                "{3} segments, {0} procedures, {4} xrefs, {1} instructions, {2} errors",
                 dasm.Procedures.Count,
                 "?", // lvListing.Items.Count,
                 dasm.Errors.Length,
-                0 /* segStat.Count */);
+                0 /* segStat.Count */,
+                dasm.Image.CrossReferences.Count);
         }
 
         private void btnGoToBookmark_Click(object sender, EventArgs e)

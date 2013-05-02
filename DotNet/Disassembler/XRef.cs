@@ -39,6 +39,15 @@ namespace Disassembler
         /// </summary>
         public Pointer DataLocation { get; private set; }
 
+        /// <summary>
+        /// Returns true if this xref is dynamic, i.e. its Target address
+        /// contains <code>Pointer.Invalid</code>.
+        /// </summary>
+        public bool IsDynamic
+        {
+            get { return Target == Pointer.Invalid; }
+        }
+
         public XRef()
         {
             this.Source = Pointer.Invalid;
@@ -190,6 +199,10 @@ namespace Disassembler
         /// An extra item is placed at the end to represent dynamic xrefs,
         /// i.e. those with source or target equal to FFFF:FFFF.
         /// </summary>
+        /// <remarks>
+        /// If the XRef collection is sparse, we might as well use a 
+        /// Dictionary(Of LinearAddress, int) to store ListHead.
+        /// </remarks>
         private XRefLink[] ListHead;
 
         private readonly int DynamicIndex;
