@@ -5,6 +5,7 @@ using System.Text;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using X86Codec;
+using Disassembler.Omf;
 
 namespace DosDebugger
 {
@@ -113,13 +114,15 @@ namespace DosDebugger
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
 
-#if true
+#if false
             CallGraphWindow f = new CallGraphWindow();
             LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x17FC;
             f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
             f.WindowState = FormWindowState.Maximized;
             f.ShowDialog(this);
             //Application.Exit();
+#else
+            btnTest_Click(null, null);
 #endif
         }
 
@@ -384,22 +387,16 @@ namespace DosDebugger
 
         private void btnTest_Click(object sender, EventArgs e)
         {
+#if false
             CallGraphWindow f = new CallGraphWindow();
             LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x14FE;
             f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
             f.WindowState = FormWindowState.Maximized;
             f.Show(this);
-#if false
-            PriorityQueue<int> q = new PriorityQueue<int>();
-            int[] testArray = new int[]
-            {
-                5,7,2,2,3,8,0,9
-            };
-            for (int i = 0; i < testArray.Length; i++)
-                q.Enqueue(testArray[i]);
-
-            for (int i = 0; i < testArray.Length; i++)
-                testArray[i] = q.Dequeue();
+#else
+            string fileName = @"..\..\..\..\Reference\SLIBC7.LIB";
+            OmfLoader omf = new OmfLoader(fileName);
+            propertiesWindow.SelectedObject = omf;
 #endif
         }
 
