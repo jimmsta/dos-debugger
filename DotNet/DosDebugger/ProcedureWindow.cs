@@ -52,7 +52,7 @@ namespace DosDebugger
                 item.Text = proc.EntryPoint.ToString();
                 //item.SubItems.Add(proc.ByteRange.Intervals.Count.ToString());
                 //item.SubItems.Add(proc.ByteRange.Length.ToString());
-                item.SubItems.Add("?");
+                item.SubItems.Add("sub_" + proc.EntryPoint.LinearAddress.ToString());
                 item.SubItems.Add("?"); // proc.Bounds.Length.ToString());
                 item.Tag = proc;
                 lvProcedures.Items.Add(item);

@@ -35,8 +35,11 @@
             this.btnOutputDot = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnArrangeLayout = new System.Windows.Forms.ToolStripButton();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.txtStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.panelScroller.SuspendLayout();
             this.toolStrip1.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // panelScroller
@@ -47,7 +50,7 @@
             this.panelScroller.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelScroller.Location = new System.Drawing.Point(0, 26);
             this.panelScroller.Name = "panelScroller";
-            this.panelScroller.Size = new System.Drawing.Size(543, 331);
+            this.panelScroller.Size = new System.Drawing.Size(543, 307);
             this.panelScroller.TabIndex = 0;
             // 
             // panelCanvas
@@ -57,6 +60,7 @@
             this.panelCanvas.Size = new System.Drawing.Size(200, 100);
             this.panelCanvas.TabIndex = 0;
             this.panelCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.panelCanvas_Paint);
+            this.panelCanvas.MouseMove += new System.Windows.Forms.MouseEventHandler(this.panelCanvas_MouseMove);
             // 
             // toolStrip1
             // 
@@ -78,6 +82,7 @@
             this.btnOutputDot.Name = "btnOutputDot";
             this.btnOutputDot.Size = new System.Drawing.Size(109, 23);
             this.btnOutputDot.Text = "Output Dot File";
+            this.btnOutputDot.Click += new System.EventHandler(this.btnOutputDot_Click);
             // 
             // toolStripSeparator1
             // 
@@ -93,6 +98,23 @@
             this.btnArrangeLayout.Size = new System.Drawing.Size(108, 23);
             this.btnArrangeLayout.Text = "Arrange Layout";
             // 
+            // statusStrip1
+            // 
+            this.statusStrip1.AutoSize = false;
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.txtStatus});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 333);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(543, 24);
+            this.statusStrip1.TabIndex = 2;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // txtStatus
+            // 
+            this.txtStatus.Name = "txtStatus";
+            this.txtStatus.Size = new System.Drawing.Size(139, 19);
+            this.txtStatus.Text = "toolStripStatusLabel1";
+            // 
             // CallGraphWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
@@ -100,16 +122,18 @@
             this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(543, 357);
             this.Controls.Add(this.panelScroller);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStrip1);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "CallGraphWindow";
             this.Text = "CallGraphWindow";
             this.Load += new System.EventHandler(this.CallGraphWindow_Load);
-            this.Paint += new System.Windows.Forms.PaintEventHandler(this.CallGraphWindow_Paint);
             this.panelScroller.ResumeLayout(false);
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -123,5 +147,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripButton btnArrangeLayout;
         private System.Windows.Forms.Panel panelCanvas;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel txtStatus;
     }
 }

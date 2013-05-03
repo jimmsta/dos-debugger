@@ -96,7 +96,7 @@ namespace DosDebugger
 
         Document document;
         MZFile mzFile;
-        UInt16 baseSegment = 0xAAAA; // 0x2920;
+        UInt16 baseSegment = 0; // 0xAAAA; // 0x2920;
 
         Disassembler.Disassembler16 dasm;
 
@@ -115,11 +115,11 @@ namespace DosDebugger
 
 #if true
             CallGraphWindow f = new CallGraphWindow();
-            LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x14FE;
+            LinearPointer procEntry = dasm.Image.BaseAddress.LinearAddress + 0x17FC;
             f.SourceProcedure = dasm.Image.Procedures.Find(procEntry);
             f.WindowState = FormWindowState.Maximized;
             f.ShowDialog(this);
-            Application.Exit();
+            //Application.Exit();
 #endif
         }
 

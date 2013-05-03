@@ -127,12 +127,21 @@ namespace Disassembler
                 if (entry.Type == XRefType.NearCall ||
                     entry.Type == XRefType.FarCall)
                 {
+                    CallType callType = (entry.Type == XRefType.NearCall) ?
+                        CallType.Near : CallType.Far;
+
                     // If a procedure with that entry point has already been
                     // defined, perform some sanity checks but no need to
                     // analyze again.
                     proc = image.Procedures.Find(entry.Target.LinearAddress);
                     if (proc != null)
                     {
+                        if (proc.CallType != callType)
+                        {
+                            AddError(entry.Target, ErrorCategory.Error,
+                                "Procedure {0} has inconsistent call type.",
+                                proc.EntryPoint);
+                        }
                         image.CrossReferences.Add(entry);
                         continue;
                     }
@@ -142,6 +151,8 @@ namespace Disassembler
                     // defined procedure. This can happen if two procedures
                     // share a chunk of code. We need to handle this later.
                     proc = image.Procedures.Create(entry.Target);
+                    proc.CallType = (entry.Type == XRefType.NearCall) ?
+                        CallType.Near : CallType.Far;
                 }
                 else
                 {

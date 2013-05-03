@@ -16,6 +16,7 @@ namespace Disassembler
     {
         private BinaryImage image;
         private ProcedureCollection procMap;
+        public CallType CallType { get; set; }
 
         //private Range<LinearPointer> addressRange;
 
@@ -197,6 +198,13 @@ namespace Disassembler
         }
     }
 #endif
+
+    public enum CallType
+    {
+        Unknown = 0,
+        Near = 1,
+        Far = 2,
+    }
 
     /// <summary>
     /// Maintains a collection of procedures and keeps track of their

@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Disassembler;
 using X86Codec;
 using Util.Data;
+using System.IO;
 
 namespace DosDebugger
 {
@@ -82,8 +83,8 @@ namespace DosDebugger
         private void DrawGraphRandomly()
         {
             int i = 0;
-            int itemSize = 100;
-            int numItemsInRow = 12;
+            int itemSize = 80;
+            int numItemsPerRow = 15;
             int minRadius = itemSize / 16;
             int maxRadius = itemSize / 4;
 
@@ -92,8 +93,8 @@ namespace DosDebugger
             this.SuspendLayout();
             foreach (CallGraphNode node in graph.Nodes)
             {
-                int x = itemSize / 2 + (i % numItemsInRow) * itemSize;
-                int y = itemSize / 2 + (i / numItemsInRow) * itemSize;
+                int x = itemSize / 2 + (i % numItemsPerRow) * itemSize;
+                int y = itemSize / 2 + (i / numItemsPerRow) * itemSize;
                 node.Center = new Point(x, y);
 #if false
                 Label label = new Label();
@@ -106,37 +107,12 @@ namespace DosDebugger
                 i++;
             }
             panelCanvas.Location = new Point(0, 0);
-            panelCanvas.Width = numItemsInRow * itemSize;
-            panelCanvas.Height = (i + numItemsInRow - 1) / numItemsInRow * itemSize;
+            panelCanvas.Width = numItemsPerRow * itemSize;
+            panelCanvas.Height = (i + numItemsPerRow - 1) / numItemsPerRow * itemSize;
             this.ResumeLayout();
         }
 
-        private void CallGraphWindow_Paint(object sender, PaintEventArgs e)
-        {
-#if false
-            Graphics g = e.Graphics;
-            g.TranslateTransform(this.AutoScrollPosition.X, this.AutoScrollPosition.Y);
-            foreach (CallGraphEdge edge in graph.Edges)
-            {
-                Point p1 = edge.Source.Center;
-                Point p2 = edge.Target.Center;
-                g.DrawLine(Pens.Black, p1, p2);
-                //edge.Source.Label.ForeColor = Color.Blue;
-                //edge.Target.Label.ForeColor = Color.Blue;
-            }
-            foreach (CallGraphNode node in graph.Nodes)
-            {
-                Rectangle rect = new Rectangle(
-                    x: node.Center.X - node.Radius,
-                    y: node.Center.Y - node.Radius,
-                    width: node.Radius * 2,
-                    height: node.Radius * 2
-                    );
-                g.FillEllipse(Brushes.White, rect);
-                g.DrawEllipse(Pens.Black, rect);
-            }
-#endif
-        }
+        private Pen thickPen = new Pen(Color.Black, 2);
 
         private void panelCanvas_Paint(object sender, PaintEventArgs e)
         {
@@ -146,9 +122,10 @@ namespace DosDebugger
             {
                 Point p1 = edge.Source.Center;
                 Point p2 = edge.Target.Center;
-                g.DrawLine(Pens.Black, p1, p2);
-                //edge.Source.Label.ForeColor = Color.Blue;
-                //edge.Target.Label.ForeColor = Color.Blue;
+                if (edge.Target.Procedure.CallType == CallType.Near)
+                    g.DrawLine(Pens.Black, p1, p2);
+                else
+                    g.DrawLine(thickPen, p1, p2);
             }
             foreach (CallGraphNode node in graph.Nodes)
             {
@@ -160,6 +137,52 @@ namespace DosDebugger
                     );
                 g.FillEllipse(Brushes.White, rect);
                 g.DrawEllipse(Pens.Black, rect);
+            }
+        }
+
+        private int GetDistanceSquared(Point pt1, Point pt2)
+        {
+            return (pt1.X - pt2.X) * (pt1.X - pt2.X) + (pt1.Y - pt2.Y) * (pt1.Y - pt2.Y);
+        }
+
+        private void panelCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            // Find out if we are on any node.
+            foreach (CallGraphNode node in graph.Nodes)
+            {
+                if (GetDistanceSquared(e.Location, node.Center) <= node.Radius * node.Radius)
+                {
+                    txtStatus.Text = string.Format(
+                        "{0} sub_{1}",
+                        node.Procedure.EntryPoint,
+                        node.Procedure.EntryPoint.LinearAddress);
+                    return;
+                }
+            }
+            txtStatus.Text = "";
+        }
+
+        private void btnOutputDot_Click(object sender, EventArgs e)
+        {
+            using (StreamWriter writer = new StreamWriter(
+                @"D:\Run\GraphViz\release\bin\MyCallGraph.txt"))
+            {
+                writer.WriteLine("digraph G {");
+                writer.WriteLine("  node[shape=box, style=rounded];");
+ 
+                foreach (var edge in graph.Edges)
+                {
+                    writer.Write("  sub_{0} -> sub_{1}",
+                        edge.Source.Procedure.EntryPoint.LinearAddress,
+                        edge.Target.Procedure.EntryPoint.LinearAddress);
+                    if (edge.Target.Procedure.CallType == CallType.Near)
+                    {
+                        writer.WriteLine(" [style=dotted]");
+                    }
+                    writer.WriteLine(";");
+                }
+
+                writer.WriteLine("}");
             }
         }
     }
@@ -182,8 +205,8 @@ namespace DosDebugger
     class CallGraph : Graph<CallGraphNode, CallGraphEdge>
     {
         // TODO: add node data to graph (allow system.void)
-        Dictionary<LinearPointer, CallGraphNode> mapEntryToNode
-            = new Dictionary<LinearPointer, CallGraphNode>();
+        Dictionary<Procedure, CallGraphNode> mapProcToNode
+            = new Dictionary<Procedure, CallGraphNode>();
 
         /// <summary>
         /// Gets the source node.
@@ -194,46 +217,40 @@ namespace DosDebugger
         /// Gets the target node (also known as the sink node). If no target
         /// procedure is specified in the constructor, this value is null.
         /// </summary>
-        //public CallGraphNode TargetNode { get; private set; }
+        public CallGraphNode TargetNode { get; private set; }
 
-        public CallGraph(Procedure sourceProcedure)
+        public CallGraph(Procedure source)
         {
             // Build the call graph using depth-first search.
-            Dictionary<LinearPointer, bool> called = new Dictionary<LinearPointer, bool>();
+            //Dictionary<LinearPointer, bool> visited = new Dictionary<LinearPointer, bool>();
 
-            this.SourceNode = new CallGraphNode { Procedure = sourceProcedure };
-            this.mapEntryToNode.Add(sourceProcedure.EntryPoint.LinearAddress, SourceNode);
-            BuildCallGraph(SourceNode, called);
+            //this.SourceNode = new CallGraphNode { Procedure = source };
+            //this.mapProcToNode.Add(source.EntryPoint.LinearAddress, SourceNode);
+
+            // TBD: we may turn this (non-tail) recursion into a list.
+            SourceNode = BuildCallGraphNode(source);
         }
 
-        private void BuildCallGraph(CallGraphNode p, IDictionary<LinearPointer, bool> called)
+        private CallGraphNode BuildCallGraphNode(Procedure proc)
         {
-            foreach (Procedure child in p.Procedure.GetCallees())
+            CallGraphNode node;
+            if (mapProcToNode.TryGetValue(proc, out node))
+                return node;
+
+            node = new CallGraphNode { Procedure = proc };
+            mapProcToNode[proc] = node;
+
+            foreach (Procedure childProc in proc.GetCallees())
             {
-                LinearPointer entryPoint = child.EntryPoint.LinearAddress;
-
-                CallGraphNode v;
-                if (!mapEntryToNode.TryGetValue(entryPoint, out v))
-                {
-                    v = new CallGraphNode { Procedure = child };
-                    mapEntryToNode.Add(entryPoint, v);
-                }
-
-                bool hasCycle = called.ContainsKey(entryPoint);
+                CallGraphNode childNode = BuildCallGraphNode(childProc);
                 CallGraphEdge e = new CallGraphEdge
                 {
-                    Source = p,
-                    Target = v,
+                    Source = node,
+                    Target = childNode,
                 };
-
                 base.AddEdge(e);
-                if (!hasCycle)
-                {
-                    called[entryPoint] = true;
-                    BuildCallGraph(v, called);
-                    called.Remove(entryPoint);
-                }
             }
+            return node;
         }
     }
 }
