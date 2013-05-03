@@ -96,7 +96,33 @@ namespace Disassembler
 
             // Update the bounds of this procedure.
             this.Extend(block);
+            this.Size += (pos2 - pos1);
+
+            // Go through each instructions in this basic block, and update
+            // the feature of this procedure. For example, if there is an
+            // "INT 21h" instruction, then it looks like this procedure
+            // interacts with the OS directly, and is therefore probably a
+            // library function rather than a user function.
+            ProcedureFeatures features = ProcedureFeatures.None;
+            for (var i = pos1; i < pos2; )
+            {
+                Instruction instruction = image.DecodeInstruction(image[i].Address);
+                switch (instruction.Operation)
+                {
+                    case Operation.INT:
+                        features |= ProcedureFeatures.HasInterrupt;
+                        break;
+                    case Operation.FCLEX:
+                        features |= ProcedureFeatures.HasFpu;
+                        break;
+                }
+                i += instruction.EncodedLength;
+            }
+            this.Features |= features;
         }
+
+        public ProcedureFeatures Features { get; private set; }
+        public int Size { get; private set; }
 
         /// <summary>
         /// Adds a basic block to the procedure.
@@ -118,6 +144,7 @@ namespace Disassembler
 
             // Update the bounds of this procedure.
             this.Extend(new ByteBlock(start, end));
+            this.Size += (end - start);
         }
 
         /// <summary>
@@ -204,6 +231,14 @@ namespace Disassembler
         Unknown = 0,
         Near = 1,
         Far = 2,
+    }
+
+    [Flags]
+    public enum ProcedureFeatures
+    {
+        None = 0,
+        HasInterrupt = 1,
+        HasFpu = 2,
     }
 
     /// <summary>

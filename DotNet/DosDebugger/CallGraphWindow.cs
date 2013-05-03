@@ -55,7 +55,7 @@ namespace DosDebugger
             int maxLength = lengthLB;
             foreach (CallGraphNode node in graph.Nodes)
             {
-                int length = node.Procedure.Length;
+                int length = node.Procedure.Size;
                 if (length < minLength)
                     minLength = length;
                 if (length > maxLength)
@@ -72,6 +72,7 @@ namespace DosDebugger
                 length = FitWithin(length, lengthLB, lengthUB);
 
                 double ratio = (Math.Log(length) - log_min) / (log_max - log_min);
+                node.SizeScale = ratio;
                 node.Radius = minRadius + (int)(ratio * (maxRadius - minRadius));
             }
         }
@@ -135,7 +136,17 @@ namespace DosDebugger
                     width: node.Radius * 2,
                     height: node.Radius * 2
                     );
-                g.FillEllipse(Brushes.White, rect);
+
+                Brush fill;
+                var features = node.Procedure.Features;
+                if ((features & ProcedureFeatures.HasInterrupt) != 0)
+                    fill = Brushes.Cyan;
+                else if ((features & ProcedureFeatures.HasFpu) != 0)
+                    fill = Brushes.Yellow;
+                else
+                    fill = Brushes.White;
+
+                g.FillEllipse(fill, rect);
                 g.DrawEllipse(Pens.Black, rect);
             }
         }
@@ -164,12 +175,31 @@ namespace DosDebugger
 
         private void btnOutputDot_Click(object sender, EventArgs e)
         {
+            const double minWidth = 1.2, minHeight = 0.4;
+            const double maxWidth = 3.6, maxHeight = 1.2;
+
             using (StreamWriter writer = new StreamWriter(
                 @"D:\Run\GraphViz\release\bin\MyCallGraph.txt"))
             {
                 writer.WriteLine("digraph G {");
-                writer.WriteLine("  node[shape=box, style=rounded];");
- 
+                writer.WriteLine("  node[shape=box, style=\"rounded,filled\", fixedsize=true];");
+                // width = 1.2, height = 0.4
+
+                foreach (var node in graph.Nodes)
+                {
+                    string fillColor;
+                    var features = node.Procedure.Features;
+                    if ((features & ProcedureFeatures.HasInterrupt) != 0)
+                        fillColor = "cyan";
+                    else
+                        fillColor = "lightgray";
+                    writer.WriteLine("  sub_{0} [width={1}, height={2}, fillcolor={3}];",
+                        node.Procedure.EntryPoint.LinearAddress,
+                        minWidth + (maxWidth - minWidth) * node.SizeScale,
+                        minHeight + (maxHeight - minHeight) * node.SizeScale,
+                        fillColor);
+                }
+
                 foreach (var edge in graph.Edges)
                 {
                     writer.Write("  sub_{0} -> sub_{1}",
@@ -177,7 +207,7 @@ namespace DosDebugger
                         edge.Target.Procedure.EntryPoint.LinearAddress);
                     if (edge.Target.Procedure.CallType == CallType.Near)
                     {
-                        writer.WriteLine(" [style=dotted]");
+                        writer.Write(" [style=dotted]");
                     }
                     writer.WriteLine(";");
                 }
@@ -192,6 +222,12 @@ namespace DosDebugger
         public Procedure Procedure;
         public Point Center; // (x,y) on screen
         public int Radius;
+
+        /// <summary>
+        /// A float number between [0,1], where 0 indicates the smallest
+        /// procedure and 1 indicates the largest procedure. 
+        /// </summary>
+        public double SizeScale;
         //public Label Label;
     }
 
