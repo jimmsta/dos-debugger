@@ -36,6 +36,14 @@ namespace Disassembler
         private XRefCollection xrefs;
 
         /// <summary>
+        /// -Maintains a dictionary that maps an offset to an Error object
+        /// -where the error occurred at this offset.
+        /// </summary>
+        private List<Error> errors = new List<Error>();
+
+        public List<Error> Errors { get { return errors; } }
+
+        /// <summary>
         /// Creates a binary image with the given data and base address.
         /// </summary>
         /// <param name="image"></param>

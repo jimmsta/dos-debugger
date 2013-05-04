@@ -222,9 +222,9 @@ namespace DosDebugger
             // Display status.
             txtStatus.Text = string.Format(
                 "{3} segments, {0} procedures, {4} xrefs, {1} instructions, {2} errors",
-                dasm.Procedures.Count,
+                dasm.Image.Procedures.Count,
                 "?", // lvListing.Items.Count,
-                dasm.Errors.Length,
+                dasm.Image.Errors.Count,
                 0 /* segStat.Count */,
                 dasm.Image.CrossReferences.Count);
         }
@@ -404,6 +404,7 @@ namespace DosDebugger
 
             omf.Library.BuildDependencyGraph();
             libraryWindow.Library = omf.Library;
+            libraryWindow.PropertiesWindow = propertiesWindow;
 #endif
         }
 

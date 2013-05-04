@@ -54,7 +54,7 @@ namespace DosDebugger
             document.Navigator.LocationChanged += navigator_LocationChanged;
 
             // Create the view model.
-            viewModel = new ListingViewModel(document.Disassembler);
+            viewModel = new ListingViewModel(document.Image);
 
             // Fill the procedure window.
             cbProcedures.Items.Clear();
@@ -83,7 +83,7 @@ namespace DosDebugger
             if (scope == ListingScope.Segment)
             {
                 UInt16 seg = viewModel.Rows[activeRowIndex].Location.Segment;
-                Segment s = document.Disassembler.Image.FindSegment(seg);
+                Segment s = document.Image.FindSegment(seg);
                 int k1 = viewModel.FindRowIndex(s.StartAddress);
                 int k2 = viewModel.FindRowIndex(s.EndAddress);
                 DisplayViewport(k1, k2);
@@ -93,7 +93,7 @@ namespace DosDebugger
             if (scope == ListingScope.Procedure)
             {
                 Pointer address = viewModel.Rows[activeRowIndex].Location;
-                Procedure proc = document.Disassembler.Image[address].Procedure;
+                Procedure proc = document.Image[address].Procedure;
                 if (proc == null)
                 {
                     // TBD: if the current row is not part of a procedure,
@@ -171,7 +171,7 @@ namespace DosDebugger
             if (location == Pointer.Invalid)
                 return;
 
-            var image = document.Disassembler.Image;
+            var image = document.Image;
 
             // Fill xrefs to this location.
             int n = 0;
@@ -374,7 +374,7 @@ namespace DosDebugger
             }
 
             Pointer address = row.Location;
-            ByteProperties b = document.Disassembler.Image[address];
+            ByteProperties b = document.Image[address];
             if (b == null) // TBD: we should also do something for an unanalyzed byte.
                 return;
 

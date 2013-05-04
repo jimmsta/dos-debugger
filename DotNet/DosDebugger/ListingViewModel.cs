@@ -16,7 +16,8 @@ namespace DosDebugger
         private List<ListingRow> rows = new List<ListingRow>();
         private List<ProcedureItem> procItems = new List<ProcedureItem>();
         private List<SegmentItem> segmentItems = new List<SegmentItem>();
-        private Disassembler16 dasm;
+        //private Disassembler16 dasm;
+        private BinaryImage image;
 
         /// <summary>
         /// Array of the address of each row. This array is used to speed up
@@ -29,20 +30,19 @@ namespace DosDebugger
         /// </summary>
         private LinearPointer[] rowAddresses;
 
-        public ListingViewModel(Disassembler16 dasm)
+        public ListingViewModel(BinaryImage image)
         {
-            this.dasm = dasm;
+            this.image = image;
 
             // Make a dictionary that maps a location to the error at that location.
             // TODO: there may be multiple errors at a single location.
             Dictionary<LinearPointer, Error> errorMap = new Dictionary<LinearPointer, Error>();
-            foreach (Error error in dasm.Errors)
+            foreach (Error error in image.Errors)
             {
                 errorMap[error.Location.LinearAddress] = error;
             }
 
             // Display analyzed code and data.
-            BinaryImage image = dasm.Image;
             Pointer address = image.BaseAddress;
             for (var i = image.StartAddress; i < image.EndAddress; )
             {
@@ -107,7 +107,7 @@ namespace DosDebugger
             // Create a ProcedureItem view object for each non-empty
             // procedure.
             // TODO: display an error for empty procedures.
-            foreach (Procedure proc in dasm.Procedures)
+            foreach (Procedure proc in image.Procedures)
             {
                 if (proc.IsEmpty)
                     continue;
@@ -123,7 +123,7 @@ namespace DosDebugger
             }
 
             // Create segment items.
-            foreach (Segment segment in dasm.Image.Segments)
+            foreach (Segment segment in image.Segments)
             {
                 segmentItems.Add(new SegmentItem(segment));
             }
@@ -141,7 +141,7 @@ namespace DosDebugger
 
         public BinaryImage Image
         {
-            get { return dasm.Image; }
+            get { return image; }
         }
 
         public List<ListingRow> Rows
@@ -175,9 +175,9 @@ namespace DosDebugger
             if (rowAddresses.Length == 0 ||
                 address < rowAddresses[0])
                 throw new ArgumentOutOfRangeException("address");
-            if (address > dasm.Image.EndAddress)
+            if (address > image.EndAddress)
                 throw new ArgumentOutOfRangeException("address");
-            if (address == dasm.Image.EndAddress)
+            if (address == image.EndAddress)
                 return rowAddresses.Length;
 
             int k = Array.BinarySearch(rowAddresses, address);

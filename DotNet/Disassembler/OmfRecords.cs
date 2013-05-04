@@ -1133,6 +1133,7 @@ namespace Disassembler.Omf
     /// </summary>
     public class LogicalEnumeratedDataRecord : Record
     {
+        public SegmentDefinition Segment { get; private set; }
         public UInt16 SegmentIndex { get; private set; }
         public UInt32 DataOffset { get; private set; }
         public byte[] Data { get; private set; }
@@ -1143,6 +1144,8 @@ namespace Disassembler.Omf
             this.SegmentIndex = reader.ReadIndex();
             if (SegmentIndex == 0 || SegmentIndex > context.SegmentDefinitions.Count)
                 throw new InvalidDataException("SegmentIndex is out of range.");
+
+            this.Segment = context.SegmentDefinitions[SegmentIndex - 1];
 
             this.DataOffset = reader.ReadUInt16Or32();
             this.Data = reader.ReadToEnd();

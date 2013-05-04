@@ -13,8 +13,13 @@ namespace DosDebugger
 
         public Disassembler16 Disassembler
         {
-            get { return dasm; }
+        //    get { return dasm; }
             set { dasm = value; }
+        }
+
+        public BinaryImage Image
+        {
+            get { return dasm.Image; }
         }
 
         public NavigationPoint<Pointer> Navigator

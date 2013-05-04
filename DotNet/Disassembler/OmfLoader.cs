@@ -134,6 +134,11 @@ namespace Disassembler
             get { return Context.LocalPublicNames.ToArray(); }
         }
 
+        public Omf.SegmentDefinition[] SegmentDefinitions
+        {
+            get { return Context.SegmentDefinitions.ToArray(); }
+        }
+
         public override string ToString()
         {
             return this.Name;

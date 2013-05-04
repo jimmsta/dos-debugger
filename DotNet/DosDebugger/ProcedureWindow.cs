@@ -44,9 +44,9 @@ namespace DosDebugger
             if (document == null)
                 return;
 
-            Disassembler16 dasm = document.Disassembler;
+            BinaryImage image = document.Image;
             Dictionary<UInt16, int> segStat = new Dictionary<UInt16, int>();
-            foreach (Procedure proc in dasm.Procedures)
+            foreach (Procedure proc in image.Procedures)
             {
                 ListViewItem item = new ListViewItem();
                 item.Text = proc.EntryPoint.ToString();

@@ -33,8 +33,7 @@ namespace DosDebugger
             if (document == null)
                 return;
 
-            Disassembler16 dasm = document.Disassembler;
-            errors = dasm.Errors;
+            errors = document.Image.Errors.ToArray();
             Array.Sort(errors, Error.CompareByLocation);
             DisplayErrors();
 #if false

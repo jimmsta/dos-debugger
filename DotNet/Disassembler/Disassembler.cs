@@ -24,12 +24,6 @@ namespace Disassembler
         //private List<XRef> globalXRefs;
         //private XRefCollection xrefCollection ;
 
-        /// <summary>
-        /// -Maintains a dictionary that maps an offset to an Error object
-        /// -where the error occurred at this offset.
-        /// </summary>
-        private List<Error> errors = new List<Error>();
-
         public Disassembler16(byte[] image, Pointer baseAddress)
         {
             this.image = new BinaryImage(image, baseAddress);
@@ -44,6 +38,7 @@ namespace Disassembler
             get { return image; }
         }
 
+#if false
         /// <summary>
         /// Gets a collection of analyzed procedures. The procedures are
         /// returned in order of their entry point offset.
@@ -52,11 +47,14 @@ namespace Disassembler
         {
             get { return image.Procedures; }
         }
+#endif
 
+#if false
         public Error[] Errors
         {
             get { return errors.ToArray(); }
         }
+#endif
 
 #if false
         /// <summary>
@@ -336,9 +334,9 @@ namespace Disassembler
             // block.
             if (image[pos].Type != ByteType.Unknown && !image[pos].IsLeadByte)
             {
-                errors.Add(new Error(pos, string.Format(
+                AddError(pos, ErrorCategory.Error,
                     "XRef target is in the middle of code/data (referred from {0})",
-                    start.Source)));
+                    start.Source);
                 return null;
             }
 
@@ -358,11 +356,11 @@ namespace Disassembler
                 {
                     if (image[b.BasicBlock.StartAddress].Address.Segment != pos.Segment)
                     {
-                        errors.Add(new Error(pos, string.Format(
+                        AddError(pos, ErrorCategory.Error,
                             "Ran into the middle of a block [{0},{1}) from another segment " +
                             "when processing block {2} referred from {3}",
                             b.BasicBlock.StartAddress, b.BasicBlock.EndAddress,
-                            start.Target, start.Source)));
+                            start.Target, start.Source);
                         return null;
                     }
                     BasicBlock newBlock = b.BasicBlock.Split(pos.LinearAddress);
@@ -382,16 +380,16 @@ namespace Disassembler
                 }
                 catch (Exception ex)
                 {
-                    errors.Add(new Error(pos, "Bad instruction: " + ex.Message));
+                    AddError(pos, ErrorCategory.Error, "Bad instruction: {0}", ex.Message);
                     break;
                 }
 
                 // Create a code piece for this instruction.
                 if (!image.CheckByteType(pos, pos + insn.EncodedLength, ByteType.Unknown))
                 {
-                    errors.Add(new Error(pos, string.Format(
+                    AddError(pos, 
                         "Ran into the middle of code when processing block {0} referred from {1}",
-                        start.Target, start.Source)));
+                        start.Target, start.Source);
                     break;
                 }
 
@@ -612,7 +610,12 @@ namespace Disassembler
             Pointer location, ErrorCategory category,
             string format, params object[] args)
         {
-            errors.Add(new Error(location, string.Format(format, args), category));
+            image.Errors.Add(new Error(location, string.Format(format, args), category));
+        }
+
+        private void AddError(Pointer location, string format, params object[] args)
+        {
+            AddError(location, ErrorCategory.Error, format, args);
         }
     }
 
