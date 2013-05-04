@@ -91,6 +91,7 @@
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.btnTest = new System.Windows.Forms.ToolStripButton();
+            this.mnuViewLibraryBrowser = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -294,7 +295,8 @@
             this.mnuViewSegments,
             this.mnuViewProcedures,
             this.mnuViewErrors,
-            this.mnuViewProperties});
+            this.mnuViewProperties,
+            this.mnuViewLibraryBrowser});
             this.mnuView.Name = "mnuView";
             this.mnuView.Size = new System.Drawing.Size(50, 23);
             this.mnuView.Text = "&View";
@@ -543,6 +545,13 @@
             this.btnTest.Text = "Test";
             this.btnTest.Click += new System.EventHandler(this.btnTest_Click);
             // 
+            // mnuViewLibraryBrowser
+            // 
+            this.mnuViewLibraryBrowser.Name = "mnuViewLibraryBrowser";
+            this.mnuViewLibraryBrowser.Size = new System.Drawing.Size(194, 24);
+            this.mnuViewLibraryBrowser.Text = "Library Browser";
+            this.mnuViewLibraryBrowser.Click += new System.EventHandler(this.mnuViewLibraryBrowser_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 19F);
@@ -621,6 +630,7 @@
         private System.Windows.Forms.ToolStripMenuItem mnuViewHex;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
         private System.Windows.Forms.ToolStripSplitButton btnNavigateForward;
+        private System.Windows.Forms.ToolStripMenuItem mnuViewLibraryBrowser;
     }
 }
 

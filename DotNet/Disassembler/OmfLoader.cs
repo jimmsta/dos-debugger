@@ -10,12 +10,12 @@ namespace Disassembler
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class OmfLoader
     {
-        private ObjectModule[] modules;
+        private ObjectLibrary library;
 
-        public ObjectModule[] Modules
+        public ObjectLibrary Library
         {
             //get { return new ReadOnlyCollection<OmfRecord>(records); }
-            get { return modules; }
+            get { return library; }
         }
 
         public OmfLoader(string fileName)
@@ -23,7 +23,7 @@ namespace Disassembler
             using (Stream stream = File.OpenRead(fileName))
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                this.modules = LoadLibrary(reader);
+                this.library = LoadLibrary(reader);
             }
         }
 
@@ -70,7 +70,7 @@ namespace Disassembler
             return module;
         }
 
-        public static ObjectModule[] LoadLibrary(BinaryReader reader)
+        public static ObjectLibrary LoadLibrary(BinaryReader reader)
         {
             List<ObjectModule> modules = new List<ObjectModule>();
 
@@ -98,7 +98,7 @@ namespace Disassembler
             }
 
             // The dictionary follows, but we ignore it.
-            return modules.ToArray();
+            return new ObjectLibrary { Modules = modules.ToArray() };
         }
     }
 
@@ -137,6 +137,64 @@ namespace Disassembler
         public override string ToString()
         {
             return this.Name;
+        }
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ObjectLibrary
+    {
+        public ObjectModule[] Modules { get; internal set; }
+
+        public Dictionary<string, List<ObjectModule>> DuplicateSymbols
+            = new Dictionary<string, List<ObjectModule>>();
+
+        public Dictionary<string, List<ObjectModule>> UnresolvedSymbols
+            = new Dictionary<string, List<ObjectModule>>();
+
+        
+
+        public void BuildDependencyGraph()
+        {
+            // First, we need to build a map of each public name.
+            var nameDefs = new Dictionary<string, ObjectModule>();
+            foreach (var module in Modules)
+            {
+                foreach (var name in module.PublicNames)
+                {
+                    if (nameDefs.ContainsKey(name.Name))
+                    {
+                        var prevDef = nameDefs[name.Name];
+                    }
+                    nameDefs[name.Name] = module;
+                }
+            }
+
+            // Create a dummy node for "unresolved external symbols".
+            // ...
+
+            // Next, we create an edge for each external symbol reference.
+            foreach (var module in Modules)
+            {
+                foreach (var name in module.ExternalNames)
+                {
+                    ObjectModule defModule;
+                    if (nameDefs.TryGetValue(name.Name, out defModule))
+                    {
+                        // ...
+                    }
+                    else // unresolved external symbol
+                    {
+                        // ...
+                        List<ObjectModule> list;
+                        if (!UnresolvedSymbols.TryGetValue(name.Name, out list))
+                        {
+                            list = new List<ObjectModule>();
+                            UnresolvedSymbols.Add(name.Name, list);
+                        }
+                        list.Add(module);
+                    }
+                }
+            }
         }
     }
 }

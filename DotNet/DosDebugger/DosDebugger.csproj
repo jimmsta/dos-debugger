@@ -98,6 +98,12 @@
     <Compile Include="HexWindow.Designer.cs">
       <DependentUpon>HexWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="LibraryBrowserWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LibraryBrowserWindow.Designer.cs">
+      <DependentUpon>LibraryBrowserWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="ListingViewModel.cs" />
     <Compile Include="ListingWindow.cs">
       <SubType>Form</SubType>
@@ -148,6 +154,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="HexWindow.resx">
       <DependentUpon>HexWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LibraryBrowserWindow.resx">
+      <DependentUpon>LibraryBrowserWindow.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="ListingWindow.resx">
       <DependentUpon>ListingWindow.cs</DependentUpon>

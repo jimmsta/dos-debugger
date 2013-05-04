@@ -17,6 +17,7 @@ namespace DosDebugger
         ListingWindow listingWindow;
         PropertiesWindow propertiesWindow;
         HexWindow hexWindow;
+        LibraryBrowserWindow libraryWindow;
 
         public MainForm()
         {
@@ -33,6 +34,7 @@ namespace DosDebugger
             listingWindow = new ListingWindow();
             propertiesWindow = new PropertiesWindow();
             hexWindow = new HexWindow();
+            libraryWindow = new LibraryBrowserWindow();
         }
 
         private void InitializeDockPanel()
@@ -52,6 +54,7 @@ namespace DosDebugger
                 listingWindow.Show(dockPanel);
                 propertiesWindow.Show(dockPanel);
                 hexWindow.Show(dockPanel);
+                libraryWindow.Show(dockPanel);
             }
 
             // ActivateDockWindow(listingWindow);
@@ -93,6 +96,7 @@ namespace DosDebugger
             this.procWindow.DockPanel = null;
             this.propertiesWindow.DockPanel = null;
             this.hexWindow.DockPanel = null;
+            this.libraryWindow.DockPanel = null;
         }
 
         Document document;
@@ -396,7 +400,10 @@ namespace DosDebugger
 #else
             string fileName = @"..\..\..\..\Reference\SLIBC7.LIB";
             OmfLoader omf = new OmfLoader(fileName);
-            propertiesWindow.SelectedObject = omf;
+            propertiesWindow.SelectedObject = omf.Library;
+
+            omf.Library.BuildDependencyGraph();
+            libraryWindow.Library = omf.Library;
 #endif
         }
 
@@ -421,6 +428,8 @@ namespace DosDebugger
                 return propertiesWindow;
             else if (persistString == typeof(HexWindow).ToString())
                 return hexWindow;
+            else if (persistString == typeof(LibraryBrowserWindow).ToString())
+                return libraryWindow;
             else
                 return null;
 
@@ -524,6 +533,11 @@ namespace DosDebugger
             ActivateDockWindow(hexWindow);
         }
 
+        private void mnuViewLibraryBrowser_Click(object sender, EventArgs e)
+        {
+            ActivateDockWindow(libraryWindow);
+        }
+
         private void ActivateDockWindow(DockContent window)
         {
             if (window.DockPanel == null)
@@ -549,6 +563,7 @@ namespace DosDebugger
             using (listingWindow) { }
             using (propertiesWindow) { }
             using (hexWindow) { }
+            using (libraryWindow) { }
         }
     }
 }
