@@ -8,6 +8,15 @@ namespace Disassembler.Omf
 {
     public enum RecordNumber : byte
     {
+#if false
+        /// <summary>
+        /// The lowest bit of the record number indicates whether this is a
+        /// 16-bit or 32-bit record. If the lowest bit is 0 (default), the
+        /// record is 16-bit; if the lowest bit is 1, the record is 32-bit.
+        /// </summary>
+        Is32Bit = 1,
+#endif
+
         /// <summary>Translator Header Record</summary>
         THEADR = 0x80,
 
@@ -162,11 +171,26 @@ namespace Disassembler.Omf
             get { return index == Data.Length; }
         }
 
+        public byte PeekByte()
+        {
+            if (index >= Data.Length)
+                throw new InvalidDataException();
+            return Data[index];
+        }
+
         public byte ReadByte()
         {
             if (index >= Data.Length)
                 throw new InvalidDataException();
             return Data[index++];
+        }
+
+        public byte[] ReadToEnd()
+        {
+            byte[] remaining = new byte[Data.Length - index];
+            Array.Copy(Data, index, remaining, 0, remaining.Length);
+            index = Data.Length;
+            return remaining;
         }
 
         public UInt16 ReadUInt16()
@@ -176,6 +200,30 @@ namespace Disassembler.Omf
             byte b1 = Data[index++];
             byte b2 = Data[index++];
             return (UInt16)(b1 | (b2 << 8));
+        }
+
+        public UInt32 ReadUInt32()
+        {
+            if (index + 4 > Data.Length)
+                throw new InvalidDataException();
+            byte b1 = Data[index++];
+            byte b2 = Data[index++];
+            byte b3 = Data[index++];
+            byte b4 = Data[index++];
+            return (UInt32)(b1 | (b2 << 8) | (b3 << 16) | (b4 << 24));
+        }
+
+        /// <summary>
+        /// Reads UInt16 if the record number is even, or UInt32 if the
+        /// record number is odd.
+        /// </summary>
+        /// <returns></returns>
+        public UInt32 ReadUInt16Or32()
+        {
+            if (((int)RecordNumber & 1) == 0)
+                return ReadUInt16();
+            else
+                return ReadUInt32();
         }
 
         /// <summary>
@@ -226,6 +274,18 @@ namespace Disassembler.Omf
     internal class RecordContext
     {
         public readonly List<string> Names = new List<string>();
+        public readonly List<SegmentDefinition> SegmentDefinitions
+            = new List<SegmentDefinition>();
+        public readonly List<GroupDefinition> GroupDefinitions
+            = new List<GroupDefinition>();
+
+        // THREAD records.
+        // Records 0-3 are for TARGET threads.
+        // Records 4-7 are for FRAME threads.
+        public readonly ThreadDefinition[] Threads = new ThreadDefinition[8];
+
+        //public Record LastDataRecord; // last LEDATA or LIDATA record
+        // this is used by FIXUPP record to know which record to fix up
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -256,17 +316,32 @@ namespace Disassembler.Omf
                 case RecordNumber.LibraryHeader:
                     r = new LibraryHeaderRecord(reader, context);
                     break;
+                case RecordNumber.LibraryEnd:
+                    r = new LibraryEndRecord(reader, context);
+                    break;
                 case RecordNumber.COMENT:
                     r = new CommentRecord(reader, context);
                     break;
                 case RecordNumber.EXTDEF:
                     r = new ExternalNamesDefinitionRecord(reader, context);
                     break;
+                case RecordNumber.FIXUPP:
+                case RecordNumber.FIXUPP32:
+                    r = new FixupRecord(reader, context);
+                    break;
                 case RecordNumber.GRPDEF:
                     r = new GroupDefinitionRecord(reader, context);
                     break;
+                case RecordNumber.LEDATA:
+                case RecordNumber.LEDATA32:
+                    r = new LogicalEnumeratedDataRecord(reader, context);
+                    break;
                 case RecordNumber.LHEADR:
                     r = new LibraryModuleHeaderRecord(reader, context);
+                    break;
+                case RecordNumber.LIDATA:
+                case RecordNumber.LIDATA32:
+                    r = new LogicalIteratedDataRecord(reader, context);
                     break;
                 case RecordNumber.LNAMES:
                     r = new ListOfNamesRecord(reader, context);
@@ -278,6 +353,7 @@ namespace Disassembler.Omf
                     r = new PublicNameDefinitionRecord(reader, context);
                     break;
                 case RecordNumber.SEGDEF:
+                case RecordNumber.SEGDEF32:
                     r = new SegmentDefinitionRecord(reader, context);
                     break;
                 case RecordNumber.THEADR:
@@ -326,6 +402,16 @@ namespace Disassembler.Omf
             // Record data consists of 7 bytes of dictionary information
             // (which we ignore), followed by padding bytes to make the next
             // record (which should be THEADR) aligned on page boundary.
+        }
+    }
+
+    public class LibraryEndRecord : Record
+    {
+        internal LibraryEndRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            // Record data serves as padding to align the dictionary that
+            // follows at 512-byte boundary.
         }
     }
 
@@ -441,18 +527,29 @@ namespace Disassembler.Omf
     /// </summary>
     public class PublicNameDefinitionRecord : Record
     {
-        public int BaseGroupIndex { get; private set; }
-        public int BaseSegmentIndex { get; private set; }
-        public UInt16 BaseSegmentAddress { get; private set; }
+        //public int BaseGroupIndex { get; private set; }
+        //public int BaseSegmentIndex { get; private set; }
+        //public UInt16 BaseSegmentAddress { get; private set; }
+        public SegmentDefinition BaseSegment { get; private set; }
+        public GroupDefinition BaseGroup { get; private set; }
         public PublicSymbolEntry[] Symbols { get; private set; }
 
         internal PublicNameDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            this.BaseGroupIndex = reader.ReadIndex();
-            this.BaseSegmentIndex = reader.ReadIndex();
-            if (BaseSegmentIndex == 0)
-                this.BaseSegmentAddress = reader.ReadUInt16();
+            int baseGroupIndex = reader.ReadIndex();
+            if (baseGroupIndex > context.GroupDefinitions.Count)
+                throw new InvalidDataException("Group index out of range.");
+            if (baseGroupIndex > 0)
+                this.BaseGroup = context.GroupDefinitions[baseGroupIndex - 1];
+
+            int baseSegmentIndex = reader.ReadIndex();
+            if (baseSegmentIndex > context.SegmentDefinitions.Count)
+                throw new InvalidDataException("Segment index out of range.");
+            if (baseSegmentIndex == 0)
+                reader.ReadUInt16(); // ignored
+            else
+                this.BaseSegment = context.SegmentDefinitions[baseSegmentIndex - 1];
 
             List<PublicSymbolEntry> symbols = new List<PublicSymbolEntry>();
             while (!reader.IsEOF)
@@ -509,59 +606,73 @@ namespace Disassembler.Omf
 
     public class SegmentDefinitionRecord : Record
     {
-        public SegmentAlignment Alignment { get; private set; }
-        public SegmentCombination Combination { get; private set; }
-        public UInt16 SegmentAddress { get; private set; }
-        public byte SegmentOffset { get; private set; }
-
-        public int Length { get; private set; }
-        public string Name { get; private set; }
-        public string Class { get; private set; }
-
-        [Browsable(false)]
-        public int SegmentNameIndex { get; private set; }
-
-        [Browsable(false)]
-        public int ClassNameIndex { get; private set; }
-
-        [Browsable(false)]
-        public int OverlayNameIndex { get; private set; }
-
-        private bool IsBig; // highest bit of SegmentLength
-        private bool Use32;
+        public SegmentDefinition Definition { get; private set; }
 
         internal SegmentDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            byte acbp = reader.ReadByte();
-            this.Alignment = (SegmentAlignment)(acbp >> 5);
-            this.Combination = (SegmentCombination)((acbp >> 2) & 7);
-            this.IsBig = (acbp & 0x02) != 0;
-            this.Use32 = (acbp & 0x01) != 0;
+            SegmentDefinition def = new SegmentDefinition();
 
-            if (this.Alignment == SegmentAlignment.Absolute)
+            byte acbp = reader.ReadByte();
+            def.Alignment = (SegmentAlignment)(acbp >> 5);
+            def.Combination = (SegmentCombination)((acbp >> 2) & 7);
+            bool isBig = (acbp & 0x02) != 0;
+            def.IsUse32 = (acbp & 0x01) != 0;
+
+            if (def.Alignment == SegmentAlignment.Absolute)
             {
-                this.SegmentAddress = reader.ReadUInt16();
-                this.SegmentOffset = reader.ReadByte();
+                def.FrameNumber = reader.ReadUInt16();
+                reader.ReadByte(); // Offset; ignored
             }
 
-            this.Length = reader.ReadUInt16();
-            if (IsBig)
-                this.Length += 0x10000;
+            long length = reader.ReadUInt16Or32();
+            if (isBig)
+            {
+                if (reader.RecordNumber == Omf.RecordNumber.SEGDEF32)
+                    length = 0x100000000L;
+                else
+                    length = 0x10000;
+            }
+            def.Length = length;
 
-            this.SegmentNameIndex = reader.ReadIndex();
-            this.ClassNameIndex = reader.ReadIndex();
-            this.OverlayNameIndex = reader.ReadIndex();
+            int segmentNameIndex = reader.ReadIndex();
+            if (segmentNameIndex > context.Names.Count)
+                throw new InvalidDataException("SegmentNameIndex out of range.");
+            if (segmentNameIndex > 0)
+                def.Name = context.Names[segmentNameIndex - 1];
 
-            if (this.SegmentNameIndex > context.Names.Count ||
-                this.ClassNameIndex > context.Names.Count ||
-                this.OverlayNameIndex > context.Names.Count)
-                throw new InvalidDataException();
+            int classNameIndex = reader.ReadIndex();
+            if (classNameIndex > context.Names.Count)
+                throw new InvalidDataException("ClassNameIndex out of range.");
+            if (classNameIndex > 0)
+                def.Class = context.Names[classNameIndex - 1];
 
-            if (SegmentNameIndex > 0)
-                this.Name = context.Names[SegmentNameIndex - 1];
-            if (ClassNameIndex > 0)
-                this.Class = context.Names[ClassNameIndex - 1];
+            int overlayNameIndex = reader.ReadIndex();
+            if (overlayNameIndex > context.Names.Count)
+                throw new InvalidDataException("OverlayNameIndex is out of range.");
+            if (overlayNameIndex > 0)
+                def.Overlay = context.Names[overlayNameIndex - 1];
+
+            this.Definition = def;
+            context.SegmentDefinitions.Add(def);
+        }
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class SegmentDefinition
+    {
+        public string Name { get; internal set; }
+        public string Class { get; internal set; }
+        public string Overlay { get; internal set; }
+        public UInt16 FrameNumber { get; internal set; }
+        public SegmentAlignment Alignment { get; internal set; }
+        public SegmentCombination Combination { get; internal set; }
+        public long Length { get; internal set; }
+        public bool IsUse32 { get; internal set; }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 
@@ -624,6 +735,317 @@ namespace Disassembler.Omf
                 indices.Add(index);
             }
             this.SegmentIndices = indices.ToArray();
+
+            context.GroupDefinitions.Add(new GroupDefinition(this.GroupName));
+        }
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class GroupDefinition
+    {
+        public string Name { get; private set; }
+
+        public GroupDefinition(string name)
+        {
+            this.Name = name;
+        }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    /// <summary>
+    /// Contains information that allows the linker to resolve (fix up) and
+    /// eventually relocate references between object modules. FIXUPP records
+    /// describe the LOCATION of each address value to be fixed up, the TARGET
+    /// address to which the fixup refers, and the FRAME relative to which the
+    /// address computation is performed.
+    /// </summary>
+    public class FixupRecord : Record
+    {
+        public ThreadDefinition[] Threads { get; private set; }
+        public FixupDefinition[] Fixups { get; private set; }
+
+        internal FixupRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            List<ThreadDefinition> threads = new List<ThreadDefinition>();
+            List<FixupDefinition> fixups = new List<FixupDefinition>();
+            while (!reader.IsEOF)
+            {
+                byte b = reader.PeekByte();
+                if ((b & 0x80) == 0)
+                {
+                    ThreadDefinition thread = ParseThreadSubrecord(reader);
+                    threads.Add(thread);
+                    context.Threads[thread.ThreadNumber] = thread;
+                    // TODO: handle if thread subrecord and fixup subrecords interleave!
+                }
+                else
+                {
+                    FixupDefinition fixup = ParseFixupSubrecord(reader);
+                    fixups.Add(fixup);
+                }
+                break;
+            }
+            // fixup info == istemplate // usetemplate
+            this.Threads = threads.ToArray();
+            this.Fixups = fixups.ToArray();
+        }
+
+        private ThreadDefinition ParseThreadSubrecord(RecordReader reader)
+        {
+            ThreadDefinition thread = new ThreadDefinition();
+
+            byte b = reader.ReadByte();
+            thread.Kind = ((b & 0x40) == 0) ? FixupKind.Target : FixupKind.Frame;
+            thread.IndexType = (IndexType)((b >> 2) & 3);
+            thread.ThreadNumber = (byte)(b & 3);
+            
+            if ((int)thread.IndexType <= 2)
+                thread.Index = reader.ReadIndex();
+
+            thread.IsDefined = true;
+            return thread;
+        }
+
+        private FixupDefinition ParseFixupSubrecord(RecordReader reader)
+        {
+            FixupDefinition fixup = new FixupDefinition();
+
+            byte b1 = reader.ReadByte();
+            byte b2 = reader.ReadByte();
+            UInt16 w = (UInt16)((b1 << 8) | b2); // big endian
+
+            fixup.Mode = (w & 0x4000) != 0 ? FixupMode.SegmentRelative : FixupMode.SelfRelative;
+            fixup.Location = (FixupLocation)((w >> 10) & 0x0F);
+            fixup.DataOffset = (UInt16)(w & 0x03FF);
+
+            byte b = reader.ReadByte();
+            bool useFrameThread = (b & 0x80) != 0;
+            if (useFrameThread)
+            {
+                int frameNumber = (b >> 4) & 0x3;
+            }
+            else
+            {
+                IndexType frameMethod = (IndexType)((b >> 4) & 7);
+                if ((int)frameMethod <= 3)
+                    fixup.FrameIndex = reader.ReadIndex();
+            }
+
+            bool useTargetThread = (b & 0x08) != 0;
+            if (useTargetThread)
+            {
+                bool hasTargetDisplacement = (b & 0x04) != 0;
+                int frameNumber = b & 3;
+            }
+            else
+            {
+                FixupTargetSpec targetMethod = (FixupTargetSpec)(b & 7);
+                fixup.TargetSpec = targetMethod;
+                fixup.TargetIndex = reader.ReadIndex();
+                if ((int)targetMethod <= 3)
+                    fixup.TargetDisplacement = reader.ReadUInt16Or32();
+            }
+            return fixup;
+        }
+    }
+
+    /// <summary>
+    /// A THREAD definition works like "preset" for FIXUPP records. Instead
+    /// of explicitly specifying how to do the fix-up in the FIXUPP record,
+    /// it could instead refer to a previously defined THREAD and use the
+    /// fix-up settings defined in the THREAD.
+    /// 
+    /// There are four TARGET threads (numbered 0-3) and four FRAME threads
+    /// (numbered 0-3). So at any time, a maximum of 8 threads are available.
+    /// If a thread with the same number is defined again, it overwrites the
+    /// previous definition.
+    /// </summary>
+    public struct ThreadDefinition
+    {
+        public bool IsDefined; // whether this entry is defined
+        public byte ThreadNumber; // 0 - 3
+
+        public FixupKind Kind;
+        //public TargetThreadMethod Method;
+        public IndexType IndexType;
+        
+        public UInt16 Index;
+    }
+
+    public enum FixupKind : byte
+    {
+        Target = 0,
+        Frame = 1
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct FixupDefinition
+    {
+        public UInt16 DataOffset { get; internal set; } // indicates where to fix up
+        public FixupLocation Location { get; internal set; } // indicates what to fix up
+        public FixupMode Mode { get; internal set; }
+
+        public FixupTargetSpec TargetSpec { get; internal set; }
+
+        public UInt16 FrameIndex { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
+        /// the referent to find the target.
+        /// </summary>
+        public UInt16 TargetIndex { get; internal set; }
+
+        public UInt32 TargetDisplacement { get; internal set; }
+    }
+
+    public enum FixupMode : byte
+    {
+        SelfRelative = 0,
+        SegmentRelative = 1
+    }
+
+    /// <summary>
+    /// Specifies the type of location (in particular, size) to fix up.
+    /// </summary>
+    public enum FixupLocation : byte
+    {
+        LowOrderByte = 0, // 8-bit displacement or low byte of 16-bit offset
+        WordOffset = 1, //  16-bit offset.
+        WordSegment = 2, //  16-bit base—logical segment base (selector).
+        FarPtr16 = 3, // 32-bit Long pointer (16-bit base:16-bit offset).
+        HighOrderByte = 4, // (high byte of 16-bit offset). Not supported by MS LINK
+        LoaderResolvedWordOffset = 5, // 16-bit loader-resolved offset, treated as Location=1.
+        DWordOffset = 9, // 32-bit offset.
+        FarPtr32 = 11,// 48-bit pointer (16-bit base:32-bit offset).
+        LoaderResolvedDWordOffset = 13, // 32-bit loader-resolved offset, treated as Location=9
+    }
+
+    /// <summary>
+    /// Specifies which ordered collection an index refers to.
+    /// </summary>
+    public enum IndexType : byte
+    {
+        SEGDEFIndex = 0,
+        GRPDEFIndex = 1,
+        EXTDEFIndex = 2,
+        ExplicitIndex = 3, // not supported
+
+        /// <summary>
+        /// (Used only for FRAME fix-ups) The FRAME is determined by the
+        /// segment index of the previous LEDATA or LIDATA record (that is,
+        /// the segment in which the location is defined).
+        /// </summary>
+        F4 = 4,
+
+        /// <summary>
+        /// (Used only for FRAME fix-ups) The FRAME is determined by the
+        /// TARGET's segment, group, or external index.
+        /// </summary>
+        F5 = 5,
+    }
+
+    /// <summary>
+    /// Specifies how to determine the TARGET of a fixup.
+    /// </summary>
+    public enum FixupTargetSpec : byte
+    {
+        /// <summary>
+        /// T0: INDEX(SEGDEF),DISP -- The TARGET is the DISP'th byte in the
+        /// LSEG (logical segment) identified by the INDEX.
+        /// </summary>
+        SegmentPlusDisplacement = 0,
+
+        /// <summary>
+        /// T1: INDEX(GRPDEF),DISP -- The TARGET is the DISP'th byte following
+        /// the first byte in the group identified by the INDEX.
+        /// </summary>
+        GroupPlusDisplacement = 1,
+
+        /// <summary>
+        /// T2: INDEX(EXTDEF),DISP -- The TARGET is the DISP'th byte following
+        /// the byte whose address is (eventuall) given by the External Name
+        /// identified by the INDEX.
+        /// </summary>
+        ExternalPlusDisplacement = 2,
+
+        /// <summary>
+        /// (Not supported by Microsoft)
+        /// T3: FRAME,DISP -- The TARGET is the DISP'th byte in FRAME, i.e.
+        /// the address of TARGET is [FRAME*16+DISP].
+        /// </summary>
+        Absolute = 3,
+
+        /// <summary>
+        /// T4: INDEX(SEGDEF),0 -- The TARGET is the first byte in the LSEG
+        /// (logical segment) identified by the INDEX.
+        /// </summary>
+        SegmentWithoutDisplacement = 4,
+
+        /// <summary>
+        /// T5: INDEX(GRPDEF),0 -- The TARGET is the first byte in the group
+        /// identified by the INDEX.
+        /// </summary>
+        GroupWithoutDisplacement = 5,
+
+        /// <summary>
+        /// T6: INDEX(EXTDEF),0 -- The TARGET is the byte whose address is
+        /// (eventually given by) the External Name identified by the INDEX.
+        /// </summary>
+        ExternalWithoutDisplacement = 6,
+    }
+
+    public enum FixupFrameSpec : byte
+    {
+    }
+
+    /// <summary>
+    /// Contains contiguous binary data to be copied into the program's
+    /// executable binary image.
+    /// </summary>
+    public class LogicalEnumeratedDataRecord : Record
+    {
+        public UInt16 SegmentIndex { get; private set; }
+        public UInt32 DataOffset { get; private set; }
+        public byte[] Data { get; private set; }
+
+        internal LogicalEnumeratedDataRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            this.SegmentIndex = reader.ReadIndex();
+            if (SegmentIndex == 0 || SegmentIndex > context.SegmentDefinitions.Count)
+                throw new InvalidDataException("SegmentIndex is out of range.");
+
+            this.DataOffset = reader.ReadUInt16Or32();
+            this.Data = reader.ReadToEnd();
+        }
+    }
+
+    /// <summary>
+    /// Contains contiguous binary data to be copied into the program's
+    /// executable binary image. The data is stored as a repeating pattern.
+    /// </summary>
+    public class LogicalIteratedDataRecord : Record
+    {
+        public UInt16 SegmentIndex { get; private set; }
+        public UInt32 DataOffset { get; private set; }
+        public byte[] Data { get; private set; }
+
+        internal LogicalIteratedDataRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            this.SegmentIndex = reader.ReadIndex();
+            if (SegmentIndex == 0 || SegmentIndex > context.SegmentDefinitions.Count)
+                throw new InvalidDataException("SegmentIndex is out of range.");
+
+            this.DataOffset = reader.ReadUInt16Or32();
+            this.Data = reader.ReadToEnd();
+
+            // TODO: parse LIDATA (recursive; a bit messy)
         }
     }
 }
