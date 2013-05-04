@@ -65,7 +65,8 @@ namespace DosDebugger
             cbSegments.Items.AddRange(viewModel.SegmentItems.ToArray());
 
             // Display the listing rows.
-            scope = ListingScope.Procedure;
+            //scope = ListingScope.Procedure;
+            scope = ListingScope.Executable; // should rename to Image
             UpdateScope();
         }
 

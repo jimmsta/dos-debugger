@@ -405,6 +405,7 @@ namespace DosDebugger
             omf.Library.BuildDependencyGraph();
             libraryWindow.Library = omf.Library;
             libraryWindow.PropertiesWindow = propertiesWindow;
+            libraryWindow.ListingWindow = listingWindow;
 #endif
         }
 

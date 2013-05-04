@@ -119,12 +119,22 @@ namespace DosDebugger
 
             // Disassemble the instructions literally. Note that this should
             // be improved, but we don't do that yet.
+            var addr = image.BaseAddress;
+            for (var i = image.StartAddress; i < image.EndAddress; )
+            {
+                var instruction = image.DecodeInstruction(addr);
+                image.CreatePiece(addr, addr + instruction.EncodedLength, ByteType.Code);
+                addr = addr.Increment(instruction.EncodedLength);
+                i += instruction.EncodedLength;
+            }
             // ...
 
             // Display the code in our disassmbly window.
             if (this.ListingWindow != null)
             {
-                this.ListingWindow.Document = null;
+                Document doc = new Document();
+                doc.Image = image;
+                this.ListingWindow.Document = doc;
             }
         }
     }
