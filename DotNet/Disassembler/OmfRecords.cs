@@ -289,10 +289,24 @@ namespace Disassembler.Omf
     internal class RecordContext
     {
         public readonly List<string> Names = new List<string>();
+
         public readonly List<SegmentDefinition> SegmentDefinitions
             = new List<SegmentDefinition>();
+
         public readonly List<GroupDefinition> GroupDefinitions
             = new List<GroupDefinition>();
+
+        public readonly List<ExternalNameDefinition> ExternalNames
+            = new List<ExternalNameDefinition>();
+
+        public readonly List<ExternalNameDefinition> LocalExternalNames
+            = new List<ExternalNameDefinition>();
+
+        public readonly List<PublicNameDefinition> PublicNames
+            = new List<PublicNameDefinition>();
+
+        public readonly List<PublicNameDefinition> LocalPublicNames
+            = new List<PublicNameDefinition>();
 
         // THREAD records.
         // Records 0-3 are for TARGET threads.
@@ -403,7 +417,7 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.PUBDEF:
                 case RecordNumber.PUBDEF32:
-                    r = new PublicNameDefinitionRecord(reader, context);
+                    r = new PublicNamesDefinitionRecord(reader, context);
                     break;
                 case RecordNumber.SEGDEF:
                 case RecordNumber.SEGDEF32:
@@ -534,43 +548,51 @@ namespace Disassembler.Omf
         }
     }
 
+    #region External Name Related Records
+
     /// <summary>
-    /// Contains a list of unresolved symbols.
+    /// Contains a list of symbolic external references, i.e. references to
+    /// symbols defined in other object modules.
     /// </summary>
+    /// <remarks>
+    /// EXTDEF names are ordered by occurrence jointly with the COMDEF and
+    /// LEXTDEF records, and referenced by an index in FIXUPP records.
+    /// </remarks>
     public class ExternalNamesDefinitionRecord : Record
     {
-        public SymbolEntry[] Symbols { get; private set; }
+        public ExternalNameDefinition[] Symbols { get; private set; }
 
         internal ExternalNamesDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<SymbolEntry> symbols = new List<SymbolEntry>();
+            List<ExternalNameDefinition> symbols = new List<ExternalNameDefinition>();
             while (!reader.IsEOF)
             {
-                string name = reader.ReadPrefixedString();
-                int typeIndex = reader.ReadIndex();
-                SymbolEntry symbol = new SymbolEntry(name, typeIndex);
+                ExternalNameDefinition symbol = new ExternalNameDefinition();
+                symbol.Name = reader.ReadPrefixedString();
+                symbol.TypeIndex = reader.ReadIndex();
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
+
+            context.ExternalNames.AddRange(Symbols);
         }
     }
 
-    // TODO: move to outer namespace
-    public class SymbolEntry
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <remarks>
+    /// LEXTDEF records are associated with LPUBDEF and LCOMDEF records and
+    /// ordered with EXTDEF and COMDEF records by occurrence, so that they
+    /// may be referenced by an external name index for fixups.
+    /// </remarks>
+    public class LocalExternalNamesDefinitionRecord : ExternalNamesDefinitionRecord
     {
-        public string Name { get; private set; }
-        public int TypeIndex { get; private set; }
-
-        public SymbolEntry(string name, int typeIndex)
+        internal LocalExternalNamesDefinitionRecord(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
         {
-            this.Name = name;
-            this.TypeIndex = TypeIndex;
-        }
-
-        public override string ToString()
-        {
-            return string.Format("{0}:{1}", Name, TypeIndex);
         }
     }
 
@@ -579,6 +601,10 @@ namespace Disassembler.Omf
     /// data that may match initialized static data in another compilation
     /// unit).
     /// </summary>
+    /// <remarks>
+    /// COMDEF records are ordered by occurrence, together with the items
+    /// named in EXTDEF and LEXTDEF records, for reference in FIXUP records.
+    /// </remarks>
     public class CommunalNamesDefinitionRecord : Record
     {
         public CommunalNameDefinition[] Definitions { get; private set; }
@@ -602,6 +628,8 @@ namespace Disassembler.Omf
                 defs.Add(def);
             }
             this.Definitions = defs.ToArray();
+
+            context.ExternalNames.AddRange(this.Definitions);
         }
 
         private static UInt32 ReadEncodedInteger(RecordReader reader)
@@ -618,41 +646,68 @@ namespace Disassembler.Omf
         }
     }
 
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public struct CommunalNameDefinition
+    /// <summary>
+    /// Serves the same purpose as the EXTDEF record. The difference is that
+    /// the symbol named is referred to through a Logical Name Index field,
+    /// which is defined through an LNAMES or LLNAMES record.
+    /// </summary>
+    /// <remarks>
+    /// This record is produced when a FIXUPP record refers to a COMDAT
+    /// symbol.
+    /// </remarks>
+    public class COMDATExternalNamesDefinitionRecord : Record
     {
-        public string Name { get; internal set; }
-        public ushort TypeIndex { get; internal set; }
-        public byte DataType { get; internal set; }
-        public UInt32 ElementCount { get; internal set; }
-        public UInt32 ElementSize { get; internal set; }
+        public ExternalNameDefinition[] Symbols { get; private set; }
 
-        public override string ToString()
-        {
-            return Name;
-        }
-    }
-
-    public class LocalExternalNamesDefinitionRecord : ExternalNamesDefinitionRecord
-    {
-        internal LocalExternalNamesDefinitionRecord(
+        internal COMDATExternalNamesDefinitionRecord(
             RecordReader reader, RecordContext context)
             : base(reader, context)
         {
+            List<ExternalNameDefinition> symbols = new List<ExternalNameDefinition>();
+            while (!reader.IsEOF)
+            {
+                UInt16 nameIndex = reader.ReadIndex();
+                if (nameIndex == 0 || nameIndex > context.Names.Count)
+                    throw new InvalidDataException("LogicalNameIndex is out of range.");
+
+                UInt16 typeIndex = reader.ReadIndex();
+                ExternalNameDefinition symbol = new ExternalNameDefinition();
+                symbol.Name = context.Names[nameIndex - 1];
+                symbol.TypeIndex = typeIndex;
+                symbols.Add(symbol);
+            }
+            this.Symbols = symbols.ToArray();
+
+            if (reader.RecordNumber == Omf.RecordNumber.LEXTDEF ||
+                reader.RecordNumber == Omf.RecordNumber.LEXTDEF32)
+            {
+                context.LocalExternalNames.AddRange(Symbols);
+            }
+            else
+            {
+                context.ExternalNames.AddRange(Symbols);
+            }
         }
     }
+
+    #endregion
 
     /// <summary>
     /// Defines public symbols in this object module. The symbols are also
     /// available for export if so indicated in an EXPDEF comment record.
     /// </summary>
-    public class PublicNameDefinitionRecord : Record
+    /// <remarks>
+    /// All defined functions and initialized global variables generate
+    /// PUBDEF records in most compilers.
+    /// </remarks>
+    public class PublicNamesDefinitionRecord : Record
     {
         public SegmentDefinition BaseSegment { get; private set; }
         public GroupDefinition BaseGroup { get; private set; }
-        public PublicSymbolEntry[] Symbols { get; private set; }
+        public UInt16 BaseFrame { get; private set; }
+        public PublicNameDefinition[] Symbols { get; private set; }
 
-        internal PublicNameDefinitionRecord(RecordReader reader, RecordContext context)
+        internal PublicNamesDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             int baseGroupIndex = reader.ReadIndex();
@@ -665,36 +720,37 @@ namespace Disassembler.Omf
             if (baseSegmentIndex > context.SegmentDefinitions.Count)
                 throw new InvalidDataException("Segment index out of range.");
             if (baseSegmentIndex == 0)
-                reader.ReadUInt16(); // ignored
+                this.BaseFrame = reader.ReadUInt16();
             else
                 this.BaseSegment = context.SegmentDefinitions[baseSegmentIndex - 1];
 
-            List<PublicSymbolEntry> symbols = new List<PublicSymbolEntry>();
+            List<PublicNameDefinition> symbols = new List<PublicNameDefinition>();
             while (!reader.IsEOF)
             {
-                PublicSymbolEntry symbol = new PublicSymbolEntry();
+                PublicNameDefinition symbol = new PublicNameDefinition();
                 symbol.Name = reader.ReadPrefixedString();
                 symbol.Offset = reader.ReadUInt16Or32();
                 symbol.TypeIndex = reader.ReadIndex();
+                symbol.BaseSegment = BaseSegment;
+                symbol.BaseGroup = BaseGroup;
+                symbol.BaseFrame = BaseFrame;
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
+
+            if (reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
+                reader.RecordNumber == Omf.RecordNumber.LPUBDEF32)
+            {
+                context.LocalPublicNames.AddRange(Symbols);
+            }
+            else
+            {
+                context.PublicNames.AddRange(Symbols);
+            }
         }
     }
 
-    public class PublicSymbolEntry
-    {
-        public string Name { get; internal set; }
-        public UInt32 Offset { get; internal set; }
-        public int TypeIndex { get; internal set; }
-
-        public override string ToString()
-        {
-            return string.Format("{0}:{1}", Name, TypeIndex);
-        }
-    }
-
-    public class LocalPublicNameDefinitionRecord : PublicNameDefinitionRecord
+    public class LocalPublicNameDefinitionRecord : PublicNamesDefinitionRecord
     {
         internal LocalPublicNameDefinitionRecord(
             RecordReader reader, RecordContext context)
@@ -776,58 +832,6 @@ namespace Disassembler.Omf
             this.Definition = def;
             context.SegmentDefinitions.Add(def);
         }
-    }
-
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class SegmentDefinition
-    {
-        public string Name { get; internal set; }
-        public string Class { get; internal set; }
-        public string Overlay { get; internal set; }
-        public UInt16 FrameNumber { get; internal set; }
-        public SegmentAlignment Alignment { get; internal set; }
-        public SegmentCombination Combination { get; internal set; }
-        public long Length { get; internal set; }
-        public bool IsUse32 { get; internal set; }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-    }
-
-    public enum SegmentAlignment : byte
-    {
-        Absolute = 0,
-        ByteAligned = 1,
-        WordAligned = 2,
-        ParagraphAligned = 3,
-        PageAligned = 4,
-        DWordAligned = 5,
-    }
-
-    public enum SegmentCombination : byte
-    {
-        /// <summary>Do not combine with any other program segment.</summary>
-        Private = 0,
-
-        /// <summary>
-        /// Combine by appending at an offset that meets the alignment
-        /// requirement.
-        /// </summary>
-        Public = 2,
-
-        /// <summary>Same as Public.</summary>
-        Public2 = 4,
-
-        /// <summary>Combine by appending at a byte-aligned offset.</summary>
-        Stack = 5,
-
-        /// <summary>Combine by overlay using maximum size.</summary>
-        Common = 6,
-
-        /// <summary>Same as Public.</summary>
-        Public3 = 7,
     }
 
     public class GroupDefinitionRecord : Record
@@ -1169,28 +1173,6 @@ namespace Disassembler.Omf
         }
     }
 
-    public class COMDATExternalNamesDefinitionRecord : Record
-    {
-        public SymbolEntry[] Symbols { get; private set; }
-
-        internal COMDATExternalNamesDefinitionRecord(
-            RecordReader reader, RecordContext context)
-            : base(reader, context)
-        {
-            List<SymbolEntry> symbols = new List<SymbolEntry>();
-            while (!reader.IsEOF)
-            {
-                UInt16 nameIndex = reader.ReadIndex();
-                if (nameIndex == 0 || nameIndex > context.Names.Count)
-                    throw new InvalidDataException("LogicalNameIndex is out of range.");
-
-                UInt16 typeIndex = reader.ReadIndex();
-                SymbolEntry symbol = new SymbolEntry(context.Names[nameIndex - 1], typeIndex);
-                symbols.Add(symbol);
-            }
-            this.Symbols = symbols.ToArray();
-        }
-    }
 
     public class InitializedCommunalDataRecordpublic : Record
     {

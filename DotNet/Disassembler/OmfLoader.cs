@@ -38,6 +38,7 @@ namespace Disassembler
             ObjectModule module = new ObjectModule();
             List<Omf.Record> records = new List<Omf.Record>();
             Omf.RecordContext context = new Omf.RecordContext();
+            module.Context = context;
 
             while (true)
             {
@@ -104,8 +105,34 @@ namespace Disassembler
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ObjectModule
     {
+        internal Omf.RecordContext Context { get; set; }
+
+        [Browsable(false)]
         public string Name { get; internal set; }
+
         public Omf.Record[] Records { get; internal set; }
+        
+        public Omf.ExternalNameDefinition[] ExternalNames
+        {
+            get { return Context.ExternalNames.ToArray(); }
+        }
+
+        [Browsable(false)]
+        public Omf.ExternalNameDefinition[] LocalExternalNames
+        {
+            get { return Context.LocalExternalNames.ToArray(); }
+        }
+
+        public Omf.PublicNameDefinition[] PublicNames
+        {
+            get { return Context.PublicNames.ToArray(); }
+        }
+
+        [Browsable(false)]
+        public Omf.PublicNameDefinition[] LocalPublicNames
+        {
+            get { return Context.LocalPublicNames.ToArray(); }
+        }
 
         public override string ToString()
         {
