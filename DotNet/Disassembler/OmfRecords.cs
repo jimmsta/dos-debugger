@@ -8,6 +8,8 @@ namespace Disassembler.Omf
 {
     public enum RecordNumber : byte
     {
+        None = 0,
+
 #if false
         /// <summary>
         /// The lowest bit of the record number indicates whether this is a
@@ -86,8 +88,11 @@ namespace Disassembler.Omf
         /// <summary>Backpatch Record (32-bit)</summary>
         BAKPAT32 = 0xB3,
 
-        /// <summary>Local External Names Definition Record</summary>
+        /// <summary>Local External Names Definition Record (32-bit)</summary>
         LEXTDEF = 0xB4,
+
+        /// <summary>Local External Names Definition Record (32-bit)</summary>
+        LEXTDEF32 = 0xB5,
 
         /// <summary>Local Public Names Definition Record (16-bit)</summary>
         LPUBDEF = 0xB6,
@@ -202,6 +207,16 @@ namespace Disassembler.Omf
             return (UInt16)(b1 | (b2 << 8));
         }
 
+        public UInt16 ReadUInt24()
+        {
+            if (index + 3 > Data.Length)
+                throw new InvalidDataException();
+            byte b1 = Data[index++];
+            byte b2 = Data[index++];
+            byte b3 = Data[index++];
+            return (UInt16)(b1 | (b2 << 8) | (b3 << 16));
+        }
+
         public UInt32 ReadUInt32()
         {
             if (index + 4 > Data.Length)
@@ -309,7 +324,23 @@ namespace Disassembler.Omf
 
         internal static Record ReadRecord(BinaryReader binaryReader, RecordContext context)
         {
+            return ReadRecord(binaryReader, context, RecordNumber.None);
+        }
+
+        internal static Record ReadRecord(
+            BinaryReader binaryReader, 
+            RecordContext context,
+            RecordNumber expectedRecord)
+        {
             RecordReader reader = new RecordReader(binaryReader);
+            if (expectedRecord != RecordNumber.None &&
+                reader.RecordNumber != expectedRecord)
+            {
+                throw new InvalidDataException(string.Format(
+                    "Expecting record {0}, but got record {1}.",
+                    expectedRecord, reader.RecordNumber));
+            }
+
             Record r;
             switch (reader.RecordNumber)
             {
@@ -318,6 +349,19 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.LibraryEnd:
                     r = new LibraryEndRecord(reader, context);
+                    break;
+                case RecordNumber.ALIAS:
+                    r = new AliasDefinitionRecord(reader, context);
+                    break;
+                case RecordNumber.CEXTDEF:
+                    r = new COMDATExternalNamesDefinitionRecord(reader, context);
+                    break;
+                case RecordNumber.COMDAT:
+                case RecordNumber.COMDAT32:
+                    r = new InitializedCommunalDataRecordpublic(reader, context);
+                    break;
+                case RecordNumber.COMDEF:
+                    r = new CommunalNamesDefinitionRecord(reader, context);
                     break;
                 case RecordNumber.COMENT:
                     r = new CommentRecord(reader, context);
@@ -336,6 +380,10 @@ namespace Disassembler.Omf
                 case RecordNumber.LEDATA32:
                     r = new LogicalEnumeratedDataRecord(reader, context);
                     break;
+                case RecordNumber.LEXTDEF:
+                case RecordNumber.LEXTDEF32:
+                    r = new LocalExternalNamesDefinitionRecord(reader, context);
+                    break;
                 case RecordNumber.LHEADR:
                     r = new LibraryModuleHeaderRecord(reader, context);
                     break;
@@ -346,10 +394,15 @@ namespace Disassembler.Omf
                 case RecordNumber.LNAMES:
                     r = new ListOfNamesRecord(reader, context);
                     break;
+                case RecordNumber.LPUBDEF:
+                case RecordNumber.LPUBDEF32:
+                    r = new LocalPublicNameDefinitionRecord(reader, context);
+                    break;
                 case RecordNumber.MODEND:
                     r = new ModuleEndRecord(reader, context);
                     break;
                 case RecordNumber.PUBDEF:
+                case RecordNumber.PUBDEF32:
                     r = new PublicNameDefinitionRecord(reader, context);
                     break;
                 case RecordNumber.SEGDEF:
@@ -522,14 +575,79 @@ namespace Disassembler.Omf
     }
 
     /// <summary>
+    /// Declares a list of communal variables (uninitialized static data or
+    /// data that may match initialized static data in another compilation
+    /// unit).
+    /// </summary>
+    public class CommunalNamesDefinitionRecord : Record
+    {
+        public CommunalNameDefinition[] Definitions { get; private set; }
+
+        internal CommunalNamesDefinitionRecord(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            var defs = new List<CommunalNameDefinition>();
+            while (!reader.IsEOF)
+            {
+                var def = new CommunalNameDefinition();
+                def.Name = reader.ReadPrefixedString();
+                def.TypeIndex = reader.ReadIndex();
+                def.DataType = reader.ReadByte();
+                def.ElementCount = ReadEncodedInteger(reader);
+                if (def.DataType == 0x61) // FAR data: count, elemsize
+                    def.ElementSize = ReadEncodedInteger(reader);
+                else
+                    def.ElementSize = 1;
+                defs.Add(def);
+            }
+            this.Definitions = defs.ToArray();
+        }
+
+        private static UInt32 ReadEncodedInteger(RecordReader reader)
+        {
+            byte b = reader.ReadByte();
+            if (b == 0x81)
+                return reader.ReadUInt16();
+            else if (b == 0x84)
+                return reader.ReadUInt24();
+            else if (b == 0x88)
+                return reader.ReadUInt32();
+            else
+                return b;
+        }
+    }
+
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public struct CommunalNameDefinition
+    {
+        public string Name { get; internal set; }
+        public ushort TypeIndex { get; internal set; }
+        public byte DataType { get; internal set; }
+        public UInt32 ElementCount { get; internal set; }
+        public UInt32 ElementSize { get; internal set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    public class LocalExternalNamesDefinitionRecord : ExternalNamesDefinitionRecord
+    {
+        internal LocalExternalNamesDefinitionRecord(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+        }
+    }
+
+    /// <summary>
     /// Defines public symbols in this object module. The symbols are also
     /// available for export if so indicated in an EXPDEF comment record.
     /// </summary>
     public class PublicNameDefinitionRecord : Record
     {
-        //public int BaseGroupIndex { get; private set; }
-        //public int BaseSegmentIndex { get; private set; }
-        //public UInt16 BaseSegmentAddress { get; private set; }
         public SegmentDefinition BaseSegment { get; private set; }
         public GroupDefinition BaseGroup { get; private set; }
         public PublicSymbolEntry[] Symbols { get; private set; }
@@ -554,10 +672,10 @@ namespace Disassembler.Omf
             List<PublicSymbolEntry> symbols = new List<PublicSymbolEntry>();
             while (!reader.IsEOF)
             {
-                string name = reader.ReadPrefixedString();
-                int offset = reader.ReadUInt16();
-                int typeIndex = reader.ReadIndex();
-                PublicSymbolEntry symbol = new PublicSymbolEntry(name, offset, typeIndex);
+                PublicSymbolEntry symbol = new PublicSymbolEntry();
+                symbol.Name = reader.ReadPrefixedString();
+                symbol.Offset = reader.ReadUInt16Or32();
+                symbol.TypeIndex = reader.ReadIndex();
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
@@ -566,20 +684,22 @@ namespace Disassembler.Omf
 
     public class PublicSymbolEntry
     {
-        public string Name { get; private set; }
-        public int TypeIndex { get; private set; }
-        public int Offset { get; private set; }
-
-        public PublicSymbolEntry(string name, int offset, int typeIndex)
-        {
-            this.Name = name;
-            this.Offset = offset;
-            this.TypeIndex = TypeIndex;
-        }
+        public string Name { get; internal set; }
+        public UInt32 Offset { get; internal set; }
+        public int TypeIndex { get; internal set; }
 
         public override string ToString()
         {
             return string.Format("{0}:{1}", Name, TypeIndex);
+        }
+    }
+
+    public class LocalPublicNameDefinitionRecord : PublicNameDefinitionRecord
+    {
+        internal LocalPublicNameDefinitionRecord(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
         }
     }
 
@@ -1047,5 +1167,62 @@ namespace Disassembler.Omf
 
             // TODO: parse LIDATA (recursive; a bit messy)
         }
+    }
+
+    public class COMDATExternalNamesDefinitionRecord : Record
+    {
+        public SymbolEntry[] Symbols { get; private set; }
+
+        internal COMDATExternalNamesDefinitionRecord(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            List<SymbolEntry> symbols = new List<SymbolEntry>();
+            while (!reader.IsEOF)
+            {
+                UInt16 nameIndex = reader.ReadIndex();
+                if (nameIndex == 0 || nameIndex > context.Names.Count)
+                    throw new InvalidDataException("LogicalNameIndex is out of range.");
+
+                UInt16 typeIndex = reader.ReadIndex();
+                SymbolEntry symbol = new SymbolEntry(context.Names[nameIndex - 1], typeIndex);
+                symbols.Add(symbol);
+            }
+            this.Symbols = symbols.ToArray();
+        }
+    }
+
+    public class InitializedCommunalDataRecordpublic : Record
+    {
+        internal InitializedCommunalDataRecordpublic(
+            RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            // TODO: parse contents.
+        }
+    }
+
+    public class AliasDefinitionRecord : Record
+    {
+        public AliasDefinition[] Aliases { get; private set; }
+
+        internal AliasDefinitionRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            List<AliasDefinition> aliases = new List<AliasDefinition>();
+            while (!reader.IsEOF)
+            {
+                AliasDefinition alias = new AliasDefinition();
+                alias.AliasName = reader.ReadPrefixedString();
+                alias.SubstituteName = reader.ReadPrefixedString();
+            }
+            this.Aliases = aliases.ToArray();
+        }
+    }
+
+    public struct AliasDefinition
+    {
+        public string AliasName { get; internal set; }
+        public string SubstituteName { get; internal set; }
     }
 }
