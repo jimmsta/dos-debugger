@@ -8,49 +8,122 @@ namespace Disassembler.Omf
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SegmentDefinition
     {
-        public string Name { get; internal set; }
-        public string Class { get; internal set; }
-        public string Overlay { get; internal set; }
-        public UInt16 FrameNumber { get; internal set; }
+        public string SegmentName { get; internal set; }
+        public string ClassName { get; internal set; }
+
+        /// <summary>
+        /// Ignored by MS LINK.
+        /// </summary>
+        [Browsable(false)]
+        public string OverlayName { get; internal set; }
+
+        /// <summary>
+        /// Gets the start address of an absolute segment. This value is only
+        /// relevant if Alignment is Absolute.
+        /// </summary>
+        public X86Codec.Pointer StartAddress { get; internal set; }
         public SegmentAlignment Alignment { get; internal set; }
         public SegmentCombination Combination { get; internal set; }
+
+        /// <summary>
+        /// Gets the length (in bytes) of the logical segment. This length
+        /// does not include COMDAT records. If COMDAT records are present,
+        /// their size should be added to this length.
+        /// </summary>
         public long Length { get; internal set; }
+
+        [Browsable(false)]
         public bool IsUse32 { get; internal set; }
 
         public override string ToString()
         {
-            return Name;
+            return string.Format("{0}:{1}", SegmentName, ClassName);
         }
     }
 
+#if false
+    // todo: make a general enum for alignment, i.e.
+    public enum Alignment
+    {
+        None = 0, // irrelevant or default
+        Byte = 1,
+        Word = 2,
+        DWord = 4,
+        QWord = 8,
+        Paragraph = 16, // i.e. dqword
+        //Page = 256,
+    }
+#endif
+
+    /// <summary>
+    /// Specifies the alignment requirement of a relocatable LSEG (logical
+    /// segment).
+    /// </summary>
     public enum SegmentAlignment : byte
     {
+        /// <summary>
+        /// Indicates a non-relocatable, absolute LSEG. This mode is not
+        /// supported by MS LINK.
+        /// </summary>
         Absolute = 0,
+
+        /// <summary>
+        /// Indicates a relocatable, byte aligned LSEG.
+        /// </summary>
         ByteAligned = 1,
+
+        /// <summary>
+        /// Indicates a relocatable, word aligned LSEG.
+        /// </summary>
         WordAligned = 2,
+
+        /// <summary>
+        /// Indicates a relocatable, paragraph (16 bytes) aligned LSEG.
+        /// </summary>
         ParagraphAligned = 3,
+
+        /// <summary>
+        /// Indicates a relocatable, page aligned LSEG. The size of a page is
+        /// 256 bytes for Intel, and 4KB for IBM.
+        /// </summary>
         PageAligned = 4,
+
+        /// <summary>
+        /// Indicates a relocatable, dword aligned LSEG.
+        /// </summary>
         DWordAligned = 5,
     }
 
+    /// <summary>
+    /// Specifies how the linker should combine two segments with the same
+    /// name and class.
+    /// </summary>
     public enum SegmentCombination : byte
     {
         /// <summary>Do not combine with any other program segment.</summary>
         Private = 0,
 
         /// <summary>
-        /// Combine by appending at an offset that meets the alignment
-        /// requirement.
+        /// Combine by appending one segment after another at a suitably
+        /// aligned location. This may leave a gap in between the two
+        /// segments.
         /// </summary>
         Public = 2,
 
         /// <summary>Same as Public.</summary>
         Public2 = 4,
 
-        /// <summary>Combine by appending at a byte-aligned offset.</summary>
+        /// <summary>
+        /// Same as Public, but always use byte alignment. As a result, this
+        /// combination method doesn't leave a gap in between the segments.
+        /// </summary>
         Stack = 5,
 
-        /// <summary>Combine by overlay using maximum size.</summary>
+        /// <summary>
+        /// Combine by overlapping the two segments. They either have the same
+        /// start address or the same end address. The combine segment size is
+        /// the larger size of the two.
+        /// </summary>
         Common = 6,
 
         /// <summary>Same as Public.</summary>
@@ -136,8 +209,19 @@ namespace Disassembler.Omf
             }
             else
             {
-                return string.Format("{0} @ {1}+{2:X}h", Name, BaseSegment.Name, Offset);
+                return string.Format("{0} @ {1}+{2:X}h", Name, BaseSegment.SegmentName, Offset);
             }
         }
+    }
+
+    public enum MemoryModel
+    {
+        Unknown = 0,
+        Tiny,
+        Small,
+        Medium,
+        Compact,
+        Large,
+        Huge
     }
 }

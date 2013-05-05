@@ -44,7 +44,7 @@ namespace DosDebugger
             root.Tag = library;
             foreach (var module in library.Modules)
             {
-                TreeNode nodeModule = root.Nodes.Add(module.Name);
+                TreeNode nodeModule = root.Nodes.Add(module.ObjectName);
                 nodeModule.Tag = module;
                 foreach (var sym in module.PublicNames)
                 {
@@ -105,7 +105,7 @@ namespace DosDebugger
             byte[] code = null;
             foreach (var seg in module.SegmentDefinitions)
             {
-                if (seg.Class == "CODE")
+                if (seg.ClassName == "CODE")
                 {
                     code = map[seg];
                     break;

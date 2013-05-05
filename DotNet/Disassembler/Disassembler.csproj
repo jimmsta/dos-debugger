@@ -75,6 +75,7 @@
     <Compile Include="Disassembler.cs" />
     <Compile Include="BinaryImage.cs" />
     <Compile Include="MZLoader.cs" />
+    <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\Loader.cs" />
     <Compile Include="Omf\Records.cs" />
     <Compile Include="Omf\Types.cs" />

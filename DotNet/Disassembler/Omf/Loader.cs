@@ -38,6 +38,7 @@ namespace Disassembler
             ObjectModule module = new ObjectModule();
             List<Omf.Record> records = new List<Omf.Record>();
             Omf.RecordContext context = new Omf.RecordContext();
+            context.Module = module;
             module.Context = context;
 
             while (true)
@@ -58,14 +59,16 @@ namespace Disassembler
             module.Records = records.ToArray();
 
             // Convert the records to the information we need.
+#if false
             foreach (Omf.Record r in records)
             {
                 if (r.RecordNumber == Omf.RecordNumber.THEADR)
                 {
-                    module.Name = ((Omf.TranslatorHeaderRecord)r).Name;
+                    //module.Name = ((Omf.TranslatorHeaderRecord)r).Name;
                     break;
                 }
             }
+#endif
 
             return module;
         }
@@ -108,7 +111,10 @@ namespace Disassembler
         internal Omf.RecordContext Context { get; set; }
 
         [Browsable(false)]
-        public string Name { get; internal set; }
+        public string ObjectName { get; internal set; }
+
+        [Browsable(false)]
+        public string SourceName { get; internal set; }
 
         public Omf.Record[] Records { get; internal set; }
         
@@ -141,7 +147,10 @@ namespace Disassembler
 
         public override string ToString()
         {
-            return this.Name;
+            if (this.ObjectName == null)
+                return this.SourceName;
+            else
+                return string.Format("{0} ({1})", this.ObjectName, this.SourceName);
         }
     }
 

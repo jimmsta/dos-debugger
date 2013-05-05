@@ -198,6 +198,13 @@ namespace Disassembler.Omf
             return remaining;
         }
 
+        public string ReadToEndAsString()
+        {
+            string s = Encoding.ASCII.GetString(Data, index, Data.Length - index);
+            index = Data.Length;
+            return s;
+        }
+
         public UInt16 ReadUInt16()
         {
             if (index + 2 > Data.Length)
@@ -315,6 +322,8 @@ namespace Disassembler.Omf
 
         //public Record LastDataRecord; // last LEDATA or LIDATA record
         // this is used by FIXUPP record to know which record to fix up
+
+        public ObjectModule Module { get; set; }
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -493,6 +502,7 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             this.Name = reader.ReadPrefixedString();
+            context.Module.SourceName = Name;
         }
     }
 
@@ -507,23 +517,6 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             this.Name = reader.ReadPrefixedString();
-        }
-    }
-
-    public class CommentRecord : Record
-    {
-        public bool IsPreserved { get; private set; }
-        public bool IsHidden { get; private set; }
-
-        internal CommentRecord(RecordReader reader, RecordContext context)
-            : base(reader, context)
-        {
-            byte commentType = reader.ReadByte();
-            this.IsPreserved = (commentType & 0x80) != 0;
-            this.IsHidden = (commentType & 0x40) != 0;
-
-            byte commentClass = reader.ReadByte();
-            // TODO: complete the subtypes...
         }
     }
 
@@ -797,8 +790,13 @@ namespace Disassembler.Omf
 
             if (def.Alignment == SegmentAlignment.Absolute)
             {
-                def.FrameNumber = reader.ReadUInt16();
-                reader.ReadByte(); // Offset; ignored
+                UInt16 frame = reader.ReadUInt16();
+                reader.ReadByte(); // Offset is ignored by MS LINK
+                def.StartAddress = new X86Codec.Pointer(frame, 0);
+            }
+            else
+            {
+                def.StartAddress = X86Codec.Pointer.Invalid;
             }
 
             long length = reader.ReadUInt16Or32();
@@ -815,19 +813,19 @@ namespace Disassembler.Omf
             if (segmentNameIndex > context.Names.Count)
                 throw new InvalidDataException("SegmentNameIndex out of range.");
             if (segmentNameIndex > 0)
-                def.Name = context.Names[segmentNameIndex - 1];
+                def.SegmentName = context.Names[segmentNameIndex - 1];
 
             int classNameIndex = reader.ReadIndex();
             if (classNameIndex > context.Names.Count)
                 throw new InvalidDataException("ClassNameIndex out of range.");
             if (classNameIndex > 0)
-                def.Class = context.Names[classNameIndex - 1];
+                def.ClassName = context.Names[classNameIndex - 1];
 
             int overlayNameIndex = reader.ReadIndex();
             if (overlayNameIndex > context.Names.Count)
                 throw new InvalidDataException("OverlayNameIndex is out of range.");
             if (overlayNameIndex > 0)
-                def.Overlay = context.Names[overlayNameIndex - 1];
+                def.OverlayName = context.Names[overlayNameIndex - 1];
 
             this.Definition = def;
             context.SegmentDefinitions.Add(def);

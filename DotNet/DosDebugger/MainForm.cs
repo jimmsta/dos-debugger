@@ -114,7 +114,7 @@ namespace DosDebugger
             //lvListing.SetWindowTheme("explorer");
             cbBookmarks.SelectedIndex = 0;
             cbFind.SelectedIndex = 0;
-            string fileName = @"E:\Dev\Projects\DosDebugger\Reference\H.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
             DoLoadFile(fileName);
             this.WindowState = FormWindowState.Maximized;
 
@@ -398,7 +398,7 @@ namespace DosDebugger
             f.WindowState = FormWindowState.Maximized;
             f.Show(this);
 #else
-            string fileName = @"..\..\..\..\Reference\SLIBC7.LIB";
+            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             OmfLoader omf = new OmfLoader(fileName);
             propertiesWindow.SelectedObject = omf.Library;
 
