@@ -318,7 +318,9 @@ namespace Disassembler.Omf
         // THREAD records.
         // Records 0-3 are for TARGET threads.
         // Records 4-7 are for FRAME threads.
-        public readonly ThreadDefinition[] Threads = new ThreadDefinition[8];
+        public readonly ThreadDefinition[] FrameThreads = new ThreadDefinition[4];
+
+        public readonly ThreadDefinition[] TargetThreads = new ThreadDefinition[4];
 
         //public Record LastDataRecord; // last LEDATA or LIDATA record
         // this is used by FIXUPP record to know which record to fix up
@@ -902,17 +904,18 @@ namespace Disassembler.Omf
                 {
                     ThreadDefinition thread = ParseThreadSubrecord(reader);
                     threads.Add(thread);
-                    context.Threads[thread.ThreadNumber] = thread;
-                    // TODO: handle if thread subrecord and fixup subrecords interleave!
+                    if (thread.Kind == FixupThreadKind.Target)
+                        context.TargetThreads[thread.ThreadNumber] = thread;
+                    else
+                        context.FrameThreads[thread.ThreadNumber] = thread;
                 }
                 else
                 {
-                    FixupDefinition fixup = ParseFixupSubrecord(reader);
+                    FixupDefinition fixup = ParseFixupSubrecord(reader, context);
                     fixups.Add(fixup);
                 }
-                break;
             }
-            // fixup info == istemplate // usetemplate
+         
             this.Threads = threads.ToArray();
             this.Fixups = fixups.ToArray();
         }
@@ -922,18 +925,18 @@ namespace Disassembler.Omf
             ThreadDefinition thread = new ThreadDefinition();
 
             byte b = reader.ReadByte();
-            thread.Kind = ((b & 0x40) == 0) ? FixupKind.Target : FixupKind.Frame;
-            thread.IndexType = (IndexType)((b >> 2) & 3);
+            thread.Kind = ((b & 0x40) == 0) ? FixupThreadKind.Target : FixupThreadKind.Frame;
+            thread.Method = (byte)((b >> 2) & 3);
             thread.ThreadNumber = (byte)(b & 3);
-            
-            if ((int)thread.IndexType <= 2)
-                thread.Index = reader.ReadIndex();
+
+            if (thread.Method <= 2) // TBD: should be 3 for intel
+                thread.IndexOrFrame = reader.ReadIndex();
 
             thread.IsDefined = true;
             return thread;
         }
 
-        private FixupDefinition ParseFixupSubrecord(RecordReader reader)
+        private FixupDefinition ParseFixupSubrecord(RecordReader reader, RecordContext context)
         {
             FixupDefinition fixup = new FixupDefinition();
 
@@ -950,27 +953,56 @@ namespace Disassembler.Omf
             if (useFrameThread)
             {
                 int frameNumber = (b >> 4) & 0x3;
+                ThreadDefinition thread = context.FrameThreads[frameNumber];
+                if (!thread.IsDefined)
+                    throw new InvalidDataException("Frame thread " + frameNumber + " is not defined.");
+
+                FixupFrameSpec spec = new FixupFrameSpec();
+                spec.Method = (FixupFrameSpecFormat)thread.Method;
+                spec.IndexOrFrame = thread.IndexOrFrame;
+                fixup.Frame = spec;
             }
             else
             {
-                IndexType frameMethod = (IndexType)((b >> 4) & 7);
-                if ((int)frameMethod <= 3)
-                    fixup.FrameIndex = reader.ReadIndex();
+                FixupFrameSpec spec = new FixupFrameSpec();
+                spec.Method = (FixupFrameSpecFormat)((b >> 4) & 7);
+                if ((int)spec.Method <= 3)
+                {
+                    spec.IndexOrFrame = reader.ReadIndex();
+                }
+                fixup.Frame = spec;
             }
 
             bool useTargetThread = (b & 0x08) != 0;
             if (useTargetThread)
             {
                 bool hasTargetDisplacement = (b & 0x04) != 0;
-                int frameNumber = b & 3;
+                int targetNumber = b & 3;
+                ThreadDefinition thread = context.TargetThreads[targetNumber];
+                if (!thread.IsDefined)
+                    throw new InvalidDataException("Target thread " + targetNumber + " is not defined.");
+
+                FixupTargetSpec spec = new FixupTargetSpec();
+                spec.Method = (FixupTargetSpecFormat)((int)thread.Method & 3);
+                if (hasTargetDisplacement)
+                    spec.Method = (FixupTargetSpecFormat)((int)spec.Method | 4);
+                spec.IndexOrFrame = thread.IndexOrFrame;
+                if ((int)spec.Method <= 3)
+                {
+                    spec.Displacement = reader.ReadUInt16Or32();
+                }
+                fixup.Target = spec;
             }
             else
             {
-                FixupTargetSpec targetMethod = (FixupTargetSpec)(b & 7);
-                fixup.TargetSpec = targetMethod;
-                fixup.TargetIndex = reader.ReadIndex();
-                if ((int)targetMethod <= 3)
-                    fixup.TargetDisplacement = reader.ReadUInt16Or32();
+                FixupTargetSpec spec = new FixupTargetSpec();
+                spec.Method = (FixupTargetSpecFormat)(b & 7);
+                spec.IndexOrFrame = reader.ReadIndex();
+                if ((int)spec.Method <= 3)
+                {
+                    spec.Displacement = reader.ReadUInt16Or32();
+                }
+                fixup.Target = spec;
             }
             return fixup;
         }
@@ -987,19 +1019,18 @@ namespace Disassembler.Omf
     /// If a thread with the same number is defined again, it overwrites the
     /// previous definition.
     /// </summary>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public struct ThreadDefinition
     {
-        public bool IsDefined; // whether this entry is defined
-        public byte ThreadNumber; // 0 - 3
+        public bool IsDefined { get; internal set; } // whether this entry is defined
+        public byte ThreadNumber { get; internal set; } // 0 - 3
+        public FixupThreadKind Kind { get; internal set; }
 
-        public FixupKind Kind;
-        //public TargetThreadMethod Method;
-        public IndexType IndexType;
-        
-        public UInt16 Index;
+        public byte Method { get; internal set; } // target method or frame method
+        public UInt16 IndexOrFrame { get; internal set; }
     }
 
-    public enum FixupKind : byte
+    public enum FixupThreadKind : byte
     {
         Target = 0,
         Frame = 1
@@ -1011,18 +1042,8 @@ namespace Disassembler.Omf
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
         public FixupLocation Location { get; internal set; } // indicates what to fix up
         public FixupMode Mode { get; internal set; }
-
-        public FixupTargetSpec TargetSpec { get; internal set; }
-
-        public UInt16 FrameIndex { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
-        /// the referent to find the target.
-        /// </summary>
-        public UInt16 TargetIndex { get; internal set; }
-
-        public UInt32 TargetDisplacement { get; internal set; }
+        public FixupTargetSpec Target { get; internal set; }
+        public FixupFrameSpec Frame { get; internal set; }
     }
 
     public enum FixupMode : byte
@@ -1047,34 +1068,46 @@ namespace Disassembler.Omf
         LoaderResolvedDWordOffset = 13, // 32-bit loader-resolved offset, treated as Location=9
     }
 
-    /// <summary>
-    /// Specifies which ordered collection an index refers to.
-    /// </summary>
-    public enum IndexType : byte
+    public struct FixupTargetSpec
     {
-        SEGDEFIndex = 0,
-        GRPDEFIndex = 1,
-        EXTDEFIndex = 2,
-        ExplicitIndex = 3, // not supported
+        public FixupTargetSpecFormat Method { get; internal set; }
 
         /// <summary>
-        /// (Used only for FRAME fix-ups) The FRAME is determined by the
-        /// segment index of the previous LEDATA or LIDATA record (that is,
-        /// the segment in which the location is defined).
+        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
+        /// the referent to find the target. If Method is Absolute, this
+        /// contains the frame number.
         /// </summary>
-        F4 = 4,
+        public UInt16 IndexOrFrame { get; internal set; }
+        public UInt32 Displacement { get; internal set; }
 
-        /// <summary>
-        /// (Used only for FRAME fix-ups) The FRAME is determined by the
-        /// TARGET's segment, group, or external index.
-        /// </summary>
-        F5 = 5,
+        public override string ToString()
+        {
+            switch (Method)
+            {
+                case FixupTargetSpecFormat.Absolute:
+                    return string.Format("{0:X4}:{1:X4}", IndexOrFrame, Displacement);
+                case FixupTargetSpecFormat.SegmentPlusDisplacement:
+                    return string.Format("SEG({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetSpecFormat.GroupPlusDisplacement:
+                    return string.Format("GRP({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetSpecFormat.ExternalPlusDisplacement:
+                    return string.Format("EXT({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetSpecFormat.SegmentWithoutDisplacement:
+                    return string.Format("SEG({0})", IndexOrFrame);
+                case FixupTargetSpecFormat.GroupWithoutDisplacement:
+                    return string.Format("GRP({0})", IndexOrFrame);
+                case FixupTargetSpecFormat.ExternalWithoutDisplacement:
+                    return string.Format("EXT({0})", IndexOrFrame);
+                default:
+                    return "(invalid)";
+            }
+        }
     }
 
     /// <summary>
     /// Specifies how to determine the TARGET of a fixup.
     /// </summary>
-    public enum FixupTargetSpec : byte
+    public enum FixupTargetSpecFormat : byte
     {
         /// <summary>
         /// T0: INDEX(SEGDEF),DISP -- The TARGET is the DISP'th byte in the
@@ -1121,8 +1154,83 @@ namespace Disassembler.Omf
         ExternalWithoutDisplacement = 6,
     }
 
-    public enum FixupFrameSpec : byte
+    public struct FixupFrameSpec
     {
+        public FixupFrameSpecFormat Method { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
+        /// the referent to find the frame. This is used only if Method is
+        /// one of 0, 1, or 2. If Method is 3, then this field contains an
+        /// absolute frame number. If Method is 4-7, this field is not used.
+        /// </summary>
+        public UInt16 IndexOrFrame { get; internal set; }
+
+        public override string ToString()
+        {
+            switch (Method)
+            {
+                case FixupFrameSpecFormat.SegmentIndex:
+                    return string.Format("SEG({0})", IndexOrFrame);
+                case FixupFrameSpecFormat.GroupIndex:
+                    return string.Format("GRP({0})", IndexOrFrame);
+                case FixupFrameSpecFormat.ExternalIndex:
+                    return string.Format("EXT({0})", IndexOrFrame);
+                case FixupFrameSpecFormat.ExplicitFrame:
+                    return string.Format("{0:X4}", IndexOrFrame);
+                case FixupFrameSpecFormat.UseLocation:
+                    return "LOCATION";
+                case FixupFrameSpecFormat.UseTarget:
+                    return "TARGET";
+                default:
+                    return "(invalid)";
+            }
+        }
+    }
+
+    public enum FixupFrameSpecFormat : byte
+    {
+        /// <summary>
+        /// The FRAME is the canonical frame of the LSEG (logical segment)
+        /// identified by Index.
+        /// </summary>
+        SegmentIndex = 0,
+
+        /// <summary>
+        /// The FRAME is the canonical frame of the group identified by Index.
+        /// </summary>
+        GroupIndex = 1,
+
+        /// <summary>
+        /// The FRAME is determined according to the External Name's PUBDEF
+        /// record. There are three cases:
+        /// a) If there is an associated group with the symbol, the canonical
+        ///    frame of that group is used; otherwise,
+        /// b) If the symbol is defined relative to some LSEG, the canonical
+        ///    frame of the LSEG is used.
+        /// c) If the symbol is defined at an absolute address, the frame of
+        ///    this absolute address is used.
+        /// </summary>
+        ExternalIndex = 2,
+
+        /// <summary>
+        /// The FRAME is specified explicitly by a number. This method is not
+        /// supported by any linker.
+        /// </summary>
+        ExplicitFrame = 3,
+
+        /// <summary>
+        /// The FRAME is the canonic FRAME of the LSEG containing LOCATION.
+        /// If the location is defined by an absolute address, the frame 
+        /// component of that address is used.
+        /// </summary>
+        UseLocation = 4,
+
+        /// <summary>
+        /// The FRAME is determined by the TARGET's segment, group, or
+        /// external index.
+        /// </summary>
+        UseTarget = 5,
     }
 
     /// <summary>
@@ -1173,7 +1281,6 @@ namespace Disassembler.Omf
             // TODO: parse LIDATA (recursive; a bit messy)
         }
     }
-
 
     public class InitializedCommunalDataRecordpublic : Record
     {
