@@ -48,7 +48,27 @@ namespace DosDebugger
                 nodeModule.Tag = module;
                 foreach (var sym in module.PublicNames)
                 {
-                    TreeNode node = nodeModule.Nodes.Add(sym.ToString());
+                    // Try demangle the symbol's name.
+                    string s = sym.Name;
+                    if (sym.BaseSegment != null && sym.BaseSegment.ClassName == "CODE")
+                    {
+                        var sig = NameMangler.Demangle(s);
+                        if (sig != null)
+                            s = sig.Name;
+                    }
+
+                    if (sym.BaseSegment == null)
+                    {
+                        s = string.Format("{0} : {1:X4}:{2:X4}",
+                            s, sym.BaseFrame, sym.Offset);
+                    }
+                    else
+                    {
+                        s = string.Format("{0} : {1}+{2:X}h",
+                            s, sym.BaseSegment.SegmentName, sym.Offset);
+                    }
+
+                    TreeNode node = nodeModule.Nodes.Add(s);
                     node.Tag = sym;
                 }
             }
