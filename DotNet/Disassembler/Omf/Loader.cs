@@ -5,7 +5,7 @@ using System.Text;
 using System.IO;
 using System.ComponentModel;
 
-namespace Disassembler
+namespace Disassembler.Omf
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class OmfLoader
@@ -37,8 +37,7 @@ namespace Disassembler
         {
             ObjectModule module = new ObjectModule();
             List<Omf.Record> records = new List<Omf.Record>();
-            Omf.RecordContext context = new Omf.RecordContext();
-            context.Module = module;
+            Omf.RecordContext context = new Omf.RecordContext(module);
             module.Context = context;
 
             while (true)
@@ -110,39 +109,67 @@ namespace Disassembler
     {
         internal Omf.RecordContext Context { get; set; }
 
-        [Browsable(false)]
+        internal readonly List<LogicalSegment> segments
+            = new List<LogicalSegment>();
+
+        internal readonly List<GroupDefinition> groups
+            = new List<GroupDefinition>();
+
+        internal readonly List<PublicNameDefinition> publicNames
+            = new List<PublicNameDefinition>();
+
+        public Record[] Records { get; internal set; }
+
+        /// <summary>
+        /// Gets the name of the object module in the library. This name is
+        /// defined by the LIBMOD subrecord of COMENT.
+        /// </summary>
         public string ObjectName { get; internal set; }
 
-        [Browsable(false)]
+        /// <summary>
+        /// Gets the source file name of the object module. This name is
+        /// defined in the THEADR record.
+        /// </summary>
         public string SourceName { get; internal set; }
 
-        public Omf.Record[] Records { get; internal set; }
-        
-        public Omf.ExternalNameDefinition[] ExternalNames
+        /// <summary>
+        /// Gets a list of logical segments defined in this module. A logical
+        /// segment is defined by SEGDEF records.
+        /// </summary>
+        public LogicalSegment[] Segments
+        {
+            get { return segments.ToArray(); }
+        }
+
+        /// <summary>
+        /// Gets a list of groups defined in this module. A group is defined
+        /// by GRPDEF records.
+        /// </summary>
+        public GroupDefinition[] Groups
+        {
+            get { return groups.ToArray(); }
+        }
+
+        public ExternalNameDefinition[] ExternalNames
         {
             get { return Context.ExternalNames.ToArray(); }
         }
 
-        [Browsable(false)]
-        public Omf.ExternalNameDefinition[] LocalExternalNames
+        public PublicNameDefinition[] PublicNames
         {
-            get { return Context.LocalExternalNames.ToArray(); }
+            get { return publicNames.ToArray(); }
         }
 
-        public Omf.PublicNameDefinition[] PublicNames
+        [Browsable(false)]
+        public ExternalNameDefinition[] LocalExternalNames
         {
-            get { return Context.PublicNames.ToArray(); }
+            get { return Context.LocalExternalNames.ToArray(); }
         }
 
         [Browsable(false)]
         public Omf.PublicNameDefinition[] LocalPublicNames
         {
             get { return Context.LocalPublicNames.ToArray(); }
-        }
-
-        public Omf.SegmentDefinition[] SegmentDefinitions
-        {
-            get { return Context.SegmentDefinitions.ToArray(); }
         }
 
         public override string ToString()

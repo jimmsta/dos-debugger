@@ -96,46 +96,22 @@ namespace DosDebugger
             // It is required that the data do not overlap, and do not
             // exceed segment boundary (here we only support 16-bit segments,
             // whose maximum size is 64KB).
-            var map = new Dictionary<SegmentDefinition, byte[]>();
-            foreach (var seg in module.SegmentDefinitions)
-            {
-                map.Add(seg, new byte[seg.Length]);
-            }
-
-            // Fill the segment with data from LEDATA/LIDATA records.
-            foreach (var record in module.Records)
-            {
-                if (record.RecordNumber == RecordNumber.LEDATA ||
-                    record.RecordNumber == RecordNumber.LEDATA32)
-                {
-                    var r = (LogicalEnumeratedDataRecord)record;
-                    if (r.Segment == null)
-                        continue;
-                    
-                    var seg = r.Segment;
-                    if (r.DataOffset + r.Data.Length > seg.Length)
-                        throw new InvalidOperationException();
-
-                    byte[] segData = map[seg];
-                    Array.Copy(r.Data, 0, segData, r.DataOffset, r.Data.Length);
-                }
-            }
 
             // Find the first CODE segment.
-            byte[] code = null;
-            foreach (var seg in module.SegmentDefinitions)
+            LogicalSegment codeSegment = null;
+            foreach (var seg in module.Segments)
             {
                 if (seg.ClassName == "CODE")
                 {
-                    code = map[seg];
+                    codeSegment = seg;
                     break;
                 }
             }
-            if (code == null)
+            if (codeSegment == null)
                 return;
 
             // Create a BinaryImage with the code.
-            BinaryImage image = new BinaryImage(code, new X86Codec.Pointer(0, 0));
+            BinaryImage image = new BinaryImage(codeSegment.Data, new X86Codec.Pointer(0, 0));
 
             // Disassemble the instructions literally. Note that this should
             // be improved, but we don't do that yet.

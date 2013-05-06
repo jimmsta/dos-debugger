@@ -5,10 +5,23 @@ using System.ComponentModel;
 
 namespace Disassembler.Omf
 {
+    /// <summary>
+    /// Contains information about a logical segment defined in an object
+    /// module.
+    /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class SegmentDefinition
+    public class LogicalSegment
     {
+        /// <summary>
+        /// Gets the name of the segment. The segment name, together with
+        /// class name, uniquely identifies the segment.
+        /// </summary>
         public string SegmentName { get; internal set; }
+
+        /// <summary>
+        /// Gets the name of the segment's class. The segment name, together
+        /// with class name, uniquely identifies the segment.
+        /// </summary>
         public string ClassName { get; internal set; }
 
         /// <summary>
@@ -17,13 +30,14 @@ namespace Disassembler.Omf
         [Browsable(false)]
         public string OverlayName { get; internal set; }
 
+        public SegmentAlignment Alignment { get; internal set; }
+        public SegmentCombination Combination { get; internal set; }
+
         /// <summary>
         /// Gets the start address of an absolute segment. This value is only
         /// relevant if Alignment is Absolute.
         /// </summary>
         public X86Codec.Pointer StartAddress { get; internal set; }
-        public SegmentAlignment Alignment { get; internal set; }
-        public SegmentCombination Combination { get; internal set; }
 
         /// <summary>
         /// Gets the length (in bytes) of the logical segment. This length
@@ -34,6 +48,8 @@ namespace Disassembler.Omf
 
         [Browsable(false)]
         public bool IsUse32 { get; internal set; }
+
+        public byte[] Data { get; internal set; }
 
         public override string ToString()
         {
@@ -100,7 +116,10 @@ namespace Disassembler.Omf
     /// </summary>
     public enum SegmentCombination : byte
     {
-        /// <summary>Do not combine with any other program segment.</summary>
+        /// <summary>
+        /// Do not combine with any other program segment, even if they have
+        /// the same segment name and class name.
+        /// </summary>
         Private = 0,
 
         /// <summary>
@@ -130,6 +149,25 @@ namespace Disassembler.Omf
         Public3 = 7,
     }
 
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class GroupDefinition
+    {
+        /// <summary>
+        /// Gets the name of the group. Groups from different object modules
+        /// are combined if their names are identical.
+        /// </summary>
+        public string Name { get; internal set; }
+
+        /// <summary>
+        /// Gets the logical segments contained in this group.
+        /// </summary>
+        public LogicalSegment[] Segments { get; internal set; }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
 
     /// <summary>
     /// Defines a symbolic name.
@@ -179,7 +217,7 @@ namespace Disassembler.Omf
         /// beginning of BaseSegment. If BaseSegment is null, the Offset field
         /// is relative to the physical frame indicated by FrameNumber.
         /// </summary>
-        public SegmentDefinition BaseSegment { get; internal set; }
+        public LogicalSegment BaseSegment { get; internal set; }
 
         /// <summary>
         /// Gets the group associated with this symbol. Such association is

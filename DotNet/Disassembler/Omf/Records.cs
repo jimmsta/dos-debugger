@@ -10,15 +10,6 @@ namespace Disassembler.Omf
     {
         None = 0,
 
-#if false
-        /// <summary>
-        /// The lowest bit of the record number indicates whether this is a
-        /// 16-bit or 32-bit record. If the lowest bit is 0 (default), the
-        /// record is 16-bit; if the lowest bit is 1, the record is 32-bit.
-        /// </summary>
-        Is32Bit = 1,
-#endif
-
         /// <summary>Translator Header Record</summary>
         THEADR = 0x80,
 
@@ -297,35 +288,32 @@ namespace Disassembler.Omf
     {
         public readonly List<string> Names = new List<string>();
 
-        public readonly List<SegmentDefinition> SegmentDefinitions
-            = new List<SegmentDefinition>();
-
-        public readonly List<GroupDefinition> GroupDefinitions
-            = new List<GroupDefinition>();
-
         public readonly List<ExternalNameDefinition> ExternalNames
             = new List<ExternalNameDefinition>();
 
         public readonly List<ExternalNameDefinition> LocalExternalNames
             = new List<ExternalNameDefinition>();
 
-        public readonly List<PublicNameDefinition> PublicNames
-            = new List<PublicNameDefinition>();
-
         public readonly List<PublicNameDefinition> LocalPublicNames
             = new List<PublicNameDefinition>();
 
-        // THREAD records.
-        // Records 0-3 are for TARGET threads.
-        // Records 4-7 are for FRAME threads.
+        // FRAME threads.
         public readonly ThreadDefinition[] FrameThreads = new ThreadDefinition[4];
 
+        // TARGET threads.
         public readonly ThreadDefinition[] TargetThreads = new ThreadDefinition[4];
 
         //public Record LastDataRecord; // last LEDATA or LIDATA record
         // this is used by FIXUPP record to know which record to fix up
 
-        public ObjectModule Module { get; set; }
+        public ObjectModule Module { get; private set; }
+
+        internal RecordContext(ObjectModule module)
+        {
+            if (module == null)
+                throw new ArgumentNullException("module");
+            this.Module = module;
+        }
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
@@ -697,7 +685,7 @@ namespace Disassembler.Omf
     /// </remarks>
     public class PublicNamesDefinitionRecord : Record
     {
-        public SegmentDefinition BaseSegment { get; private set; }
+        public LogicalSegment BaseSegment { get; private set; }
         public GroupDefinition BaseGroup { get; private set; }
         public UInt16 BaseFrame { get; private set; }
         public PublicNameDefinition[] Symbols { get; private set; }
@@ -706,18 +694,18 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             int baseGroupIndex = reader.ReadIndex();
-            if (baseGroupIndex > context.GroupDefinitions.Count)
+            if (baseGroupIndex > context.Module.groups.Count)
                 throw new InvalidDataException("Group index out of range.");
             if (baseGroupIndex > 0)
-                this.BaseGroup = context.GroupDefinitions[baseGroupIndex - 1];
+                this.BaseGroup = context.Module.groups[baseGroupIndex - 1];
 
             int baseSegmentIndex = reader.ReadIndex();
-            if (baseSegmentIndex > context.SegmentDefinitions.Count)
+            if (baseSegmentIndex > context.Module.segments.Count)
                 throw new InvalidDataException("Segment index out of range.");
             if (baseSegmentIndex == 0)
                 this.BaseFrame = reader.ReadUInt16();
             else
-                this.BaseSegment = context.SegmentDefinitions[baseSegmentIndex - 1];
+                this.BaseSegment = context.Module.segments[baseSegmentIndex - 1];
 
             List<PublicNameDefinition> symbols = new List<PublicNameDefinition>();
             while (!reader.IsEOF)
@@ -732,7 +720,7 @@ namespace Disassembler.Omf
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
-
+            
             if (reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
                 reader.RecordNumber == Omf.RecordNumber.LPUBDEF32)
             {
@@ -740,7 +728,7 @@ namespace Disassembler.Omf
             }
             else
             {
-                context.PublicNames.AddRange(Symbols);
+                context.Module.publicNames.AddRange(Symbols);
             }
         }
     }
@@ -777,12 +765,12 @@ namespace Disassembler.Omf
 
     public class SegmentDefinitionRecord : Record
     {
-        public SegmentDefinition Definition { get; private set; }
+        public LogicalSegment Definition { get; private set; }
 
         internal SegmentDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            SegmentDefinition def = new SegmentDefinition();
+            LogicalSegment def = new LogicalSegment();
 
             byte acbp = reader.ReadByte();
             def.Alignment = (SegmentAlignment)(acbp >> 5);
@@ -810,6 +798,7 @@ namespace Disassembler.Omf
                     length = 0x10000;
             }
             def.Length = length;
+            def.Data = new byte[length];
 
             int segmentNameIndex = reader.ReadIndex();
             if (segmentNameIndex > context.Names.Count)
@@ -830,53 +819,41 @@ namespace Disassembler.Omf
                 def.OverlayName = context.Names[overlayNameIndex - 1];
 
             this.Definition = def;
-            context.SegmentDefinitions.Add(def);
+            context.Module.segments.Add(def);
         }
     }
 
     public class GroupDefinitionRecord : Record
     {
-        [Browsable(false)]
-        public int GroupNameIndex { get; private set; }
-        public string GroupName { get; private set; }
-        public int[] SegmentIndices { get; private set; }
+        public GroupDefinition Definition { get; private set; }
 
         internal GroupDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            GroupNameIndex = reader.ReadIndex();
-            if (GroupNameIndex > context.Names.Count)
-                throw new InvalidDataException();
+            GroupDefinition def = new GroupDefinition();
 
-            if (GroupNameIndex > 0)
-                this.GroupName = context.Names[GroupNameIndex - 1];
+            UInt16 groupNameIndex = reader.ReadIndex();
+            if (groupNameIndex == 0 || groupNameIndex > context.Names.Count)
+            {
+                throw new InvalidDataException("GroupNameIndex is out of range.");
+            }
+            def.Name = context.Names[groupNameIndex - 1];
 
-            List<int> indices = new List<int>();
+            List<LogicalSegment> segments = new List<LogicalSegment>();
             while (!reader.IsEOF)
             {
                 reader.ReadByte(); // 'type' ignored
-                int index = reader.ReadIndex();
-                indices.Add(index);
+                UInt16 segmentIndex = reader.ReadIndex();
+                if (segmentIndex == 0 || segmentIndex > context.Module.segments.Count)
+                {
+                    throw new InvalidDataException("SegmentIndex is out of range.");
+                }
+                segments.Add(context.Module.segments[segmentIndex - 1]);
             }
-            this.SegmentIndices = indices.ToArray();
+            def.Segments = segments.ToArray();
 
-            context.GroupDefinitions.Add(new GroupDefinition(this.GroupName));
-        }
-    }
-
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class GroupDefinition
-    {
-        public string Name { get; private set; }
-
-        public GroupDefinition(string name)
-        {
-            this.Name = name;
-        }
-
-        public override string ToString()
-        {
-            return Name;
+            this.Definition = def;
+            context.Module.groups.Add(def);
         }
     }
 
@@ -1053,19 +1030,44 @@ namespace Disassembler.Omf
     }
 
     /// <summary>
-    /// Specifies the type of location (in particular, size) to fix up.
+    /// Specifies the type of data to fix up in that location.
     /// </summary>
     public enum FixupLocation : byte
     {
-        LowOrderByte = 0, // 8-bit displacement or low byte of 16-bit offset
-        WordOffset = 1, //  16-bit offset.
-        WordSegment = 2, //  16-bit base—logical segment base (selector).
-        FarPtr16 = 3, // 32-bit Long pointer (16-bit base:16-bit offset).
-        HighOrderByte = 4, // (high byte of 16-bit offset). Not supported by MS LINK
-        LoaderResolvedWordOffset = 5, // 16-bit loader-resolved offset, treated as Location=1.
-        DWordOffset = 9, // 32-bit offset.
-        FarPtr32 = 11,// 48-bit pointer (16-bit base:32-bit offset).
-        LoaderResolvedDWordOffset = 13, // 32-bit loader-resolved offset, treated as Location=9
+        /// <summary>
+        /// 8-bit displacement or low byte of 16-bit offset.
+        /// </summary>
+        LowByte = 0,
+
+        /// <summary>16-bit offset.</summary>
+        Offset = 1,
+
+        /// <summary>16-bit base.</summary>
+        Base = 2,
+
+        /// <summary>32-bit pointer (16-bit base:16-bit offset).</summary>
+        Pointer = 3,
+
+        /// <summary>
+        /// High byte of 16-bit offset. Not supported by MS LINK.
+        /// </summary>
+        HighByte = 4,
+
+        /// <summary>
+        /// 16-bit loader-resolved offset, treated as Location=1.
+        /// </summary>
+        LoaderResolvedOffset = 5,
+
+        /// <summary>32-bit offset.</summary>
+        Offset32 = 9,
+
+        /// <summary>48-bit pointer (16-bit base:32-bit offset).</summary>
+        Pointer32 = 11,
+
+        /// <summary>
+        /// 32-bit loader-resolved offset, treated as Location=9.
+        /// </summary>
+        LoaderResolvedOffset32 = 13,
     }
 
     public struct FixupTargetSpec
@@ -1239,22 +1241,29 @@ namespace Disassembler.Omf
     /// </summary>
     public class LogicalEnumeratedDataRecord : Record
     {
-        public SegmentDefinition Segment { get; private set; }
-        public UInt16 SegmentIndex { get; private set; }
+        public LogicalSegment Segment { get; private set; }
         public UInt32 DataOffset { get; private set; }
         public byte[] Data { get; private set; }
 
         internal LogicalEnumeratedDataRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            this.SegmentIndex = reader.ReadIndex();
-            if (SegmentIndex == 0 || SegmentIndex > context.SegmentDefinitions.Count)
+            UInt16 segmentIndex = reader.ReadIndex();
+            if (segmentIndex == 0 || segmentIndex > context.Module.segments.Count)
+            {
                 throw new InvalidDataException("SegmentIndex is out of range.");
-
-            this.Segment = context.SegmentDefinitions[SegmentIndex - 1];
+            }
+            this.Segment = context.Module.segments[segmentIndex - 1];
 
             this.DataOffset = reader.ReadUInt16Or32();
-            this.Data = reader.ReadToEnd();
+            this.Data = reader.ReadToEnd(); // TBD: this can be optimized to
+                                            // reduce extra data copy
+
+            // Fill the segment's data.
+            if (Data.Length + DataOffset > Segment.Length)
+                throw new InvalidDataException("The LEDATA overflows the segment.");
+
+            Array.Copy(Data, 0, Segment.Data, DataOffset, Data.Length);
         }
     }
 
@@ -1272,7 +1281,7 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             this.SegmentIndex = reader.ReadIndex();
-            if (SegmentIndex == 0 || SegmentIndex > context.SegmentDefinitions.Count)
+            if (SegmentIndex == 0 || SegmentIndex > context.Module.segments.Count)
                 throw new InvalidDataException("SegmentIndex is out of range.");
 
             this.DataOffset = reader.ReadUInt16Or32();
