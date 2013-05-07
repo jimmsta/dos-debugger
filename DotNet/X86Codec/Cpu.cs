@@ -7,6 +7,10 @@ namespace X86Codec
     {
     }
 
+    /// <summary>
+    /// Size constants. These values MUST be defined to be the equivalent
+    /// number of bytes.
+    /// </summary>
     public enum CpuSize : ushort
     {
         Default = 0,

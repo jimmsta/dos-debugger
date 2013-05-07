@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Disassembler;
 using Util.Forms;
 using Disassembler.Omf;
+using X86Codec;
 
 namespace DosDebugger
 {
@@ -52,9 +53,9 @@ namespace DosDebugger
                     string s = sym.Name;
                     if (sym.BaseSegment != null && sym.BaseSegment.ClassName == "CODE")
                     {
-                        var sig = NameMangler.Demangle(s);
-                        if (sig != null)
-                            s = sig.Name;
+                        //var sig = NameMangler.Demangle(s);
+                        //if (sig != null)
+                        //    s = sig.Name;
                     }
 
                     if (sym.BaseSegment == null)
@@ -121,6 +122,60 @@ namespace DosDebugger
                 var instruction = image.DecodeInstruction(addr);
                 image.CreatePiece(addr, addr + instruction.EncodedLength, ByteType.Code);
                 addr = addr.Increment(instruction.EncodedLength);
+
+                // An operand may have zero or one component that may be
+                // fixed up. Check this.
+                SymbolicInstruction si = new SymbolicInstruction(instruction);
+                for (int k = 0; k < instruction.Operands.Length; k++)
+                {
+                    var opr = instruction.Operands[k];
+                    if (opr.EncodedLength != 0)
+                    {
+                        int j = i - image.StartAddress + opr.EncodedPosition;
+                        int fixupIndex = codeSegment.DataFixups[j];
+                        if (fixupIndex != 0)
+                        {
+                            FixupDefinition fixup = codeSegment.Fixups[fixupIndex - 1];
+                            if (fixup.DataOffset != j)
+                                continue;
+
+                            si.operandText[k] = FormatSymbolicOperand(instruction, opr, fixup, module);
+                            System.Diagnostics.Debug.WriteLine(si.ToString());
+                        }
+                    }
+                }
+
+                // TODO: we need to check more accurately.
+
+#if false
+                // Check if any bytes covered by this instruction has a fixup
+                // record associated with it. Note that an instruction might
+                // have multiple fixup records associated with it, such as 
+                // in a far call.
+                for (int j = 0; j < instruction.EncodedLength; j++)
+                {
+                    int fixupIndex = codeSegment.DataFixups[i - image.StartAddress + j];
+                    if (fixupIndex != 0)
+                    {
+                        FixupDefinition fixup = codeSegment.Fixups[fixupIndex - 1];
+                        if (fixup.DataOffset != i - image.StartAddress + j)
+                            continue;
+
+                        if (fixup.Target.Method == FixupTargetSpecFormat.ExternalPlusDisplacement ||
+                            fixup.Target.Method == FixupTargetSpecFormat.ExternalWithoutDisplacement)
+                        {
+                            var extIndex = fixup.Target.IndexOrFrame;
+                            var extName = module.ExternalNames[extIndex - 1];
+                            var disp = fixup.Target.Displacement;
+
+                            System.Diagnostics.Debug.WriteLine(string.Format(
+                                "{0} refers to {1}+{2} : {3}",
+                                instruction, extName, disp, fixup.Location));
+                        }
+                    }
+                }
+#endif
+
                 i += instruction.EncodedLength;
             }
             // ...
@@ -131,6 +186,99 @@ namespace DosDebugger
                 Document doc = new Document();
                 doc.Image = image;
                 this.ListingWindow.Document = doc;
+            }
+        }
+
+        private static string FormatSymbolicOperand(
+            X86Codec.Instruction instruction,
+            X86Codec.Operand operand,
+            FixupDefinition fixup,
+            ObjectModule module)
+        {
+
+            if (fixup.Target.Method == FixupTargetSpecFormat.ExternalPlusDisplacement ||
+                fixup.Target.Method == FixupTargetSpecFormat.ExternalWithoutDisplacement)
+            {
+                var extIndex = fixup.Target.IndexOrFrame;
+                var extName = module.ExternalNames[extIndex - 1];
+                var disp = fixup.Target.Displacement;
+
+                //System.Diagnostics.Debug.WriteLine(string.Format(
+                //    "{0} : operand {4} refers to {1}+{2} : {3}",
+                //    instruction, extName, disp, fixup.Location, operand));
+                return extName.Name;
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Represents an instruction with some fields replaced with a symbol,
+    /// e.g. 
+    /// CALL _strcpy
+    /// MOV DX, seg DGROUP
+    /// JMP [BX + off Table]
+    /// </summary>
+    public class SymbolicInstruction
+    {
+        public Instruction instruction { get; private set; }
+        public string[] operandText;
+
+        public SymbolicInstruction(Instruction instruction)
+        {
+            this.instruction = instruction;
+            this.operandText = new string[instruction.Operands.Length];
+        }
+
+        /// <summary>
+        /// Converts the instruction to a string in Intel syntax.
+        /// </summary>
+        /// <returns>The formatted instruction.</returns>
+        public override string ToString()
+        {
+            StringBuilder s = new StringBuilder();
+
+            // Write address.
+            s.Append(instruction.Location.ToString());
+            s.Append("  ");
+
+            // Format group 1 (LOCK/REPZ/REPNZ) prefix.
+            if ((instruction.Prefix & Prefixes.Group1) != 0)
+            {
+                s.Append((instruction.Prefix & Prefixes.Group1).ToString());
+                s.Append(' ');
+            }
+
+            // Format mnemonic.
+            s.Append(instruction.Operation.ToString());
+
+            // Format operands.
+            for (int i = 0; i < instruction.Operands.Length; i++)
+            {
+                if (i > 0)
+                {
+                    s.Append(',');
+                }
+                s.Append(' ');
+                s.Append(FormatOperand(i));
+            }
+            return s.ToString().ToLowerInvariant();
+        }
+
+        private string FormatOperand(int i)
+        {
+            var operand = instruction.Operands[i];
+            if (operandText[i] != null)
+                return operandText[i];
+
+            if (operand is RelativeOperand)
+            {
+                RelativeOperand opr = (RelativeOperand)operand;
+                return ((ushort)(instruction.Location.Offset + instruction.EncodedLength + opr.Offset)).ToString("X4");
+            }
+            else
+            {
+                return operand.ToString();
             }
         }
     }

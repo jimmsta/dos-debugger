@@ -918,12 +918,14 @@ namespace X86Codec
 
         static ImmediateOperand DecodeImmediateOperand(InstructionReader reader, CpuSize size)
         {
-            return new ImmediateOperand(reader.ReadImmediate(size), size);
+            int pos = reader.Position;
+            return new ImmediateOperand(reader.ReadImmediate(size), size, pos, (int)size);
         }
 
         static RelativeOperand DecodeRelativeOperand(InstructionReader reader, CpuSize size)
         {
-            return new RelativeOperand(reader.ReadImmediate(size));
+            int pos = reader.Position;
+            return new RelativeOperand(reader.ReadImmediate(size), pos, (int)size);
         }
 
         static Operand DecodeOperand(O spec,
@@ -938,7 +940,7 @@ namespace X86Codec
                 case O.Imm1:
                 case O.Imm2:
                 case O.Imm3:
-                    return new ImmediateOperand(spec - O.Imm0, CpuSize.Use8Bit);
+                    return new ImmediateOperand(spec - O.Imm0, CpuSize.Use8Bit, 0, 0);
 
                 case O.ES:
                 case O.CS:
@@ -1013,11 +1015,12 @@ namespace X86Codec
                     {
                         throw new NotSupportedException();
                     }
-                    if (true)
+                    else
                     {
+                        int pos = reader.Position;
                         ushort off = (ushort)reader.ReadImmediate(CpuSize.Use16Bit);
                         ushort seg = (ushort)reader.ReadImmediate(CpuSize.Use16Bit);
-                        return new PointerOperand(seg, off);
+                        return new PointerOperand(seg, off, pos, 4);
                     }
 
                 case O.Eb: // r/m; 8-bit

@@ -3,11 +3,48 @@ using System.Text;
 
 namespace X86Codec
 {
+#if false
+    /// <summary>
+    /// Defines a location within an instruction.
+    /// </summary>
+    public struct LocationWithinInstruction
+    {
+    }
+#endif
+
     /// <summary>
     /// Represents an operand of an instruction.
     /// </summary>
     public abstract class Operand
     {
+        /// <summary>
+        /// Specifies the location of the operand within the instruction,
+        /// expressed as a byte offset to the beginning of the instruction.
+        /// This only applies to the displacement and immediate part; it does
+        /// not include part of the operand encoded in prefix, opcode, modrm,
+        /// or SIB byte.
+        /// </summary>
+        /// <remarks>
+        /// Depending on the operand type, these values are defined as below:
+        /// 
+        /// Operand Type            StartOffset     EndOffset       Example
+        /// Register                0               0               AX
+        /// Memory with disp        disp-start      disp-end        [BX+4]
+        /// Memory w/o disp         0               0               [BX+BI]
+        /// Relative                offset start    offset end      +4
+        /// Immediate (explicit)    imm start       imm end         20h
+        /// Immediate (implicit)    0               0               SHL AX,1
+        /// Pointer                 pointer start   pointer end     2920:7654
+        /// </remarks>
+        public byte EncodedPosition { get; private set; }
+        public byte EncodedLength { get; private set; }
+
+        protected Operand(int encodedPosition, int encodedLength)
+        {
+            this.EncodedPosition = (byte)encodedPosition;
+            this.EncodedLength = (byte)encodedLength;
+        }
+
         /// <summary>
         /// Converts an unsigned integer to hexidecimal string of the form
         /// "0f43h" or "5".
@@ -40,7 +77,8 @@ namespace X86Codec
         private int value;
         public CpuSize Size;
 
-        public ImmediateOperand(int value, CpuSize size)
+        public ImmediateOperand(int value, CpuSize size, int position, int length)
+            : base(position, length)
         {
             this.value = value;
             this.Size = size;
@@ -102,15 +140,18 @@ namespace X86Codec
         public Register Register { get; set; }
 
         public RegisterOperand()
+            : base(0, 0)
         {
         }
 
         public RegisterOperand(Register register)
+            : base(0, 0)
         {
             this.Register = register;
         }
 
         public RegisterOperand(Register register, CpuSize newSize)
+            : base(0, 0)
         {
             int reg = (int)register & ~(int)Register._SizeMask;
             reg |= (int)newSize << (int)Register._SizeShift;
@@ -123,6 +164,7 @@ namespace X86Codec
         }
 
         public RegisterOperand(RegisterType type, int number, CpuSize size, RegisterOffset offset)
+            : base(0, 0)
         {
             int value =
                 ((int)type << (int)Register._TypeShift) |
@@ -195,6 +237,11 @@ namespace X86Codec
         public byte Scaling = 1; // scaling factor; must be one of 1, 2, 4
         public int Displacement; // sign-extended
 
+        public MemoryOperand()
+            : base(0, 0)
+        {
+        }
+
         /// <summary>
         /// Formats a memory operand in the form "dword ptr es:[ax+si*4+10]".
         /// </summary>
@@ -262,7 +309,8 @@ namespace X86Codec
     {
         private int offset;
 
-        public RelativeOperand(int offset)
+        public RelativeOperand(int offset, int position, int length)
+            : base(position, length)
         {
             this.offset = offset;
         }
@@ -296,10 +344,11 @@ namespace X86Codec
 
     public class PointerOperand : Operand
     {
-        public UInt16 Segment;
-        public UInt64 Offset;
+        public UInt16 Segment { get; private set; }
+        public UInt64 Offset { get; private set; }
 
-        public PointerOperand(UInt16 segment, UInt64 offset)
+        public PointerOperand(UInt16 segment, UInt64 offset, int position, int length)
+            : base(position, length)
         {
             this.Segment = segment;
             this.Offset = offset;

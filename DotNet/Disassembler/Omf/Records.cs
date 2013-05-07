@@ -303,8 +303,8 @@ namespace Disassembler.Omf
         // TARGET threads.
         public readonly ThreadDefinition[] TargetThreads = new ThreadDefinition[4];
 
-        //public Record LastDataRecord; // last LEDATA or LIDATA record
-        // this is used by FIXUPP record to know which record to fix up
+        // Contains the last record.
+        public Record LastRecord = null;
 
         public ObjectModule Module { get; private set; }
 
@@ -371,7 +371,7 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.COMDAT:
                 case RecordNumber.COMDAT32:
-                    r = new InitializedCommunalDataRecordpublic(reader, context);
+                    r = new InitializedCommunalDataRecord(reader, context);
                     break;
                 case RecordNumber.COMDEF:
                     r = new CommunalNamesDefinitionRecord(reader, context);
@@ -431,6 +431,15 @@ namespace Disassembler.Omf
             }
 
             // TODO: check all bytes are consumed.
+            // ...
+
+            // Update RecordContext.LastRecord. This is necessary so that
+            // a FIXUPP record knows which record to fix up.
+            if (context != null)
+            {
+                context.LastRecord = r;
+            }
+
             return r;
         }
 
@@ -661,15 +670,15 @@ namespace Disassembler.Omf
             }
             this.Symbols = symbols.ToArray();
 
-            if (reader.RecordNumber == Omf.RecordNumber.LEXTDEF ||
-                reader.RecordNumber == Omf.RecordNumber.LEXTDEF32)
-            {
-                context.LocalExternalNames.AddRange(Symbols);
-            }
-            else
-            {
+            //if (reader.RecordNumber == Omf.RecordNumber.LEXTDEF ||
+            //    reader.RecordNumber == Omf.RecordNumber.LEXTDEF32)
+            //{
+            //    context.LocalExternalNames.AddRange(Symbols);
+            //}
+            //else
+            //{
                 context.ExternalNames.AddRange(Symbols);
-            }
+            //}
         }
     }
 
@@ -799,6 +808,7 @@ namespace Disassembler.Omf
             }
             def.Length = length;
             def.Data = new byte[length];
+            def.DataFixups = new ushort[length];
 
             int segmentNameIndex = reader.ReadIndex();
             if (segmentNameIndex > context.Names.Count)
@@ -889,7 +899,29 @@ namespace Disassembler.Omf
                 else
                 {
                     FixupDefinition fixup = ParseFixupSubrecord(reader, context);
+                    //if (fixup.Target.Method== FixupTargetSpecFormat.SegmentPlusDisplacement
                     fixups.Add(fixup);
+
+                    if (context.LastRecord is LogicalEnumeratedDataRecord)
+                    {
+                        var r = (LogicalEnumeratedDataRecord)context.LastRecord;
+                        FixupDefinition f = fixup;
+                        f.DataOffset += (ushort)r.DataOffset;
+                        r.Segment.fixups.Add(f);
+                        UInt16 fixupIndex = (UInt16)r.Segment.fixups.Count;
+                        for (int i = 0; i < f.Length; i++)
+                            r.Segment.DataFixups[f.DataOffset + i] = fixupIndex;
+                    }
+                    else if (context.LastRecord is LogicalIteratedDataRecord)
+                    {
+                    }
+                    else if (context.LastRecord is InitializedCommunalDataRecord)
+                    {
+                    }
+                    else
+                    {
+                        throw new InvalidDataException("FIXUPP record must follow LEDATA or LIDATA record.");
+                    }
                 }
             }
          
@@ -1021,6 +1053,35 @@ namespace Disassembler.Omf
         public FixupMode Mode { get; internal set; }
         public FixupTargetSpec Target { get; internal set; }
         public FixupFrameSpec Frame { get; internal set; }
+
+        /// <summary>
+        /// Gets the number of bytes to fix up. This is inferred from the
+        /// Location property.
+        /// </summary>
+        public int Length
+        {
+            get
+            {
+                switch (Location)
+                {
+                    case FixupLocation.LowByte:
+                    case FixupLocation.HighByte:
+                        return 1;
+                    case FixupLocation.Offset:
+                    case FixupLocation.Base:
+                    case FixupLocation.LoaderResolvedOffset:
+                        return 2;
+                    case FixupLocation.Pointer:
+                    case FixupLocation.Offset32:
+                    case FixupLocation.LoaderResolvedOffset32:
+                        return 4;
+                    case FixupLocation.Pointer32:
+                        return 6;
+                    default:
+                        return 0;
+                }
+            }
+        }
     }
 
     public enum FixupMode : byte
@@ -1291,9 +1352,9 @@ namespace Disassembler.Omf
         }
     }
 
-    public class InitializedCommunalDataRecordpublic : Record
+    public class InitializedCommunalDataRecord : Record
     {
-        internal InitializedCommunalDataRecordpublic(
+        internal InitializedCommunalDataRecord(
             RecordReader reader, RecordContext context)
             : base(reader, context)
         {

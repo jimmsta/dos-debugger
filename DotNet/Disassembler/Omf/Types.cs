@@ -51,6 +51,17 @@ namespace Disassembler.Omf
 
         public byte[] Data { get; internal set; }
 
+        // datafixups[i] corresponds to data[i]
+        // it is 1+index of the fix up that covers this byte. 0=none
+        public UInt16[] DataFixups { get; internal set; }
+
+        internal readonly List<FixupDefinition> fixups = new List<FixupDefinition>();
+
+        public FixupDefinition[] Fixups
+        {
+            get { return fixups.ToArray(); }
+        }
+
         public override string ToString()
         {
             return string.Format("{0}:{1}", SegmentName, ClassName);
@@ -192,8 +203,9 @@ namespace Disassembler.Omf
     /// of the following records:
     /// EXTDEF  -- ExternalNamesDefinitionRecord
     /// LEXTDEF -- LocalExternalNamesDefinitionRecord
-    /// COMDEF  -- CommunalNamesDefinitionRecord
     /// CEXTDEF -- COMDATExternalNamesDefinitionRecord
+    /// One of these records must be defined so that a FIXUPP record can
+    /// refer to the symbol's address.
     /// </summary>
     public class ExternalNameDefinition : NameDefinition
     {
