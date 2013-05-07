@@ -399,11 +399,11 @@ namespace DosDebugger
             f.Show(this);
 #else
             string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
-            OmfLoader omf = new OmfLoader(fileName);
-            propertiesWindow.SelectedObject = omf.Library;
+            ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
+            propertiesWindow.SelectedObject = library;
 
-            omf.Library.BuildDependencyGraph();
-            libraryWindow.Library = omf.Library;
+            library.BuildDependencyGraph();
+            libraryWindow.Library = library;
             libraryWindow.PropertiesWindow = propertiesWindow;
             libraryWindow.ListingWindow = listingWindow;
 #endif

@@ -1,32 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Text;
-using System.IO;
 using System.ComponentModel;
+using System.IO;
 
 namespace Disassembler.Omf
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class OmfLoader
+    public static class OmfLoader
     {
-        private ObjectLibrary library;
-
-        public ObjectLibrary Library
-        {
-            //get { return new ReadOnlyCollection<OmfRecord>(records); }
-            get { return library; }
-        }
-
-        public OmfLoader(string fileName)
-        {
-            using (Stream stream = File.OpenRead(fileName))
-            using (BinaryReader reader = new BinaryReader(stream))
-            {
-                this.library = LoadLibrary(reader);
-            }
-        }
-
         /// <summary>
         /// Returns null if LibraryEnd record is encountered before
         /// MODEND or MODEND32 record is encountered.
@@ -87,6 +67,18 @@ namespace Disassembler.Omf
 
             // The dictionary follows, but we ignore it.
             return new ObjectLibrary { Modules = modules.ToArray() };
+        }
+
+        public static ObjectLibrary LoadLibrary(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException("fileName");
+
+            using (Stream stream = File.OpenRead(fileName))
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                return LoadLibrary(reader);
+            }
         }
     }
 
