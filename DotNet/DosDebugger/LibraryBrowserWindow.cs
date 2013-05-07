@@ -112,7 +112,7 @@ namespace DosDebugger
                 return;
 
             // Create a BinaryImage with the code.
-            BinaryImage image = new BinaryImage(codeSegment.Data, new X86Codec.Pointer(0, 0));
+            BinaryImage image = new BinaryImage(codeSegment.Data, new Pointer(0, 0));
 
             // Disassemble the instructions literally. Note that this should
             // be improved, but we don't do that yet.
@@ -239,8 +239,8 @@ namespace DosDebugger
             StringBuilder s = new StringBuilder();
 
             // Write address.
-            s.Append(instruction.Location.ToString());
-            s.Append("  ");
+            //s.Append(instruction.Location.ToString());
+            //s.Append("  ");
 
             // Format group 1 (LOCK/REPZ/REPNZ) prefix.
             if ((instruction.Prefix & Prefixes.Group1) != 0)
@@ -271,12 +271,14 @@ namespace DosDebugger
             if (operandText[i] != null)
                 return operandText[i];
 
+#if false
             if (operand is RelativeOperand)
             {
                 RelativeOperand opr = (RelativeOperand)operand;
                 return ((ushort)(instruction.Location.Offset + instruction.EncodedLength + opr.Offset)).ToString("X4");
             }
             else
+#endif
             {
                 return operand.ToString();
             }

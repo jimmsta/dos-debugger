@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using Disassembler;
-using X86Codec;
 
 namespace DosDebugger
 {

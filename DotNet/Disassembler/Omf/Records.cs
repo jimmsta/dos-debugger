@@ -782,11 +782,11 @@ namespace Disassembler.Omf
             {
                 UInt16 frame = reader.ReadUInt16();
                 reader.ReadByte(); // Offset is ignored by MS LINK
-                def.StartAddress = new X86Codec.Pointer(frame, 0);
+                def.StartAddress = new Pointer(frame, 0);
             }
             else
             {
-                def.StartAddress = X86Codec.Pointer.Invalid;
+                def.StartAddress = Pointer.Invalid;
             }
 
             long length = reader.ReadUInt16Or32();

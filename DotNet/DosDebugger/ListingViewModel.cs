@@ -56,7 +56,7 @@ namespace DosDebugger
                     }
 
                     Instruction insn = image.DecodeInstruction(b.Address);
-                    rows.Add(new CodeListingRow(0, insn, image.GetBytes(i, insn.EncodedLength)));
+                    rows.Add(new CodeListingRow(0, b.Address, insn, image.GetBytes(i, insn.EncodedLength)));
                     address = b.Address + insn.EncodedLength;
                     i += insn.EncodedLength;
                 }
@@ -321,10 +321,12 @@ namespace DosDebugger
     {
         private Instruction instruction;
         private byte[] code;
+        private Pointer location;
 
-        public CodeListingRow(int index, Instruction instruction, byte[] code)
+        public CodeListingRow(int index, Pointer location, Instruction instruction, byte[] code)
             : base(index)
         {
+            this.location = location;
             this.instruction = instruction;
             this.code = code;
         }
@@ -336,7 +338,7 @@ namespace DosDebugger
 
         public override Pointer Location
         {
-            get { return instruction.Location; }
+            get { return location; }
         }
 
         public override byte[] Opcode

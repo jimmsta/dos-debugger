@@ -8,10 +8,12 @@ namespace X86Codec
     /// </summary>
     public class Instruction
     {
+#if false
         /// <summary>
         /// Gets or sets the location (CS:IP) of the instruction.
         /// </summary>
         public Pointer Location { get; set; }
+#endif
 
         /// <summary>
         /// Gets or sets the encoded length (in bytes) of the instruction.
@@ -65,12 +67,14 @@ namespace X86Codec
 
         private string FormatOperand(Operand operand)
         {
+#if false
             if (operand is RelativeOperand)
             {
                 RelativeOperand opr = (RelativeOperand)operand;
                 return ((ushort)(this.Location.Offset + this.EncodedLength + opr.Offset)).ToString("X4");
             }
             else
+#endif
             {
                 return operand.ToString();
             }

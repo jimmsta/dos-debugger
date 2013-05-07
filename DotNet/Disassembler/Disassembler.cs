@@ -373,6 +373,7 @@ namespace Disassembler
             while (true)
             {
                 // Decode an instruction at this location.
+                Pointer insnPos = pos;
                 Instruction insn;
                 try
                 {
@@ -416,7 +417,7 @@ namespace Disassembler
 
                 // Analyze BCJ (branch, jump, call) instructions. Such an
                 // instruction will create a cross reference.
-                XRef xref = AnalyzeFlowInstruction(insn);
+                XRef xref = AnalyzeFlowInstruction(insnPos, insn);
                 if (xref != null)
                 {
                     xrefs.Add(xref);
@@ -430,7 +431,7 @@ namespace Disassembler
                     {
                         xrefs.Add(new XRef(
                             type: XRefType.ConditionalJump,
-                            source: insn.Location,
+                            source: insnPos,
                             target: pos
                         ));
                     }
@@ -470,9 +471,8 @@ namespace Disassembler
         /// <returns>XRef if the instruction is a b/c/j instruction; 
         /// null otherwise.</returns>
         /// TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
-        private XRef AnalyzeFlowInstruction(Instruction instruction)
+        private XRef AnalyzeFlowInstruction(Pointer start, Instruction instruction)
         {
-            Pointer start = instruction.Location;
             Operation op = instruction.Operation;
 
             // Find the type of branch/call/jump instruction being processed.
@@ -550,7 +550,7 @@ namespace Disassembler
                 return new XRef(
                     type: bcjType,
                     source: start,
-                    target: opr.Value
+                    target: new Pointer(opr.Segment, (UInt16)opr.Offset)
                 );
             }
 

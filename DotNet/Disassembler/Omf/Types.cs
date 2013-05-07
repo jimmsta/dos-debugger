@@ -37,7 +37,7 @@ namespace Disassembler.Omf
         /// Gets the start address of an absolute segment. This value is only
         /// relevant if Alignment is Absolute.
         /// </summary>
-        public X86Codec.Pointer StartAddress { get; internal set; }
+        public Pointer StartAddress { get; internal set; }
 
         /// <summary>
         /// Gets the length (in bytes) of the logical segment. This length

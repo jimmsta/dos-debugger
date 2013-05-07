@@ -19,7 +19,7 @@ namespace X86Codec
         public static Instruction Decode(
             byte[] code, 
             int startIndex,
-            Pointer location,
+            //Pointer location,
             CpuMode cpuMode)
         {
             if (cpuMode != CpuMode.RealAddressMode)
@@ -30,7 +30,7 @@ namespace X86Codec
             context.OperandSize = CpuSize.Use16Bit;
 
             X86Codec.Decoder decoder = new X86Codec.Decoder();
-            return decoder.Decode(code, startIndex, code.Length - startIndex, location, context);
+            return decoder.Decode(code, startIndex, code.Length - startIndex, /*location,*/ context);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace X86Codec
             byte[] code, 
             int startIndex,
             int count,
-            Pointer location, 
+            //Pointer location, 
             DecoderContext context)
         {
             Instruction instruction = new Instruction();
@@ -100,7 +100,7 @@ namespace X86Codec
 
             // Update the encoded length of the instruction.
             instruction.EncodedLength = reader.Position;
-            instruction.Location = location;
+            //instruction.Location = location;
             return instruction;
         }
 

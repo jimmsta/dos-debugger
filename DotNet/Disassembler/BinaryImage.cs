@@ -152,7 +152,7 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("address");
 
             Instruction instruction = X86Codec.Decoder.Decode(
-                image, offset, address, CpuMode.RealAddressMode);
+                image, offset, /*address,*/ CpuMode.RealAddressMode);
             return instruction;
         }
 
