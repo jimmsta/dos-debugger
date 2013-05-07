@@ -226,6 +226,9 @@ namespace Disassembler
     }
 #endif
 
+    /// <summary>
+    /// Specifies whether a function call is a near call or far call.
+    /// </summary>
     public enum CallType
     {
         Unknown = 0,

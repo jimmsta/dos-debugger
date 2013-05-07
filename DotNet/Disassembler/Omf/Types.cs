@@ -13,14 +13,14 @@ namespace Disassembler.Omf
     public class LogicalSegment
     {
         /// <summary>
-        /// Gets the name of the segment. The segment name, together with
-        /// class name, uniquely identifies the segment.
+        /// Gets the segment's name, such as "_TEXT". A segment's name
+        /// together with its class name uniquely identifies the segment.
         /// </summary>
         public string SegmentName { get; internal set; }
 
         /// <summary>
-        /// Gets the name of the segment's class. The segment name, together
-        /// with class name, uniquely identifies the segment.
+        /// Gets the segment's class name, such as "CODE". A segment's name
+        /// together with its class name uniquely identifies the segment.
         /// </summary>
         public string ClassName { get; internal set; }
 
@@ -110,8 +110,7 @@ namespace Disassembler.Omf
         ParagraphAligned = 3,
 
         /// <summary>
-        /// Indicates a relocatable, page aligned LSEG. The size of a page is
-        /// 256 bytes for Intel, and 4KB for IBM.
+        /// Indicates a relocatable, page (256 bytes) aligned LSEG.
         /// </summary>
         PageAligned = 4,
 
@@ -128,15 +127,15 @@ namespace Disassembler.Omf
     public enum SegmentCombination : byte
     {
         /// <summary>
-        /// Do not combine with any other program segment, even if they have
-        /// the same segment name and class name.
+        /// Do not combine the segment with segments from other modules, even
+        /// if they have the same segment name and class name.
         /// </summary>
         Private = 0,
 
         /// <summary>
-        /// Combine by appending one segment after another at a suitably
-        /// aligned location. This may leave a gap in between the two
-        /// segments.
+        /// Concatenates all segments having the same name (and class name)
+        /// to form a single, contiguous segment (subject to alignment
+        /// requirements). This may leave a gap in between two segments.
         /// </summary>
         Public = 2,
 
@@ -144,8 +143,9 @@ namespace Disassembler.Omf
         Public2 = 4,
 
         /// <summary>
-        /// Same as Public, but always use byte alignment. As a result, this
-        /// combination method doesn't leave a gap in between the segments.
+        /// Concatenates all segments having the same name (and class name)
+        /// and causes the operating system to set SS:00 to the bottom and
+        /// SS:SP to the top of the resulting segment.
         /// </summary>
         Stack = 5,
 

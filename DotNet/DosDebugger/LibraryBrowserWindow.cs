@@ -196,8 +196,8 @@ namespace DosDebugger
             ObjectModule module)
         {
 
-            if (fixup.Target.Method == FixupTargetSpecFormat.ExternalPlusDisplacement ||
-                fixup.Target.Method == FixupTargetSpecFormat.ExternalWithoutDisplacement)
+            if (fixup.Target.Method == FixupTargetMethod.ExternalPlusDisplacement ||
+                fixup.Target.Method == FixupTargetMethod.ExternalWithoutDisplacement)
             {
                 var extIndex = fixup.Target.IndexOrFrame;
                 var extName = module.ExternalNames[extIndex - 1];

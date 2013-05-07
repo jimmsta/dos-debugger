@@ -105,15 +105,15 @@ namespace Disassembler.Omf
                 if (!thread.IsDefined)
                     throw new InvalidDataException("Frame thread " + frameNumber + " is not defined.");
 
-                FixupFrameSpec spec = new FixupFrameSpec();
-                spec.Method = (FixupFrameSpecFormat)thread.Method;
+                FixupFrame spec = new FixupFrame();
+                spec.Method = (FixupFrameMethod)thread.Method;
                 spec.IndexOrFrame = thread.IndexOrFrame;
                 fixup.Frame = spec;
             }
             else
             {
-                FixupFrameSpec spec = new FixupFrameSpec();
-                spec.Method = (FixupFrameSpecFormat)((b >> 4) & 7);
+                FixupFrame spec = new FixupFrame();
+                spec.Method = (FixupFrameMethod)((b >> 4) & 7);
                 if ((int)spec.Method <= 3)
                 {
                     spec.IndexOrFrame = reader.ReadIndex();
@@ -130,10 +130,10 @@ namespace Disassembler.Omf
                 if (!thread.IsDefined)
                     throw new InvalidDataException("Target thread " + targetNumber + " is not defined.");
 
-                FixupTargetSpec spec = new FixupTargetSpec();
-                spec.Method = (FixupTargetSpecFormat)((int)thread.Method & 3);
+                FixupTarget spec = new FixupTarget();
+                spec.Method = (FixupTargetMethod)((int)thread.Method & 3);
                 if (hasTargetDisplacement)
-                    spec.Method = (FixupTargetSpecFormat)((int)spec.Method | 4);
+                    spec.Method = (FixupTargetMethod)((int)spec.Method | 4);
                 spec.IndexOrFrame = thread.IndexOrFrame;
                 if ((int)spec.Method <= 3)
                 {
@@ -143,8 +143,8 @@ namespace Disassembler.Omf
             }
             else
             {
-                FixupTargetSpec spec = new FixupTargetSpec();
-                spec.Method = (FixupTargetSpecFormat)(b & 7);
+                FixupTarget spec = new FixupTarget();
+                spec.Method = (FixupTargetMethod)(b & 7);
                 spec.IndexOrFrame = reader.ReadIndex();
                 if ((int)spec.Method <= 3)
                 {
@@ -190,8 +190,8 @@ namespace Disassembler.Omf
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
         public FixupLocation Location { get; internal set; } // indicates what to fix up
         public FixupMode Mode { get; internal set; }
-        public FixupTargetSpec Target { get; internal set; }
-        public FixupFrameSpec Frame { get; internal set; }
+        public FixupTarget Target { get; internal set; }
+        public FixupFrame Frame { get; internal set; }
 
         /// <summary>
         /// Gets the number of bytes to fix up. This is inferred from the
@@ -270,9 +270,9 @@ namespace Disassembler.Omf
         LoaderResolvedOffset32 = 13,
     }
 
-    public struct FixupTargetSpec
+    public struct FixupTarget
     {
-        public FixupTargetSpecFormat Method { get; internal set; }
+        public FixupTargetMethod Method { get; internal set; }
 
         /// <summary>
         /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
@@ -286,19 +286,19 @@ namespace Disassembler.Omf
         {
             switch (Method)
             {
-                case FixupTargetSpecFormat.Absolute:
+                case FixupTargetMethod.Absolute:
                     return string.Format("{0:X4}:{1:X4}", IndexOrFrame, Displacement);
-                case FixupTargetSpecFormat.SegmentPlusDisplacement:
+                case FixupTargetMethod.SegmentPlusDisplacement:
                     return string.Format("SEG({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetSpecFormat.GroupPlusDisplacement:
+                case FixupTargetMethod.GroupPlusDisplacement:
                     return string.Format("GRP({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetSpecFormat.ExternalPlusDisplacement:
+                case FixupTargetMethod.ExternalPlusDisplacement:
                     return string.Format("EXT({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetSpecFormat.SegmentWithoutDisplacement:
+                case FixupTargetMethod.SegmentWithoutDisplacement:
                     return string.Format("SEG({0})", IndexOrFrame);
-                case FixupTargetSpecFormat.GroupWithoutDisplacement:
+                case FixupTargetMethod.GroupWithoutDisplacement:
                     return string.Format("GRP({0})", IndexOrFrame);
-                case FixupTargetSpecFormat.ExternalWithoutDisplacement:
+                case FixupTargetMethod.ExternalWithoutDisplacement:
                     return string.Format("EXT({0})", IndexOrFrame);
                 default:
                     return "(invalid)";
@@ -309,7 +309,7 @@ namespace Disassembler.Omf
     /// <summary>
     /// Specifies how to determine the TARGET of a fixup.
     /// </summary>
-    public enum FixupTargetSpecFormat : byte
+    public enum FixupTargetMethod : byte
     {
         /// <summary>
         /// T0: INDEX(SEGDEF),DISP -- The TARGET is the DISP'th byte in the
@@ -356,9 +356,9 @@ namespace Disassembler.Omf
         ExternalWithoutDisplacement = 6,
     }
 
-    public struct FixupFrameSpec
+    public struct FixupFrame
     {
-        public FixupFrameSpecFormat Method { get; internal set; }
+        public FixupFrameMethod Method { get; internal set; }
 
         /// <summary>
         /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
@@ -372,17 +372,17 @@ namespace Disassembler.Omf
         {
             switch (Method)
             {
-                case FixupFrameSpecFormat.SegmentIndex:
+                case FixupFrameMethod.SegmentIndex:
                     return string.Format("SEG({0})", IndexOrFrame);
-                case FixupFrameSpecFormat.GroupIndex:
+                case FixupFrameMethod.GroupIndex:
                     return string.Format("GRP({0})", IndexOrFrame);
-                case FixupFrameSpecFormat.ExternalIndex:
+                case FixupFrameMethod.ExternalIndex:
                     return string.Format("EXT({0})", IndexOrFrame);
-                case FixupFrameSpecFormat.ExplicitFrame:
+                case FixupFrameMethod.ExplicitFrame:
                     return string.Format("{0:X4}", IndexOrFrame);
-                case FixupFrameSpecFormat.UseLocation:
+                case FixupFrameMethod.UseLocation:
                     return "LOCATION";
-                case FixupFrameSpecFormat.UseTarget:
+                case FixupFrameMethod.UseTarget:
                     return "TARGET";
                 default:
                     return "(invalid)";
@@ -390,7 +390,7 @@ namespace Disassembler.Omf
         }
     }
 
-    public enum FixupFrameSpecFormat : byte
+    public enum FixupFrameMethod : byte
     {
         /// <summary>
         /// The FRAME is the canonical frame of the LSEG (logical segment)
