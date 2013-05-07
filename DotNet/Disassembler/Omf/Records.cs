@@ -288,15 +288,6 @@ namespace Disassembler.Omf
     {
         public readonly List<string> Names = new List<string>();
 
-        public readonly List<ExternalNameDefinition> ExternalNames
-            = new List<ExternalNameDefinition>();
-
-        public readonly List<ExternalNameDefinition> LocalExternalNames
-            = new List<ExternalNameDefinition>();
-
-        public readonly List<PublicNameDefinition> LocalPublicNames
-            = new List<PublicNameDefinition>();
-
         // FRAME threads.
         public readonly ThreadDefinition[] FrameThreads = new ThreadDefinition[4];
 
@@ -567,7 +558,7 @@ namespace Disassembler.Omf
             }
             this.Symbols = symbols.ToArray();
 
-            context.ExternalNames.AddRange(Symbols);
+            context.Module.externalNames.AddRange(Symbols);
         }
     }
 
@@ -621,7 +612,7 @@ namespace Disassembler.Omf
             }
             this.Definitions = defs.ToArray();
 
-            context.ExternalNames.AddRange(this.Definitions);
+            context.Module.externalNames.AddRange(this.Definitions);
         }
 
         private static UInt32 ReadEncodedInteger(RecordReader reader)
@@ -677,7 +668,7 @@ namespace Disassembler.Omf
             //}
             //else
             //{
-                context.ExternalNames.AddRange(Symbols);
+                context.Module.externalNames.AddRange(Symbols);
             //}
         }
     }
@@ -730,15 +721,15 @@ namespace Disassembler.Omf
             }
             this.Symbols = symbols.ToArray();
             
-            if (reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
-                reader.RecordNumber == Omf.RecordNumber.LPUBDEF32)
-            {
-                context.LocalPublicNames.AddRange(Symbols);
-            }
-            else
-            {
+            //if (reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
+            //    reader.RecordNumber == Omf.RecordNumber.LPUBDEF32)
+            //{
+            //    context.LocalPublicNames.AddRange(Symbols);
+            //}
+            //else
+            //{
                 context.Module.publicNames.AddRange(Symbols);
-            }
+            //}
         }
     }
 

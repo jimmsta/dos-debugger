@@ -36,39 +36,25 @@ namespace Disassembler.Omf
         public static ObjectModule LoadObject(BinaryReader reader)
         {
             ObjectModule module = new ObjectModule();
-            List<Omf.Record> records = new List<Omf.Record>();
-            Omf.RecordContext context = new Omf.RecordContext(module);
-            module.Context = context;
+            List<Record> records = new List<Record>();
+            RecordContext context = new RecordContext(module);
 
             while (true)
             {
-                Omf.Record record = Omf.Record.ReadRecord(reader, context);
+                Record record = Record.ReadRecord(reader, context);
                 records.Add(record);
 
-                if (record.RecordNumber == Omf.RecordNumber.MODEND ||
-                    record.RecordNumber == Omf.RecordNumber.MODEND32)
+                if (record.RecordNumber == RecordNumber.MODEND ||
+                    record.RecordNumber == RecordNumber.MODEND32)
                 {
                     break;
                 }
-                if (record.RecordNumber == Omf.RecordNumber.LibraryEnd)
+                if (record.RecordNumber == RecordNumber.LibraryEnd)
                 {
                     return null;
                 }
             }
             module.Records = records.ToArray();
-
-            // Convert the records to the information we need.
-#if false
-            foreach (Omf.Record r in records)
-            {
-                if (r.RecordNumber == Omf.RecordNumber.THEADR)
-                {
-                    //module.Name = ((Omf.TranslatorHeaderRecord)r).Name;
-                    break;
-                }
-            }
-#endif
-
             return module;
         }
 
@@ -107,8 +93,6 @@ namespace Disassembler.Omf
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ObjectModule
     {
-        internal Omf.RecordContext Context { get; set; }
-
         internal readonly List<LogicalSegment> segments
             = new List<LogicalSegment>();
 
@@ -117,6 +101,9 @@ namespace Disassembler.Omf
 
         internal readonly List<PublicNameDefinition> publicNames
             = new List<PublicNameDefinition>();
+
+        internal readonly List<ExternalNameDefinition> externalNames
+            = new List<ExternalNameDefinition>();
 
         public Record[] Records { get; internal set; }
 
@@ -150,9 +137,16 @@ namespace Disassembler.Omf
             get { return groups.ToArray(); }
         }
 
+        /// <summary>
+        /// Gets a list of external names used in this module, including:
+        /// EXTDEF  -- refers to public names in other modules
+        /// LEXTDEF -- refers to a local name defined in this module
+        /// CEXTDEF -- refers to a COMDAT name defined in another module 
+        ///            (by COMDEF) or in this module (by LCOMDEF)
+        /// </summary>
         public ExternalNameDefinition[] ExternalNames
         {
-            get { return Context.ExternalNames.ToArray(); }
+            get { return externalNames.ToArray(); }
         }
 
         public PublicNameDefinition[] PublicNames
@@ -160,6 +154,7 @@ namespace Disassembler.Omf
             get { return publicNames.ToArray(); }
         }
 
+#if false
         [Browsable(false)]
         public ExternalNameDefinition[] LocalExternalNames
         {
@@ -171,6 +166,7 @@ namespace Disassembler.Omf
         {
             get { return Context.LocalPublicNames.ToArray(); }
         }
+#endif
 
         public override string ToString()
         {
