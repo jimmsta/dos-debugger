@@ -183,15 +183,9 @@ namespace X86Codec
             else
                 throw new ArgumentException("size must be 1, 2, or 4.");
 
-            return new Operand.LocationAware<int>
-            {
-                Location = new Operand.Location
-                {
-                    StartOffset = (byte)pos,
-                    Length = (byte)size
-                },
-                Value = value
-            };
+            return new Operand.LocationAware<int>(
+                new Operand.Location((byte)pos, (byte)size),
+                value);
         }
 
         private byte ReadByte()

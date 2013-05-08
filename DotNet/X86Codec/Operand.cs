@@ -9,36 +9,6 @@ namespace X86Codec
     public abstract class Operand
     {
         /// <summary>
-        /// Specifies the location of the operand within the instruction,
-        /// expressed as a byte offset to the beginning of the instruction.
-        /// This only applies to the displacement and immediate part; it does
-        /// not include part of the operand encoded in prefix, opcode, modrm,
-        /// or SIB byte.
-        /// </summary>
-        /// <remarks>
-        /// Depending on the operand type, these values are defined as below:
-        /// 
-        /// Operand Type            StartOffset     EndOffset       Example
-        /// Register                0               0               AX
-        /// Memory with disp        disp-start      disp-end        [BX+4]
-        /// Memory w/o disp         0               0               [BX+BI]
-        /// Relative                offset start    offset end      +4
-        /// Immediate (explicit)    imm start       imm end         20h
-        /// Immediate (implicit)    0               0               SHL AX,1
-        /// Pointer                 pointer start   pointer end     2920:7654
-        /// </remarks>
-        //public byte EncodedPosition { get; private set; }
-        //public byte EncodedLength { get; private set; }
-
-#if false
-        protected Operand(int encodedPosition, int encodedLength)
-        {
-            this.EncodedPosition = (byte)encodedPosition;
-            this.EncodedLength = (byte)encodedLength;
-        }
-#endif
-
-        /// <summary>
         /// Converts an unsigned integer to hexidecimal string of the form
         /// "0f43h" or "5".
         /// </summary>
@@ -66,19 +36,51 @@ namespace X86Codec
         /// </summary>
         public struct Location
         {
-            public byte StartOffset { get; set; }
-            public byte Length { get; set; }
+            public byte StartOffset { get; private set; }
+            public byte Length { get; private set; }
+
+            public Location(byte startOffset, byte length)
+                : this()
+            {
+                StartOffset = startOffset;
+                Length = length;
+            }
         }
 
+        /// <summary>
+        /// Wraps a value of type T with its location within the instruction.
+        /// </summary>
+        /// <typeparam name="T">Type of the value to wrap.</typeparam>
+        /// <remarks>
+        /// The location is expressed as a byte offset to the beginning of
+        /// the instruction. Depending on the type of operand, the location
+        /// may be used in the following ways:
+        /// 
+        /// Operand Type            Property        Example
+        /// ---------------------------------------------------------------
+        /// Register                (not used)      XOR   AX, AX
+        /// Memory with disp        displacement    LEA   AX, [BX+4]
+        /// Memory w/o disp         (not used)      MOV   AX, [BX+BI]
+        /// Relative                Offset          JMP   +4
+        /// Immediate (explicit)    Immediate       MOV   AX, 20h
+        /// Immediate (implicit)    (not used)      SHL   AX, 1
+        /// Pointer                 Segment,Offset  CALLF 2920:7654
+        /// </remarks>
         public struct LocationAware<T>
         {
-            public Location Location { get; set; }
-            public T Value { get; set; }
+            public Location Location { get; private set; }
+            public T Value { get; private set; }
 
             public LocationAware(Location location, T value)
                 : this()
             {
                 this.Location = location;
+                this.Value = value;
+            }
+
+            public LocationAware(T value)
+                : this()
+            {
                 this.Value = value;
             }
         }
@@ -101,7 +103,7 @@ namespace X86Codec
 
         public ImmediateOperand(int value, CpuSize size)
         {
-            this.Immediate = new LocationAware<int> { Value = value };
+            this.Immediate = new LocationAware<int>(value);
             this.Size = size;
         }
 
@@ -130,105 +132,12 @@ namespace X86Codec
     /// </summary>
     public class RegisterOperand : Operand
     {
-#if false
-        public static Register Make(RegisterType type, int number, CpuSize size, int offset)
-        {
-            int value =
-                ((int)type << (int)Register._TypeShift) |
-                (number << (int)Register._NumberShift) |
-                ((int)size << (int)Register._SizeShift) |
-                (offset << (int)Register._OffsetShift);
-            return (Register)value;
-        }
-
-        public static Register Make(RegisterType type, int number, CpuSize size)
-        {
-            return Make(type, number, size, 0);
-        }
-
-        public static Register Resize(Register register, CpuSize newSize)
-        {
-            int reg = (int)register & ~(int)Register._SizeMask;
-            reg |= (int)newSize << (int)Register._SizeShift;
-            return (Register)reg;
-        }
-#endif
-        public Register Register { get; set; }
+        public Register Register { get; private set; }
 
         public RegisterOperand(Register register)
         {
             this.Register = register;
         }
-
-#if false
-        public RegisterOperand(Register register, CpuSize newSize)
-            : base(0, 0)
-        {
-            int reg = (int)register & ~(int)Register._SizeMask;
-            reg |= (int)newSize << (int)Register._SizeShift;
-            this.Register = (Register)reg;
-        }
-
-        public RegisterOperand(RegisterType type, int number, CpuSize size)
-            : this(type, number, size, 0)
-        {
-        }
-
-        public RegisterOperand(RegisterType type, int number, CpuSize size, RegisterOffset offset)
-            : base(0, 0)
-        {
-            int value =
-                ((int)type << (int)Register._TypeShift) |
-                (number << (int)Register._NumberShift) |
-                ((int)size << (int)Register._SizeShift) |
-                ((int)offset << (int)Register._OffsetShift);
-            this.Register = (Register)value;
-        }
-
-        public RegisterType Type
-        {
-            get
-            {
-                return (RegisterType)((int)(Register & Register._TypeMask)
-                    >> (int)Register._TypeShift);
-            }
-        }
-
-        public int Number
-        {
-            get
-            {
-                return (int)(Register & Register._NumberMask)
-                    >> (int)Register._NumberShift;
-            }
-        }
-
-        /// <summary>
-        /// Gets the size (in bytes) of the register.
-        /// </summary>
-        public CpuSize Size
-        {
-            get
-            {
-                return (CpuSize)((int)(Register & Register._SizeMask)
-                    >> (int)Register._SizeShift);
-            }
-        }
-
-        /// <summary>
-        /// Gets the offset (in bytes) of the register relative to the
-        /// physical register. This is 1 for AH,BH,CH,DH and 0 for all
-        /// other registers.
-        /// </summary>
-        public RegisterOffset Offset
-        {
-            get
-            {
-                return (RegisterOffset)((int)(Register & Register._OffsetMask)
-                    >> (int)Register._OffsetShift);
-            }
-        }
-#endif
 
         public override string ToString()
         {
@@ -242,15 +151,21 @@ namespace X86Codec
     /// </summary>
     public class MemoryOperand : Operand
     {
-        public CpuSize Size; // size of the operand in bytes
-        public Register Segment;
-        public Register Base;
-        public Register Index;
-        public byte Scaling = 1; // scaling factor; must be one of 1, 2, 4
-        public LocationAware<int> Displacement; // sign-extended
+        public CpuSize Size { get; set; } // size of the operand in bytes
+        public Register Segment { get; set; }
+        public Register Base { get; set; }
+        public Register Index { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scaling factor. Must be one of 1, 2, 4.
+        /// </summary>
+        public byte Scaling { get; set; }
+
+        public LocationAware<int> Displacement { get; set; } // sign-extended
 
         public MemoryOperand()
         {
+            this.Scaling = 1;
         }
 
         /// <summary>
@@ -318,39 +233,18 @@ namespace X86Codec
     /// </summary>
     public class RelativeOperand : Operand
     {
-        private LocationAware< int> offset;
+        public LocationAware<int> Offset { get; private set; }
 
         public RelativeOperand(LocationAware<int> offset)
         {
-            this.offset = offset;
-        }
-
-        public LocationAware< int> Offset
-        {
-            get { return offset; }
-            //set { offset = value; }
+            this.Offset = offset;
         }
 
         public override string ToString()
         {
-            string s = offset.Value.ToString();
-            if (offset.Value >= 0)
-                s = '+' + s;
-            return s;
+            return Offset.Value.ToString("+#;-#");
         }
     }
-
-#if false
-    /// <summary>
-    /// Represents a far pointer consisting of a segment address and an offset
-    /// within the segment.
-    /// </summary>
-    public struct FarPointer
-    {
-        public UInt16 Segment;
-        public UInt64 Offset;
-    }
-#endif
 
     public class PointerOperand : Operand
     {
@@ -365,8 +259,7 @@ namespace X86Codec
 
         public override string ToString()
         {
-            return string.Format("{0:X4}:{1:X4}",
-                Segment.Value, Offset.Value);
+            return string.Format("{0:X4}:{1:X4}", Segment.Value, Offset.Value);
         }
     }
 }

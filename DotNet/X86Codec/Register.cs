@@ -12,7 +12,8 @@ namespace X86Codec
         private Register(RegisterId id)
         {
 #if DEBUG
-            if (id.ToString().StartsWith("_"))
+            char c = id.ToString()[0];
+            if (c >= '0' && c <= '9')
             {
                 throw new ArgumentException(id.ToString() + " is not a valid register.");
             }
@@ -22,7 +23,7 @@ namespace X86Codec
 
         public Register(RegisterType type, int number, CpuSize size)
         {
-            id = (RegisterId)(number | ((int)type << 4) | ((int)size - 1) << 8);
+            id = (RegisterId)(number | ((int)type << 4) | ((int)size << 8));
         }
 
         /// <summary>
@@ -46,12 +47,12 @@ namespace X86Codec
         /// </summary>
         public CpuSize Size
         {
-            get { return (CpuSize)((((int)id >> 8) & 0xFF) + 1); }
+            get { return (CpuSize)(((int)id >> 8) & 0xFF); }
         }
 
         public Register Resize(CpuSize newSize)
         {
-            int newId = (int)id & 0xFF | (((int)newSize - 1) << 8);
+            int newId = (int)id & 0xFF | ((int)newSize << 8);
             return new Register((RegisterId)newId);
         }
 
@@ -137,7 +138,7 @@ namespace X86Codec
     /// 
     ///   15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
     ///  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    ///  |         SIZE minus 1          |     TYPE      |    NUMBER     |
+    ///  |             SIZE              |     TYPE      |    NUMBER     |
     ///  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
     ///
     /// TYPE specifies the type of the register, such as general purpose,
@@ -148,9 +149,9 @@ namespace X86Codec
     /// number is defined by its opcode encoding; for example, general-
     /// purpose registers are numbered in the order of AX, CX, DX, BX.
     ///
-    /// SIZE specifies the size (in bytes) of the register, minus one. Thus
-    /// by encoding SIZE in 8 bits, it's capable of representing a length
-    /// from 1 byte up to 256 bytes, adequate for any register.
+    /// SIZE specifies the size (in bytes) of the register. This field is
+    /// necessary to distinguish for example AX, EAX, RAX, which have the
+    /// same TYPE and NUMBER.
     /// </remarks>
     internal enum RegisterId : ushort
     {
@@ -335,12 +336,13 @@ namespace X86Codec
     /// </summary>
     internal enum RS
     {
-        BYTE = (1 - 1) << 8,
-        WORD = (2 - 1) << 8,
-        DWORD = (4 - 1) << 8,
-        QWORD = (8 - 1) << 8,
-        LONGDOUBLE = (10 - 1) << 8,
-        DQWORD = (16 - 1) << 8,
+        BYTE = CpuSize.Use8Bit << 8,
+        WORD = CpuSize.Use16Bit << 8,
+        DWORD = CpuSize.Use32Bit << 8,
+        QWORD = CpuSize.Use64Bit << 8,
+        LONGDOUBLE = CpuSize.Use80Bit << 8,
+        DQWORD = CpuSize.Use128Bit << 8,
+        QQWORD = CpuSize.Use256Bit << 8,
     }
 
     /// <summary>
