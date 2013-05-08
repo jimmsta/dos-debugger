@@ -3,33 +3,150 @@
 namespace X86Codec
 {
     /// <summary>
-    /// Represents a register.
+    /// Represents an x86 register.
+    /// </summary>
+    public struct Register
+    {
+        private RegisterId id;
+
+        private Register(RegisterId id)
+        {
+            this.id = id;
+        }
+
+        public Register(RegisterType type, int number, CpuSize size)
+        {
+            id = (RegisterId)(number | ((int)type << 4) | ((int)size - 1) << 8);
+        }
+
+        /// <summary>
+        /// Gets the type of the register.
+        /// </summary>
+        public RegisterType Type
+        {
+            get { return (RegisterType)(((int)id >> 4) & 0xF); }
+        }
+
+        /// <summary>
+        /// Gets the ordinal number of the register within its type.
+        /// </summary>
+        public int Number
+        {
+            get { return (int)id & 0xF; }
+        }
+
+        /// <summary>
+        /// Gets the size (in bytes) of the register.
+        /// </summary>
+        public CpuSize Size
+        {
+            get { return (CpuSize)((((int)id >> 8) & 0xFF) + 1); }
+        }
+
+        public Register Resize(CpuSize newSize)
+        {
+            int newId = (int)id & 0xFF | (((int)newSize - 1) << 8);
+            return new Register((RegisterId)newId);
+        }
+
+        public override string ToString()
+        {
+            return id.ToString();
+        }
+
+        public static bool operator ==(Register x, Register y)
+        {
+            return x.id == y.id;
+        }
+
+        public static bool operator !=(Register x, Register y)
+        {
+            return x.id != y.id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is Register) && (this == (Register)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return id.GetHashCode();
+        }
+
+        public static readonly Register None = new Register(RegisterId.None);
+        public static readonly Register FLAGS = new Register(RegisterId.FLAGS);
+
+        public static readonly Register AL = new Register(RegisterId.AL);
+        public static readonly Register CL = new Register(RegisterId.CL);
+        public static readonly Register DL = new Register(RegisterId.DL);
+        public static readonly Register BL = new Register(RegisterId.BL);
+        public static readonly Register AH = new Register(RegisterId.AH);
+        public static readonly Register CH = new Register(RegisterId.CH);
+        public static readonly Register DH = new Register(RegisterId.DH);
+        public static readonly Register BH = new Register(RegisterId.BH);
+
+        public static readonly Register AX = new Register(RegisterId.AX);
+        public static readonly Register CX = new Register(RegisterId.CX);
+        public static readonly Register DX = new Register(RegisterId.DX);
+        public static readonly Register BX = new Register(RegisterId.BX);
+        public static readonly Register SP = new Register(RegisterId.SP);
+        public static readonly Register BP = new Register(RegisterId.BP);
+        public static readonly Register SI = new Register(RegisterId.SI);
+        public static readonly Register DI = new Register(RegisterId.DI);
+
+        public static readonly Register EAX = new Register(RegisterId.EAX);
+        public static readonly Register ECX = new Register(RegisterId.ECX);
+        public static readonly Register EDX = new Register(RegisterId.EDX);
+        public static readonly Register EBX = new Register(RegisterId.EBX);
+        public static readonly Register ESP = new Register(RegisterId.ESP);
+        public static readonly Register EBP = new Register(RegisterId.EBP);
+        public static readonly Register ESI = new Register(RegisterId.ESI);
+        public static readonly Register EDI = new Register(RegisterId.EDI);
+
+        public static readonly Register ES = new Register(RegisterId.ES);
+        public static readonly Register CS = new Register(RegisterId.CS);
+        public static readonly Register SS = new Register(RegisterId.SS);
+        public static readonly Register DS = new Register(RegisterId.DS);
+        public static readonly Register FS = new Register(RegisterId.FS);
+        public static readonly Register GS = new Register(RegisterId.GS);
+
+        public static readonly Register ST0 = new Register(RegisterId.ST0);
+        public static readonly Register ST1 = new Register(RegisterId.ST1);
+        public static readonly Register ST2 = new Register(RegisterId.ST2);
+        public static readonly Register ST3 = new Register(RegisterId.ST3);
+        public static readonly Register ST4 = new Register(RegisterId.ST4);
+        public static readonly Register ST5 = new Register(RegisterId.ST5);
+        public static readonly Register ST6 = new Register(RegisterId.ST6);
+        public static readonly Register ST7 = new Register(RegisterId.ST7);
+    }
+
+    /// <summary>
+    /// Defines the ID of each x86 register in a specific way.
     /// </summary>
     /// <remarks>
-    /// Each logical register in the x86 architecture is assigned a unique
-    /// 16-bit identifier. For performance considerations, the values of 
-    /// these identifiers are constructed as follows:
+    /// Each addressible register in the x86 architecture is assigned a unique
+    /// ID that can be stored in 16-bits. For performance reasons, the value
+    /// of the identifier are constructed as follows:
     /// 
     ///   15  14  13  12  11  10   9   8   7   6   5   4   3   2   1   0
     ///  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
-    ///  | offset|         size          |     type      |    number     |
+    ///  |         SIZE minus 1          |     TYPE      |    NUMBER     |
     ///  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
     ///
-    /// TYPE corresponds to an enumerated value defined in RegisterType.
-    /// NUMBER is a number between 0 and 15. TYPE and NUMBER combined defines
-    /// a physical register on the CPU, such as RAX. All logical registers on
-    /// the same physical register have the same TYPE and NUMBER values.
-    ///
-    /// SIZE and OFFSET defines a logical register that can be referenced in
-    /// an instruction, such as AX or AH. OFFSET is typically 0, which
-    /// indicates the lowerest SIZE*8 bits of the register. The only cases
-    /// where OFFSET is non-zero are AH-DH, where OFFSET=1 and indicates high
-    /// byte.
+    /// TYPE specifies the type of the register, such as general purpose,
+    /// segment, flags, etc. Its value corresponds to an enumerated value
+    /// defined in RegisterType.
     /// 
-    /// NUMBER is chosen to be equal to their encoded values where possible.
-    /// The exceptions are AH-DH.
+    /// NUMBER is the ordinal number of the register within its type. This
+    /// number is defined by its opcode encoding; for example, general-
+    /// purpose registers are numbered in the order of AX, CX, DX, BX.
+    ///
+    /// SIZE specifies the size (in bytes) of the register, minus one. Thus
+    /// by encoding SIZE in 8 bits, it's capable of representing a length
+    /// from 1 byte up to 256 bytes, adequate for any register.
     /// </remarks>
-    public enum Register : ushort
+    internal enum RegisterId : ushort
     {
         /// <summary>
         /// Indicates that either a register is not used, or the default
@@ -37,44 +154,22 @@ namespace X86Codec
         /// </summary>
         None = 0,
 
-        /// <summary>
-        /// Specifies the bits that are used to represent the number of the
-        /// physical register among the same type of registers.
-        /// </summary>
-        _NumberMask = 0xf,
-        _NumberShift = 0,
-
-        /// <summary>
-        /// Specifies the bits that are used to represent the type of the
-        /// register.
-        /// </summary>
-        _TypeMask = 0xf0,
-        _TypeShift = 4,
         _SPECIAL = RegisterType.Special << 4,
         _GENERAL = RegisterType.General << 4,
+        _HIGHBYTE = RegisterType.HighByte << 4,
         _SEGMENT = RegisterType.Segment << 4,
         _ST = RegisterType.Fpu << 4,
+        _CONTROL = RegisterType.Control << 4,
+        _DEBUG = RegisterType.Debug << 4,
+        _MM = RegisterType.MMX << 4,
+        _XMM = RegisterType.XMM << 4,
 
-        /// <summary>
-        /// Specifies the bits that are used to represent the size (in bytes)
-        /// of a logical register.
-        /// </summary>
-        _SizeMask = 0x3f00,
-        _SizeShift = 8,
-        _BYTE = CpuSize.Use8Bit << 8,
-        _WORD = CpuSize.Use16Bit << 8,
-        _DWORD = CpuSize.Use32Bit << 8,
-        _QWORD = CpuSize.Use64Bit << 8,
-        _LNGDBL = CpuSize.Use80Bit << 8,
-        _DQWORD = CpuSize.Use128Bit << 8,
-
-        /// <summary>
-        /// Specifies the bits that are used to indicate the offset of a
-        /// logical register.
-        /// </summary>
-        _OffsetMask = 0xc000,
-        _OffsetShift = 14,
-        _HIBYTE = RegisterOffset.HighByte << 14,
+        _BYTE = 1 << 8,
+        _WORD = 2 << 8,
+        _DWORD = 4 << 8,
+        _QWORD = 8 << 8,
+        _LONGDOUBLE = 10 << 8,
+        _DQWORD = 16 << 8,
 
         /* Special registers. */
         IP = _SPECIAL | 1 | _WORD,
@@ -88,10 +183,10 @@ namespace X86Codec
         // See Table B-2 to B-5 in Intel Reference, Volume 2, Appendix B.
 
         /* ad-hoc registers */
-        AH = _GENERAL | _BYTE | 0 | _HIBYTE,
-        CH = _GENERAL | _BYTE | 1 | _HIBYTE,
-        DH = _GENERAL | _BYTE | 2 | _HIBYTE,
-        BH = _GENERAL | _BYTE | 3 | _HIBYTE,
+        AH = _HIGHBYTE | _BYTE | 0,
+        CH = _HIGHBYTE | _BYTE | 1,
+        DH = _HIGHBYTE | _BYTE | 2,
+        BH = _HIGHBYTE | _BYTE | 3,
 
         /* byte registers */
         AL = _GENERAL | _BYTE | 0,
@@ -174,58 +269,56 @@ namespace X86Codec
         GS = _SEGMENT | _WORD | 5,
 
         /* FPU */
-        ST0 = _ST | _LNGDBL | 0,
-        ST1 = _ST | _LNGDBL | 1,
-        ST2 = _ST | _LNGDBL | 2,
-        ST3 = _ST | _LNGDBL | 3,
-        ST4 = _ST | _LNGDBL | 4,
-        ST5 = _ST | _LNGDBL | 5,
-        ST6 = _ST | _LNGDBL | 6,
-        ST7 = _ST | _LNGDBL | 7,
+        ST0 = _ST | _LONGDOUBLE | 0,
+        ST1 = _ST | _LONGDOUBLE | 1,
+        ST2 = _ST | _LONGDOUBLE | 2,
+        ST3 = _ST | _LONGDOUBLE | 3,
+        ST4 = _ST | _LONGDOUBLE | 4,
+        ST5 = _ST | _LONGDOUBLE | 5,
+        ST6 = _ST | _LONGDOUBLE | 6,
+        ST7 = _ST | _LONGDOUBLE | 7,
 
-#if false
         /* Control registers (eee). See Volume 2, Appendix B, Table B-9. */
-        R_CR0 = REG_MAKE_W(CONTROL, 0),
-        R_CR2 = REG_MAKE_W(CONTROL, 2),
-        R_CR3 = REG_MAKE_W(CONTROL, 3),
-        R_CR4 = REG_MAKE_W(CONTROL, 4),
+        CR0 = _CONTROL | _WORD | 0,
+        CR2 = _CONTROL | _WORD | 2,
+        CR3 = _CONTROL | _WORD | 3,
+        CR4 = _CONTROL | _WORD | 4,
 
         /* Debug registers (eee). See Volume 2, Appendix B, Table B-9. */
-        R_DR0 = REG_MAKE_W(DEBUG, 0),
-        R_DR1 = REG_MAKE_W(DEBUG, 1),
-        R_DR2 = REG_MAKE_W(DEBUG, 2),
-        R_DR3 = REG_MAKE_W(DEBUG, 3),
-        R_DR6 = REG_MAKE_W(DEBUG, 6),
-        R_DR7 = REG_MAKE_W(DEBUG, 7),
+        DR0 = _DEBUG | _WORD | 0,
+        DR1 = _DEBUG | _WORD | 1,
+        DR2 = _DEBUG | _WORD | 2,
+        DR3 = _DEBUG | _WORD | 3,
+        DR6 = _DEBUG | _WORD | 6,
+        DR7 = _DEBUG | _WORD | 7,
 
         /* MMX registers. */
-        R_MM0 = REG_MAKE_Q(MMX, 0),
-        R_MM1 = REG_MAKE_Q(MMX, 1),
-        R_MM2 = REG_MAKE_Q(MMX, 2),
-        R_MM3 = REG_MAKE_Q(MMX, 3),
-        R_MM4 = REG_MAKE_Q(MMX, 4),
-        R_MM5 = REG_MAKE_Q(MMX, 5),
-        R_MM6 = REG_MAKE_Q(MMX, 6),
-        R_MM7 = REG_MAKE_Q(MMX, 7),
+        MM0 = _MM | _QWORD | 0,
+        MM1 = _MM | _QWORD | 1,
+        MM2 = _MM | _QWORD | 2,
+        MM3 = _MM | _QWORD | 3,
+        MM4 = _MM | _QWORD | 4,
+        MM5 = _MM | _QWORD | 5,
+        MM6 = _MM | _QWORD | 6,
+        MM7 = _MM | _QWORD | 7,
 
         /* XMM registers. */
-        R_XMM0 = REG_MAKE_DQ(XMM, 0),
-        R_XMM1 = REG_MAKE_DQ(XMM, 1),
-        R_XMM2 = REG_MAKE_DQ(XMM, 2),
-        R_XMM3 = REG_MAKE_DQ(XMM, 3),
-        R_XMM4 = REG_MAKE_DQ(XMM, 4),
-        R_XMM5 = REG_MAKE_DQ(XMM, 5),
-        R_XMM6 = REG_MAKE_DQ(XMM, 6),
-        R_XMM7 = REG_MAKE_DQ(XMM, 7),
-        R_XMM8 = REG_MAKE_DQ(XMM, 8),
-        R_XMM9 = REG_MAKE_DQ(XMM, 9),
-        R_XMM10 = REG_MAKE_DQ(XMM, 10),
-        R_XMM11 = REG_MAKE_DQ(XMM, 11),
-        R_XMM12 = REG_MAKE_DQ(XMM, 12),
-        R_XMM13 = REG_MAKE_DQ(XMM, 13),
-        R_XMM14 = REG_MAKE_DQ(XMM, 14),
-        R_XMM15 = REG_MAKE_DQ(XMM, 15),
-#endif
+        XMM0 = _XMM | _DQWORD | 0,
+        XMM1 = _XMM | _DQWORD | 1,
+        XMM2 = _XMM | _DQWORD | 2,
+        XMM3 = _XMM | _DQWORD | 3,
+        XMM4 = _XMM | _DQWORD | 4,
+        XMM5 = _XMM | _DQWORD | 5,
+        XMM6 = _XMM | _DQWORD | 6,
+        XMM7 = _XMM | _DQWORD | 7,
+        XMM8 = _XMM | _DQWORD | 8,
+        XMM9 = _XMM | _DQWORD | 9,
+        XMM10 = _XMM | _DQWORD | 10,
+        XMM11 = _XMM | _DQWORD | 11,
+        XMM12 = _XMM | _DQWORD | 12,
+        XMM13 = _XMM | _DQWORD | 13,
+        XMM14 = _XMM | _DQWORD | 14,
+        XMM15 = _XMM | _DQWORD | 15,
     }
 
     /// <summary>
@@ -238,11 +331,14 @@ namespace X86Codec
         /// </summary>
         None,
 
-        /// <summary>Special purpose registers.</summary>
+        /// <summary>Special purpose registers, such as FLAGS.</summary>
         Special,
 
         /// <summary>General purpose registers, such as EAX.</summary>
         General,
+
+        /// <summary>High byte of general purpose registers (AH-DH).</summary>
+        HighByte,
 
         /// <summary>Segment registers, such as CS.</summary>
         Segment,
@@ -250,18 +346,14 @@ namespace X86Codec
         /// <summary>FPU registers ST(0) - ST(7).</summary>
         Fpu,
 
-        // <summary>Control registers.</summary>
-        //Control,
+        /// <summary>Control registers.</summary>
+        Control,
 
-        //Debug,
-        //MMX,
-        //XMM,
+        /// <summary>Debug registers.</summary>
+        Debug,
+
+        MMX,
+        XMM,
         //YMM,
-    }
-
-    public enum RegisterOffset
-    {
-        None = 0,
-        HighByte = 1,
     }
 }

@@ -115,6 +115,7 @@ namespace X86Codec
     /// </summary>
     public class RegisterOperand : Operand
     {
+#if false
         public static Register Make(RegisterType type, int number, CpuSize size, int offset)
         {
             int value =
@@ -136,7 +137,7 @@ namespace X86Codec
             reg |= (int)newSize << (int)Register._SizeShift;
             return (Register)reg;
         }
-
+#endif
         public Register Register { get; set; }
 
         public RegisterOperand()
@@ -150,6 +151,7 @@ namespace X86Codec
             this.Register = register;
         }
 
+#if false
         public RegisterOperand(Register register, CpuSize newSize)
             : base(0, 0)
         {
@@ -217,6 +219,7 @@ namespace X86Codec
                     >> (int)Register._OffsetShift);
             }
         }
+#endif
 
         public override string ToString()
         {

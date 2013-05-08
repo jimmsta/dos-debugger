@@ -784,13 +784,12 @@ namespace X86Codec
                 operandSize == CpuSize.Use8Bit &&
                 reg >= 4)
             {
-                return new RegisterOperand(
-                    RegisterType.General, 
-                    reg - 4, 
-                    CpuSize.Use8Bit,
-                    RegisterOffset.HighByte);
+                return new RegisterOperand(new Register(
+                    RegisterType.HighByte,
+                    reg - 4,
+                    CpuSize.Use8Bit));
             }
-            return new RegisterOperand(registerType, reg, operandSize);
+            return new RegisterOperand(new Register(registerType, reg, operandSize));
         }
 
         // Note: we need to take into account OperandSizeOverride and
@@ -842,15 +841,14 @@ namespace X86Codec
                     operandSize == CpuSize.Use8Bit &&
                     rm >= 4)
                 {
-                    return new RegisterOperand(
-                        RegisterType.General, 
-                        rm - 4, 
-                        CpuSize.Use8Bit,
-                        RegisterOffset.HighByte);
+                    return new RegisterOperand(new Register(
+                        RegisterType.HighByte,
+                        rm - 4,
+                        CpuSize.Use8Bit));
                 }
                 else
                 {
-                    return new RegisterOperand(registerType, rm, operandSize);
+                    return new RegisterOperand(new Register(registerType, rm, operandSize));
                 }
             }
 
@@ -928,6 +926,11 @@ namespace X86Codec
             return new RelativeOperand(reader.ReadImmediate(size), pos, (int)size);
         }
 
+        static RegisterOperand CreateRegisterOperand(RegisterType type, int number, CpuSize size)
+        {
+            return new RegisterOperand(new Register(type, number, size));
+        }
+
         static Operand DecodeOperand(O spec,
             InstructionReader reader, DecoderContext context)
         {
@@ -946,7 +949,7 @@ namespace X86Codec
                 case O.CS:
                 case O.SS:
                 case O.DS:
-                    return new RegisterOperand(
+                    return CreateRegisterOperand(
                         RegisterType.Segment,
                         spec - O.ES,
                         CpuSize.Use16Bit);
@@ -955,7 +958,7 @@ namespace X86Codec
                 case O.CL:
                 case O.DL:
                 case O.BL:
-                    return new RegisterOperand(
+                    return CreateRegisterOperand(
                         RegisterType.General,
                         spec - O.AL,
                         CpuSize.Use8Bit);
@@ -964,11 +967,10 @@ namespace X86Codec
                 case O.CH:
                 case O.DH:
                 case O.BH:
-                    return new RegisterOperand(
-                        RegisterType.General,
+                    return CreateRegisterOperand(
+                        RegisterType.HighByte,
                         spec - O.AH,
-                        CpuSize.Use8Bit,
-                        RegisterOffset.HighByte);
+                        CpuSize.Use8Bit);
 
                 case O.AX:
                 case O.CX:
@@ -978,7 +980,7 @@ namespace X86Codec
                 case O.BP:
                 case O.SI:
                 case O.DI:
-                    return new RegisterOperand(
+                    return CreateRegisterOperand(
                         RegisterType.General,
                         spec - O.AX,
                         CpuSize.Use16Bit);
@@ -994,7 +996,7 @@ namespace X86Codec
                     number = spec - O.eAX;
                     size = (context.OperandSize == CpuSize.Use16Bit) ?
                         CpuSize.Use16Bit : CpuSize.Use32Bit;
-                    return new RegisterOperand(RegisterType.General, number, size);
+                    return CreateRegisterOperand(RegisterType.General, number, size);
 
                 case O.rAX:
                 case O.rCX:
@@ -1005,7 +1007,7 @@ namespace X86Codec
                 case O.rSI:
                 case O.rDI:
                     number = spec - O.rAX;
-                    return new RegisterOperand(RegisterType.General, number, context.OperandSize);
+                    return CreateRegisterOperand(RegisterType.General, number, context.OperandSize);
 
                 case O.ST0:
                     return new RegisterOperand(Register.ST0);
@@ -1039,7 +1041,7 @@ namespace X86Codec
                     return DecodeMemoryOperand(reader, RegisterType.General, CpuSize.Use16Bit, context);
 
                 case O.Fv: // FLAGS/EFLAGS/RFLAGS
-                    return new RegisterOperand(Register.FLAGS, context.OperandSize);
+                    return new RegisterOperand(Register.FLAGS.Resize(context.OperandSize));
 
                 case O.Gb: // general-purpose register; byte
                     return DecodeRegisterOperand(reader, RegisterType.General, CpuSize.Use8Bit, context);
@@ -1141,14 +1143,14 @@ namespace X86Codec
                     return DecodeRegisterOperand(reader, RegisterType.Segment, CpuSize.Use16Bit, context);
 
                 case O.T80fp: // r/m selects x87 FPU register ST0-ST7
-                    return new RegisterOperand(RegisterType.Fpu, reader.GetModRM().RM, CpuSize.Use80Bit);
+                    return CreateRegisterOperand(RegisterType.Fpu, reader.GetModRM().RM, CpuSize.Use80Bit);
 
                 case O.Xb: // memory addressed by DS:rSI; byte
                     return new MemoryOperand
                     {
                         Size = CpuSize.Use8Bit,
                         Segment = Register.DS,
-                        Base = RegisterOperand.Resize(Register.SI, context.AddressSize)
+                        Base = Register.SI.Resize(context.AddressSize)
                     };
 
                 case O.Xv: // memory addressed by DS:rSI; 16, 32, or 64 bit
@@ -1156,7 +1158,7 @@ namespace X86Codec
                     {
                         Size = context.OperandSize,
                         Segment = Register.DS,
-                        Base = RegisterOperand.Resize(Register.SI, context.AddressSize)
+                        Base = Register.SI.Resize(context.AddressSize)
                     };
 
                 case O.Yb: // memory addressed by ES:rDI; byte
@@ -1164,7 +1166,7 @@ namespace X86Codec
                     {
                         Size = CpuSize.Use8Bit,
                         Segment = Register.ES,
-                        Base = RegisterOperand.Resize(Register.DI, context.AddressSize)
+                        Base = Register.DI.Resize(context.AddressSize)
                     };
 
                 case O.Yv: // memory addressed by ES:rDI; 16, 32, or 64 bit
@@ -1172,7 +1174,7 @@ namespace X86Codec
                     {
                         Size = context.OperandSize,
                         Segment = Register.ES,
-                        Base = RegisterOperand.Resize(Register.DI, context.AddressSize)
+                        Base = Register.DI.Resize(context.AddressSize)
                     };
 
                 case O._XLAT:
