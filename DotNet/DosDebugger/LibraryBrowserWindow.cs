@@ -273,17 +273,7 @@ namespace DosDebugger
             if (operandText[i] != null)
                 return operandText[i];
 
-#if false
-            if (operand is RelativeOperand)
-            {
-                RelativeOperand opr = (RelativeOperand)operand;
-                return ((ushort)(instruction.Location.Offset + instruction.EncodedLength + opr.Offset)).ToString("X4");
-            }
-            else
-#endif
-            {
-                return operand.ToString();
-            }
+            return operand.ToString();
         }
     }
 }

@@ -139,7 +139,10 @@ namespace Disassembler
 #endif
 
         /// <summary>
-        /// Decodes an instruction at the given address.
+        /// Decodes an instruction at the given address. In addition to being
+        /// a shortcut for X86Codec.Decoder.Decode(...), this method does the
+        /// following:
+        /// 1. Replace RelativeOperand with SourceAwareRelativeOperand
         /// </summary>
         /// <param name="address">The address to decode.</param>
         /// <returns>The decoded instruction.</returns>
@@ -153,6 +156,15 @@ namespace Disassembler
 
             Instruction instruction = X86Codec.Decoder.Decode(
                 image, offset, /*address,*/ CpuMode.RealAddressMode);
+            for (int i = 0; i < instruction.Operands.Length; i++)
+            {
+                if (instruction.Operands[i] is RelativeOperand)
+                {
+                    instruction.Operands[i] = new SourceAwareRelativeOperand(
+                        (RelativeOperand)instruction.Operands[i],
+                        address + instruction.EncodedLength);
+                }
+            }
             return instruction;
         }
 
@@ -582,6 +594,26 @@ namespace Disassembler
             this.EndAddress = location;
 
             return newBlock;
+        }
+    }
+
+    public class SourceAwareRelativeOperand : RelativeOperand
+    {
+        public Pointer Source { get; private set; }
+        public Pointer Target
+        {
+            get { return Source.IncrementWithWrapping(Offset.Value); }
+        }
+
+        public SourceAwareRelativeOperand(RelativeOperand opr, Pointer source)
+            : base(opr.Offset)
+        {
+            this.Source = source;
+        }
+
+        public override string ToString()
+        {
+            return Target.Offset.ToString("X4");
         }
     }
 

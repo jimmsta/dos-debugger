@@ -67,17 +67,7 @@ namespace X86Codec
 
         private string FormatOperand(Operand operand)
         {
-#if false
-            if (operand is RelativeOperand)
-            {
-                RelativeOperand opr = (RelativeOperand)operand;
-                return ((ushort)(this.Location.Offset + this.EncodedLength + opr.Offset)).ToString("X4");
-            }
-            else
-#endif
-            {
-                return operand.ToString();
-            }
+            return operand.ToString();
         }
     }
 
