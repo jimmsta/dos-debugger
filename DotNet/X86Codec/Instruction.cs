@@ -32,7 +32,7 @@ namespace X86Codec
 
         /// <summary>Gets or sets the operands of this instruction.</summary>
         /// <remarks>An X86 instruction may use up to four operands.</remarks>
-        public Operand[] Operands;
+        public Operand[] Operands { get; set; }
 
         /// <summary>
         /// Converts the instruction to a string in Intel syntax.
@@ -170,15 +170,28 @@ namespace X86Codec
         /// Consumes the next byte, word, or dword.
         /// </summary>
         /// <returns>The next byte, word, or dword, sign-extended.</returns>
-        public int ReadImmediate(CpuSize size)
+        public Operand.LocationAware<int> ReadImmediate(CpuSize size)
         {
+            int pos = this.Position;
+            int value;
             if (size == CpuSize.Use8Bit)
-                return (sbyte)ReadByte();
-            if (size == CpuSize.Use16Bit)
-                return ReadInt16();
-            if (size == CpuSize.Use32Bit)
-                return ReadInt32();
-            throw new ArgumentException("size must be 1, 2, or 4.");
+                value = (sbyte)ReadByte();
+            else if (size == CpuSize.Use16Bit)
+                value = ReadInt16();
+            else if (size == CpuSize.Use32Bit)
+                value = ReadInt32();
+            else
+                throw new ArgumentException("size must be 1, 2, or 4.");
+
+            return new Operand.LocationAware<int>
+            {
+                Location = new Operand.Location
+                {
+                    StartOffset = (byte)pos,
+                    Length = (byte)size
+                },
+                Value = value
+            };
         }
 
         private byte ReadByte()

@@ -3,15 +3,6 @@ using System.Text;
 
 namespace X86Codec
 {
-#if false
-    /// <summary>
-    /// Defines a location within an instruction.
-    /// </summary>
-    public struct LocationWithinInstruction
-    {
-    }
-#endif
-
     /// <summary>
     /// Represents an operand of an instruction.
     /// </summary>
@@ -36,14 +27,16 @@ namespace X86Codec
         /// Immediate (implicit)    0               0               SHL AX,1
         /// Pointer                 pointer start   pointer end     2920:7654
         /// </remarks>
-        public byte EncodedPosition { get; private set; }
-        public byte EncodedLength { get; private set; }
+        //public byte EncodedPosition { get; private set; }
+        //public byte EncodedLength { get; private set; }
 
+#if false
         protected Operand(int encodedPosition, int encodedLength)
         {
             this.EncodedPosition = (byte)encodedPosition;
             this.EncodedLength = (byte)encodedLength;
         }
+#endif
 
         /// <summary>
         /// Converts an unsigned integer to hexidecimal string of the form
@@ -66,6 +59,29 @@ namespace X86Codec
                     return s.Substring(1);
             }
         }
+
+        /// <summary>
+        /// Represents the location within an instruction, expressed as an
+        /// offset to the beginning of the instruction.
+        /// </summary>
+        public struct Location
+        {
+            public byte StartOffset { get; set; }
+            public byte Length { get; set; }
+        }
+
+        public struct LocationAware<T>
+        {
+            public Location Location { get; set; }
+            public T Value { get; set; }
+
+            public LocationAware(Location location, T value)
+                : this()
+            {
+                this.Location = location;
+                this.Value = value;
+            }
+        }
     }
 
     /// <summary>
@@ -74,20 +90,19 @@ namespace X86Codec
     /// </summary>
     public class ImmediateOperand : Operand
     {
-        private int value;
+        public LocationAware<int> Immediate { get; set; }
         public CpuSize Size;
 
-        public ImmediateOperand(int value, CpuSize size, int position, int length)
-            : base(position, length)
+        public ImmediateOperand(LocationAware<int> immediate, CpuSize size)
         {
-            this.value = value;
+            this.Immediate = immediate;
             this.Size = size;
         }
 
-        public int Value
+        public ImmediateOperand(int value, CpuSize size)
         {
-            get { return value; }
-            set { this.value = value; }
+            this.Immediate = new LocationAware<int> { Value = value };
+            this.Size = size;
         }
 
         /// <summary>
@@ -97,15 +112,15 @@ namespace X86Codec
         public override string ToString()
         {
             // Encode in decimal if the value is a single digit.
-            if (value > -10 && value < 10)
-                return value.ToString();
+            if (Immediate.Value > -10 && Immediate.Value < 10)
+                return Immediate.Value.ToString();
 
             // Encode in hexidecimal format such as 0f34h.
             switch (Size)
             {
-                case CpuSize.Use8Bit: return FormatImmediate((byte)value);
-                case CpuSize.Use16Bit: return FormatImmediate((ushort)value);
-                default: return FormatImmediate((uint)value);
+                case CpuSize.Use8Bit: return FormatImmediate((byte)Immediate.Value);
+                case CpuSize.Use16Bit: return FormatImmediate((ushort)Immediate.Value);
+                default: return FormatImmediate((uint)Immediate.Value);
             }
         }
     }
@@ -140,13 +155,7 @@ namespace X86Codec
 #endif
         public Register Register { get; set; }
 
-        public RegisterOperand()
-            : base(0, 0)
-        {
-        }
-
         public RegisterOperand(Register register)
-            : base(0, 0)
         {
             this.Register = register;
         }
@@ -238,10 +247,9 @@ namespace X86Codec
         public Register Base;
         public Register Index;
         public byte Scaling = 1; // scaling factor; must be one of 1, 2, 4
-        public int Displacement; // sign-extended
+        public LocationAware<int> Displacement; // sign-extended
 
         public MemoryOperand()
-            : base(0, 0)
         {
         }
 
@@ -274,7 +282,7 @@ namespace X86Codec
             s.Append('[');
             if (Base == Register.None) // only displacement
             {
-                s.Append(FormatImmediate((UInt32)Displacement));
+                s.Append(FormatImmediate((UInt32)Displacement.Value));
             }
             else // base+index*scale+displacement
             {
@@ -289,15 +297,15 @@ namespace X86Codec
                         s.Append(Scaling.ToString());
                     }
                 }
-                if (Displacement > 0) // e.g. [BX+1]
+                if (Displacement.Value > 0) // e.g. [BX+1]
                 {
                     s.Append('+');
-                    s.Append(FormatImmediate((uint)Displacement));
+                    s.Append(FormatImmediate((uint)Displacement.Value));
                 }
-                else if (Displacement < 0) // e.g. [BP-2]
+                else if (Displacement.Value < 0) // e.g. [BP-2]
                 {
                     s.Append('-');
-                    s.Append(FormatImmediate((uint)(-Displacement)));
+                    s.Append(FormatImmediate((uint)(-Displacement.Value)));
                 }
             }
             s.Append(']');
@@ -310,24 +318,23 @@ namespace X86Codec
     /// </summary>
     public class RelativeOperand : Operand
     {
-        private int offset;
+        private LocationAware< int> offset;
 
-        public RelativeOperand(int offset, int position, int length)
-            : base(position, length)
+        public RelativeOperand(LocationAware<int> offset)
         {
             this.offset = offset;
         }
 
-        public int Offset
+        public LocationAware< int> Offset
         {
             get { return offset; }
-            set { offset = value; }
+            //set { offset = value; }
         }
 
         public override string ToString()
         {
-            string s = offset.ToString();
-            if (offset >= 0)
+            string s = offset.Value.ToString();
+            if (offset.Value >= 0)
                 s = '+' + s;
             return s;
         }
@@ -347,11 +354,10 @@ namespace X86Codec
 
     public class PointerOperand : Operand
     {
-        public UInt16 Segment { get; private set; }
-        public UInt64 Offset { get; private set; }
+        public LocationAware<UInt16> Segment { get; private set; }
+        public LocationAware<UInt32> Offset { get; private set; }
 
-        public PointerOperand(UInt16 segment, UInt64 offset, int position, int length)
-            : base(position, length)
+        public PointerOperand(LocationAware<UInt16> segment, LocationAware<UInt32> offset)
         {
             this.Segment = segment;
             this.Offset = offset;
@@ -359,9 +365,8 @@ namespace X86Codec
 
         public override string ToString()
         {
-            //if (opr->size == OPR_32BIT)
             return string.Format("{0:X4}:{1:X4}",
-                Segment, (UInt16)Offset);
+                Segment.Value, Offset.Value);
         }
     }
 }

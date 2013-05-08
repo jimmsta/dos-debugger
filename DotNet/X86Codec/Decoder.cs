@@ -859,12 +859,11 @@ namespace X86Codec
             // This encodes a 16-bit sign-extended displacement.
             if (mod == 0 && rm == 6)
             {
-                int displacement = reader.ReadImmediate(CpuSize.Use16Bit);
                 return new MemoryOperand
                 {
                     Size = operandSize,
                     Segment = segment,
-                    Displacement = displacement
+                    Displacement = reader.ReadImmediate(CpuSize.Use16Bit)
                 };
             }
 
@@ -916,14 +915,12 @@ namespace X86Codec
 
         static ImmediateOperand DecodeImmediateOperand(InstructionReader reader, CpuSize size)
         {
-            int pos = reader.Position;
-            return new ImmediateOperand(reader.ReadImmediate(size), size, pos, (int)size);
+            return new ImmediateOperand(reader.ReadImmediate(size), size);
         }
 
         static RelativeOperand DecodeRelativeOperand(InstructionReader reader, CpuSize size)
         {
-            int pos = reader.Position;
-            return new RelativeOperand(reader.ReadImmediate(size), pos, (int)size);
+            return new RelativeOperand(reader.ReadImmediate(size));
         }
 
         static RegisterOperand CreateRegisterOperand(RegisterType type, int number, CpuSize size)
@@ -943,7 +940,7 @@ namespace X86Codec
                 case O.Imm1:
                 case O.Imm2:
                 case O.Imm3:
-                    return new ImmediateOperand(spec - O.Imm0, CpuSize.Use8Bit, 0, 0);
+                    return new ImmediateOperand(spec - O.Imm0, CpuSize.Use8Bit);
 
                 case O.ES:
                 case O.CS:
@@ -1019,10 +1016,11 @@ namespace X86Codec
                     }
                     else
                     {
-                        int pos = reader.Position;
-                        ushort off = (ushort)reader.ReadImmediate(CpuSize.Use16Bit);
-                        ushort seg = (ushort)reader.ReadImmediate(CpuSize.Use16Bit);
-                        return new PointerOperand(seg, off, pos, 4);
+                        var off = reader.ReadImmediate(CpuSize.Use16Bit);
+                        var seg = reader.ReadImmediate(CpuSize.Use16Bit);
+                        return new PointerOperand(
+                            new Operand.LocationAware<UInt16>(seg.Location, (UInt16)seg.Value),
+                            new Operand.LocationAware<UInt32>(off.Location, (UInt32)off.Value));
                     }
 
                 case O.Eb: // r/m; 8-bit

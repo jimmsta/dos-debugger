@@ -540,7 +540,7 @@ namespace Disassembler
                 return new XRef(
                     type: bcjType,
                     source: start,
-                    target: start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset)
+                    target: start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset.Value)
                 );
             }
 
@@ -550,7 +550,7 @@ namespace Disassembler
                 return new XRef(
                     type: bcjType,
                     source: start,
-                    target: new Pointer(opr.Segment, (UInt16)opr.Offset)
+                    target: new Pointer(opr.Segment.Value, (UInt16)opr.Offset.Value)
                 );
             }
 
@@ -583,7 +583,7 @@ namespace Disassembler
                         type: XRefType.NearIndexedJump,
                         source: start,
                         target: Pointer.Invalid,
-                        dataLocation: new Pointer(start.Segment, (UInt16)opr.Displacement)
+                        dataLocation: new Pointer(start.Segment, (UInt16)opr.Displacement.Value)
                     );
                 }
             }

@@ -129,6 +129,7 @@ namespace DosDebugger
                 for (int k = 0; k < instruction.Operands.Length; k++)
                 {
                     var opr = instruction.Operands[k];
+#if false
                     if (opr.EncodedLength != 0)
                     {
                         int j = i - image.StartAddress + opr.EncodedPosition;
@@ -143,6 +144,7 @@ namespace DosDebugger
                             System.Diagnostics.Debug.WriteLine(si.ToString());
                         }
                     }
+#endif
                 }
 
                 // TODO: we need to check more accurately.
