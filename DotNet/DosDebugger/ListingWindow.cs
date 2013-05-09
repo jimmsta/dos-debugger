@@ -493,6 +493,54 @@ namespace DosDebugger
             //e.DrawDefault = true;
         }
 
+        private TextWithInfo[] MeasureSubItemTexts(Graphics g, ListViewItem.ListViewSubItem subItem)
+        {
+            string s = subItem.Text;
+
+            // Create a Text array, so that we can display segments
+            // of the text with different format, and also retrieve
+            // the location of each segment of text.
+            List<TextWithInfo> textList = new List<TextWithInfo>(10);
+            for (int index = 0; index < s.Length; )
+            {
+                // Get separaters.
+                int k = index;
+                while (k < s.Length && (s[k] == ' ' || s[k] == ','))
+                    k++;
+
+                if (k > index)
+                {
+                    textList.Add(new TextWithInfo
+                    {
+                        Text = s.Substring(index, k - index),
+                        Font = subItem.Font,
+                        Color = Color.Black
+                    });
+                }
+                index = k;
+
+                // Get word.
+                while (k < s.Length && (s[k] != ' ' && s[k] != ','))
+                    k++;
+
+                if (k > index)
+                {
+                    textList.Add(new TextWithInfo
+                    {
+                        Text = s.Substring(index, k - index),
+                        Font = subItem.Font,
+                        Color = (s[index] == '_') ? Color.Blue : Color.Black
+                    });
+                }
+                index = k;
+            }
+
+            // Measure the texts.
+            TextWithInfo[] texts = textList.ToArray();
+            g.MeasureTexts(texts, subItem.Bounds);
+            return texts;
+        }
+
         private bool DisplayLinkText(
             string s, Graphics g, Rectangle bounds, Font font)
         {
@@ -563,6 +611,27 @@ namespace DosDebugger
 
         private void lvListing_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
         {
+            // Use default drawing routine if this cell doesn't contain html.
+            if (!e.SubItem.Text.Contains("<"))
+            {
+                e.DrawDefault = true;
+                return;
+            }
+
+            Rectangle rect = e.SubItem.Bounds;
+            if (e.ColumnIndex == 0)
+            {
+                rect = new Rectangle(rect.X, rect.Y, e.Item.ListView.Columns[0].Width, rect.Height);
+            }
+
+            HtmlRenderer renderer = new HtmlRenderer(
+                e.SubItem.Text, e.SubItem.Font, linkHoverFont);
+            renderer.Measure(e.Graphics, rect);
+            if (renderer.Draw(e.Graphics, lvListing.PointToClient(Cursor.Position)))
+                ; // lvListing.Cursor = Cursors.Hand;
+            return;
+
+#if false
             // If the text has a word starting with _, make the word a link.
             if (e.SubItem.Text.Contains(" _"))
             {
@@ -594,6 +663,7 @@ namespace DosDebugger
             {
                 e.DrawDefault = true;
             }
+#endif
         }
 
         private void lvListing_MouseMove(object sender, MouseEventArgs e)
@@ -601,17 +671,57 @@ namespace DosDebugger
             var ht = lvListing.HitTest(e.Location);
             if (ht.Item != lastItem)
             {
-                if (lastItem != null)
+                if (lastItem != null && lastItem.Index < lvListing.Items.Count)
                     lvListing.RedrawItems(lastItem.Index, lastItem.Index, true);
                 if (ht.Item != null)
                     lvListing.RedrawItems(ht.Item.Index, ht.Item.Index, true);
                 lastItem = ht.Item;
             }
 
-            if (ht.Item != null && ht.SubItem != null)
+            // Update cursor shape.
+            if (ht.Item == null)
             {
+                lvListing.Cursor = Cursors.Default;
+            }
+            else
+            {
+                HtmlRenderer renderer = new HtmlRenderer(
+                    ht.SubItem.Text, ht.SubItem.Font, linkHoverFont);
+                using (Graphics g = lvListing.CreateGraphics())
+                {
+                    renderer.Measure(g, ht.SubItem.Bounds); // TBD: if ColumnIndex == 0...
+                    if (renderer.HitTest(e.Location))
+                    {
+                        lvListing.Cursor = Cursors.Hand;
+                        return;
+                    }
+                }
+                lvListing.Cursor = Cursors.Default;
             }
 
+#if false
+            // Display a tool-tip for an instruction.
+            if (ht.SubItem != null && ht.SubItem.Text.Contains(" _"))
+            {
+                using (Graphics g = lvListing.CreateGraphics())
+                {
+                    TextWithInfo[] texts = MeasureSubItemTexts(g, ht.SubItem);
+                    //System.Diagnostics.Debug.WriteLine("Checking...");
+                    if (texts.Length > 0 && texts[0].Bounds.Contains(e.Location))
+                    {
+                        if (opcodeToolTip == null)
+                            opcodeToolTip = new ToolTip();
+
+                        Rectangle r = ht.SubItem.Bounds;
+                        Point ptToolTip = new Point(r.Left, r.Bottom);
+                        opcodeToolTip.Show(texts[0].Text, lvListing, ptToolTip, 1000);
+                        //ht.SubItem.
+                    }
+                }
+            }
+#endif
+
+#if false
             if (ht.Item != null && ht.SubItem.Text.IndexOf(':') > 0)
             {
                 lvListing.Cursor = Cursors.Hand;
@@ -620,8 +730,10 @@ namespace DosDebugger
             {
                 lvListing.Cursor = Cursors.Default;
             }
+#endif
         }
 
+        ToolTip opcodeToolTip;
         ListViewItem lastItem;
     }
 

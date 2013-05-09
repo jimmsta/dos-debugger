@@ -83,7 +83,13 @@ namespace Disassembler
 
         public override string ToString()
         {
+            // We should take an argument to specify whether to return
+            // html.
+#if true
+            return string.Format("<a href=\"somewhere\">{0}</a>", Target.TargetName);
+#else
             return Target.TargetName;
+#endif
         }
     }
 

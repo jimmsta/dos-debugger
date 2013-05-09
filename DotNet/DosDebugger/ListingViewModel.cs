@@ -348,7 +348,14 @@ namespace DosDebugger
 
         public override string Text
         {
-            get { return instruction.ToString(); }
+            get {
+                //StringBuilder sb = new StringBuilder();
+
+                // If an operand contains a symbolic part, return
+                // an html formatted text.
+
+                return instruction.ToString(); 
+            }
         }
     }
 

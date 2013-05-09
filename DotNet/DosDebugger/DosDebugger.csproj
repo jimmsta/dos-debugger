@@ -98,6 +98,7 @@
     <Compile Include="HexWindow.Designer.cs">
       <DependentUpon>HexWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="HtmlRenderer.cs" />
     <Compile Include="LibraryBrowserWindow.cs">
       <SubType>Form</SubType>
     </Compile>
