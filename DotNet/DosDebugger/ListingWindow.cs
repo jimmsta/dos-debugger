@@ -6,6 +6,7 @@ using System.Text;
 using System.Windows.Forms;
 using Disassembler;
 using X86Codec;
+using Util.Forms;
 
 namespace DosDebugger
 {
@@ -15,10 +16,12 @@ namespace DosDebugger
         {
             InitializeComponent();
             this.monoFont = new Font(FontFamily.GenericMonospace, mnuListing.Font.Size);
+            this.linkHoverFont = new Font(lvListing.Font, FontStyle.Underline);
             // TODO: dispose monoFont when no longer used
         }
 
         private Font monoFont;
+        private Font linkHoverFont;
 
         private Document document;
         private ListingViewModel viewModel;
@@ -45,6 +48,7 @@ namespace DosDebugger
 
         private void UpdateUI()
         {
+            lvListing.SetWindowTheme("explorer");
             lvListing.VirtualListSize = 0;
             viewModel = null;
             if (document == null)
@@ -476,6 +480,149 @@ namespace DosDebugger
         {
             this.ListingScope = ListingScope.Executable;
         }
+
+        private void lvListing_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
+        {
+            e.DrawDefault = true;
+        }
+
+        private void lvListing_DrawItem(object sender, DrawListViewItemEventArgs e)
+        {
+            //e.Graphics.DrawString(e.Item.Text, e.Item.Font, Brushes.Black, e.Bounds);
+            //e.Graphics.DrawString("AAAA", e.Item.Font, Brushes.Black, e.Bounds);
+            //e.DrawDefault = true;
+        }
+
+        private bool DisplayLinkText(
+            string s, Graphics g, Rectangle bounds, Font font)
+        {
+            if (s == null)
+                throw new ArgumentNullException("s");
+            if (s.Length == 0)
+                return true;
+
+            // Create a Text array, so that we can display segments
+            // of the text with different format, and also retrieve
+            // the location of each segment of text.
+            List<TextWithInfo> textList = new List<TextWithInfo>(10);
+            for (int index = 0; index < s.Length; )
+            {
+                // Get separaters.
+                int k = index;
+                while (k < s.Length && (s[k] == ' ' || s[k] == ','))
+                    k++;
+
+                if (k > index)
+                {
+                    textList.Add(new TextWithInfo
+                    {
+                        Text = s.Substring(index, k - index),
+                        Font = font,
+                        Color = Color.Black
+                    });
+                }
+                index = k;
+
+                // Get word.
+                while (k < s.Length && (s[k] != ' ' && s[k] != ','))
+                    k++;
+
+                if (k > index)
+                {
+                    textList.Add(new TextWithInfo
+                    {
+                        Text = s.Substring(index, k - index),
+                        Font = font,
+                        Color = (s[index] == '_') ? Color.Blue : Color.Black
+                    });
+                }
+                index = k;
+            }
+
+            // Measure the texts.
+            TextWithInfo[] texts = textList.ToArray();
+            g.MeasureTexts(texts, bounds);
+
+            // Check if the mouse cursor is on a link. If it is, change the
+            // font to underlined.
+            Point pt = lvListing.PointToClient(Cursor.Position);
+            foreach (var text in texts)
+            {
+                if (text.Color == Color.Blue && text.Bounds.Contains(pt))
+                {
+                    text.Font = linkHoverFont;
+                    lvListing.Cursor = Cursors.Hand;
+                }
+            }
+
+            // Display the text.
+            g.DrawTexts(texts);
+
+            return true;
+        }
+
+        private void lvListing_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
+        {
+            // If the text has a word starting with _, make the word a link.
+            if (e.SubItem.Text.Contains(" _"))
+            {
+                Rectangle r = e.Bounds;
+
+                DisplayLinkText(e.SubItem.Text, e.Graphics, r, e.SubItem.Font);
+
+                return;
+            }
+
+            if (e.ColumnIndex == 0)
+            {
+                //e.Graphics.DrawString("AAAA", e.Item.Font, Brushes.Black, e.Bounds);
+                //if (lvListing. Cursor.Position
+                Point pt = lvListing.PointToClient(Cursor.Position);
+                if (e.Bounds.Contains(pt))
+                {
+                    using (Font font = new Font(e.Item.Font, FontStyle.Underline))
+                    {
+                        e.Graphics.DrawText(e.SubItem.Text, font, e.Bounds, Color.Blue);
+                    }
+                }
+                else
+                {
+                    e.DrawDefault = true;
+                }
+            }
+            else
+            {
+                e.DrawDefault = true;
+            }
+        }
+
+        private void lvListing_MouseMove(object sender, MouseEventArgs e)
+        {
+            var ht = lvListing.HitTest(e.Location);
+            if (ht.Item != lastItem)
+            {
+                if (lastItem != null)
+                    lvListing.RedrawItems(lastItem.Index, lastItem.Index, true);
+                if (ht.Item != null)
+                    lvListing.RedrawItems(ht.Item.Index, ht.Item.Index, true);
+                lastItem = ht.Item;
+            }
+
+            if (ht.Item != null && ht.SubItem != null)
+            {
+            }
+
+            if (ht.Item != null && ht.SubItem.Text.IndexOf(':') > 0)
+            {
+                lvListing.Cursor = Cursors.Hand;
+            }
+            else
+            {
+                lvListing.Cursor = Cursors.Default;
+            }
+        }
+
+        ListViewItem lastItem;
     }
 
     static class ListViewItemExtensions

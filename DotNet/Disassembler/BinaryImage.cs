@@ -154,6 +154,10 @@ namespace Disassembler
             if (offset < 0 || offset >= image.Length)
                 throw new ArgumentOutOfRangeException("address");
 
+            // If there's already an instruction decoded here, return it.
+            if (attr[offset].Instruction != null)
+                return attr[offset].Instruction;
+
             Instruction instruction = X86Codec.Decoder.Decode(
                 image, offset, /*address,*/ CpuMode.RealAddressMode);
             for (int i = 0; i < instruction.Operands.Length; i++)
@@ -419,6 +423,8 @@ namespace Disassembler
         public Procedure Procedure { get; internal set; }
 
         //public Piece Piece { get; internal set; }
+
+        public Instruction Instruction { get; set; }
 
         public ByteProperties()
         {

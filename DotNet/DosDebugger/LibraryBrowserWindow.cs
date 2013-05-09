@@ -120,19 +120,17 @@ namespace DosDebugger
             for (var i = image.StartAddress; i < image.EndAddress; )
             {
                 var instruction = image.DecodeInstruction(addr);
-                image.CreatePiece(addr, addr + instruction.EncodedLength, ByteType.Code);
-                addr = addr.Increment(instruction.EncodedLength);
 
                 // An operand may have zero or one component that may be
                 // fixed up. Check this.
-                SymbolicInstruction si = new SymbolicInstruction(instruction);
                 for (int k = 0; k < instruction.Operands.Length; k++)
                 {
-                    var opr = instruction.Operands[k];
-#if false
-                    if (opr.EncodedLength != 0)
+                    var operand = instruction.Operands[k];
+                    if (operand is RelativeOperand)
                     {
-                        int j = i - image.StartAddress + opr.EncodedPosition;
+                        var opr = (RelativeOperand)operand;
+                        var loc = opr.Offset.Location;
+                        int j = i - image.StartAddress + loc.StartOffset;
                         int fixupIndex = codeSegment.DataFixups[j];
                         if (fixupIndex != 0)
                         {
@@ -140,12 +138,16 @@ namespace DosDebugger
                             if (fixup.DataOffset != j)
                                 continue;
 
-                            si.operandText[k] = FormatSymbolicOperand(instruction, opr, fixup, module);
-                            System.Diagnostics.Debug.WriteLine(si.ToString());
+                            var target = new SymbolicTarget(fixup, module);
+                            instruction.Operands[k] = new SymbolicRelativeOperand(target);
+                            System.Diagnostics.Debug.WriteLine(instruction.ToString());
                         }
                     }
-#endif
                 }
+
+                image.CreatePiece(addr, addr + instruction.EncodedLength, ByteType.Code);
+                image[addr].Instruction = instruction;
+                addr = addr.Increment(instruction.EncodedLength);
 
                 // TODO: we need to check more accurately.
 
@@ -211,69 +213,6 @@ namespace DosDebugger
                 return extName.Name;
             }
             return null;
-        }
-    }
-
-    /// <summary>
-    /// Represents an instruction with some fields replaced with a symbol,
-    /// e.g. 
-    /// CALL _strcpy
-    /// MOV DX, seg DGROUP
-    /// JMP [BX + off Table]
-    /// </summary>
-    public class SymbolicInstruction
-    {
-        public Instruction instruction { get; private set; }
-        public string[] operandText;
-
-        public SymbolicInstruction(Instruction instruction)
-        {
-            this.instruction = instruction;
-            this.operandText = new string[instruction.Operands.Length];
-        }
-
-        /// <summary>
-        /// Converts the instruction to a string in Intel syntax.
-        /// </summary>
-        /// <returns>The formatted instruction.</returns>
-        public override string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-
-            // Write address.
-            //s.Append(instruction.Location.ToString());
-            //s.Append("  ");
-
-            // Format group 1 (LOCK/REPZ/REPNZ) prefix.
-            if ((instruction.Prefix & Prefixes.Group1) != 0)
-            {
-                s.Append((instruction.Prefix & Prefixes.Group1).ToString());
-                s.Append(' ');
-            }
-
-            // Format mnemonic.
-            s.Append(instruction.Operation.ToString());
-
-            // Format operands.
-            for (int i = 0; i < instruction.Operands.Length; i++)
-            {
-                if (i > 0)
-                {
-                    s.Append(',');
-                }
-                s.Append(' ');
-                s.Append(FormatOperand(i));
-            }
-            return s.ToString().ToLowerInvariant();
-        }
-
-        private string FormatOperand(int i)
-        {
-            var operand = instruction.Operands[i];
-            if (operandText[i] != null)
-                return operandText[i];
-
-            return operand.ToString();
         }
     }
 }

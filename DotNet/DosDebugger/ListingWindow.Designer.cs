@@ -62,7 +62,7 @@
             this.tableLayoutPanel1.SetColumnSpan(this.lvListing, 2);
             this.lvListing.ContextMenuStrip = this.mnuListing;
             this.lvListing.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lvListing.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvListing.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvListing.FullRowSelect = true;
             this.lvListing.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.lvListing.HideSelection = false;
@@ -70,13 +70,18 @@
             this.lvListing.Margin = new System.Windows.Forms.Padding(1);
             this.lvListing.MultiSelect = false;
             this.lvListing.Name = "lvListing";
+            this.lvListing.OwnerDraw = true;
             this.lvListing.Size = new System.Drawing.Size(717, 263);
             this.lvListing.TabIndex = 0;
             this.lvListing.UseCompatibleStateImageBehavior = false;
             this.lvListing.View = System.Windows.Forms.View.Details;
             this.lvListing.VirtualMode = true;
+            this.lvListing.DrawColumnHeader += new System.Windows.Forms.DrawListViewColumnHeaderEventHandler(this.lvListing_DrawColumnHeader);
+            this.lvListing.DrawItem += new System.Windows.Forms.DrawListViewItemEventHandler(this.lvListing_DrawItem);
+            this.lvListing.DrawSubItem += new System.Windows.Forms.DrawListViewSubItemEventHandler(this.lvListing_DrawSubItem);
             this.lvListing.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvListing_RetrieveVirtualItem);
             this.lvListing.SelectedIndexChanged += new System.EventHandler(this.lvListing_SelectedIndexChanged);
+            this.lvListing.MouseMove += new System.Windows.Forms.MouseEventHandler(this.lvListing_MouseMove);
             // 
             // columnHeader1
             // 
@@ -100,7 +105,7 @@
             this.toolStripMenuItem1,
             this.mnuListingIncomingXRefs});
             this.mnuListing.Name = "contextMenuListing";
-            this.mnuListing.Size = new System.Drawing.Size(242, 80);
+            this.mnuListing.Size = new System.Drawing.Size(242, 58);
             this.mnuListing.Closed += new System.Windows.Forms.ToolStripDropDownClosedEventHandler(this.contextMenuListing_Closed);
             this.mnuListing.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuListing_Opening);
             // 
@@ -115,7 +120,7 @@
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(228, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(238, 6);
             // 
             // mnuListingIncomingXRefs
             // 
