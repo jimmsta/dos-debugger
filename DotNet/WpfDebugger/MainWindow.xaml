@@ -1,9 +1,10 @@
 ﻿<Window x:Class="WpfDebugger.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonDock="http://avalondock.codeplex.com"
         xmlns:my="clr-namespace:WpfDebugger"
         Title="MainWindow" Height="400" Width="600"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded" Unloaded="Window_Unloaded">
     <Window.Resources>
         <BitmapImage x:Key="BackwardImage" UriSource="Resources/left_circular-26.png"/>
         <BitmapImage x:Key="ForwardImage" UriSource="Resources/right_circular-26.png"/>
@@ -13,6 +14,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -20,10 +22,12 @@
         <!-- Menu bar -->
         <Menu HorizontalAlignment="Left" Grid.Row="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open">
-                </MenuItem>
+                <MenuItem Header="_Open"/>
                 <Separator/>
-                <MenuItem Header="E_xit"/>
+                <MenuItem Name="mnuFileSaveLayout" Header="Save Layout" Click="mnuFileSaveLayout_Click"/>
+                <MenuItem Name="mnuFileLoadLayout" Header="Load Layout" Click="mnuFileLoadLayout_Click"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Name="mnuFileExit" Click="mnuFileExit_Click" />
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Header="Copy Address"/>
@@ -41,6 +45,16 @@
             <MenuItem Header="_View">
                 <MenuItem Header="Navigate _Backward" Icon="{StaticResource BackwardIcon}" IsEnabled="False"/>
                 <MenuItem Header="Navigate _Forward" Icon="{StaticResource ForwardIcon}"/>
+                <Separator/>
+                <MenuItem Header="Segment List" Name="mnuViewSegments"/>
+                <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click"/>
+                <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click"/>
+                <MenuItem Header="Properties" Name="mnuViewProperties"/>
+                <Separator/>
+                <MenuItem Header="Theme">
+                    <MenuItem Header="Default"/>
+                    <MenuItem Header="VS2010"/>
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Name="mnuHelpTest" Header="_Test" Click="mnuHelpTest_Click"/>
@@ -48,26 +62,66 @@
             </MenuItem>
         </Menu>
         
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            
-            <my:DisassemblyControl x:Name="disassemblyList" Grid.Column="1" />
-            
-            <Grid Grid.Column="0">
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <!--<RowDefinition/>-->
-                </Grid.RowDefinitions>
-                <my:ProcedureListControl x:Name="procedureList"/>
-                <!--<DataGrid Grid.Row="1">                    
-                </DataGrid>-->
-            </Grid>
-        </Grid>
-        
-        <StackPanel Grid.Row="2" Margin="4,2,4,2">
+        <!-- Tool bar -->
+        <ToolBar Grid.Row="1">
+            <Button>Go Backward</Button>
+            <Button>Go Forward</Button>
+        </ToolBar>
+
+        <!-- Main window -->
+        <avalonDock:DockingManager Name="dockingManager" Grid.Row="2">
+            <!--
+            <avalonDock:DockingManager.Theme>
+                <avalonDock:VS2010Theme/>
+            </avalonDock:DockingManager.Theme>
+            -->
+            <avalonDock:LayoutRoot>
+                <avalonDock:LayoutPanel Orientation="Horizontal">
+                    <avalonDock:LayoutDocumentPane>
+                        <avalonDock:LayoutDocument ContentId="document1" Title="Disassembly">
+                            <my:DisassemblyControl x:Name="disassemblyList"/>
+                        </avalonDock:LayoutDocument>
+                        <!--<avalonDock:LayoutDocument ContentId="document2" Title="Hoho"/>-->
+                    </avalonDock:LayoutDocumentPane>
+                    <avalonDock:LayoutAnchorablePane DockWidth="200">
+                        <avalonDock:LayoutAnchorable ContentId="procedureList" Title="Procedures">
+                            <!--<Frame JournalOwnership="OwnsJournal"
+                                       NavigationUIVisibility="Visible">
+                                <Frame.Content>
+                                    <StackPanel Background="White">
+                                        <TextBox Text="Just test this"/>
+                                        <TextBlock>
+                                                <Run ToolTip="How">Please</Run> click 
+                                                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="Page1.xaml">here</Hyperlink> to navigate <Run>to the</Run> next page
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Frame.Content>
+                            </Frame>
+                            -->
+                            <my:ProcedureListControl x:Name="procedureList"/>
+                        </avalonDock:LayoutAnchorable>
+                    </avalonDock:LayoutAnchorablePane>
+                </avalonDock:LayoutPanel>
+
+                <avalonDock:LayoutRoot.LeftSide>
+                    <avalonDock:LayoutAnchorSide>
+                        <avalonDock:LayoutAnchorGroup>
+                            <avalonDock:LayoutAnchorable ContentId="errorList" Title="Error List">
+                                <my:ErrorListControl x:Name="errorList"/>
+                            </avalonDock:LayoutAnchorable>
+                            <!--<avalonDock:LayoutAnchorable ContentId="segmentList" Title="Segments">
+                                <TextBlock Text="Nothing yet"/>
+                            </avalonDock:LayoutAnchorable>
+                            -->
+                        </avalonDock:LayoutAnchorGroup>
+                    </avalonDock:LayoutAnchorSide>
+                </avalonDock:LayoutRoot.LeftSide>
+                
+            </avalonDock:LayoutRoot>
+        </avalonDock:DockingManager>
+
+        <!-- Status Bar -->
+        <StackPanel Grid.Row="3" Margin="4,2,4,2">
             <TextBlock>Status Bar</TextBlock>
         </StackPanel>
         
