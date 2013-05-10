@@ -11,14 +11,30 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <ToolBar>
-            <Button Content="Errors"></Button>
+            <Button>
+                <StackPanel Orientation="Horizontal">
+                    <Image Width="16" Height="16" Source="{StaticResource ErrorIcon}"/>
+                    <TextBlock x:Name="txtError" Margin="4,0,0,0" Text="{Binding ErrorCount, StringFormat='\{0\} Errors'}" />
+                </StackPanel>
+            </Button>
             <Separator/>
-            <Button Content="Warnings"></Button>
+            <Button>
+                <StackPanel Orientation="Horizontal">
+                    <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                    <TextBlock Margin="4,0,0,0" Text="{Binding WarningCount, StringFormat='\{0\} Warnings'}" />
+                </StackPanel>
+            </Button>
             <Separator/>
-            <Button Content="Messages"></Button>
+            <Button>
+                <StackPanel Orientation="Horizontal">
+                    <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                    <TextBlock Margin="4,0,0,0" Text="{Binding MessageCount, StringFormat='\{0\} Messages'}" />
+                </StackPanel>
+            </Button>
         </ToolBar>
         
         <ListView Name="lvErrors" Grid.Row="1"
+                  ItemsSource="{Binding Items}"
                   Foreground="Black" 
                   FontFamily="Consolas" 
                   SelectionMode="Single">
@@ -31,7 +47,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Message" Width="200">
+                    <GridViewColumn Header="Message" Width="500">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Message}"/>

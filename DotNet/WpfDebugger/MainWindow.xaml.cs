@@ -102,6 +102,7 @@ namespace WpfDebugger
             this.disassemblyList.Image = image;
             this.procedureList.Image = image;
             this.errorList.Image = image;
+            this.segmentList.Image = image;
         }
 
         private void mnuFileExit_Click(object sender, RoutedEventArgs e)
@@ -110,6 +111,11 @@ namespace WpfDebugger
         }
 
         #region Tool Window Activation
+
+        private void mnuViewSegments_Click(object sender, RoutedEventArgs e)
+        {
+            ActivateToolWindow(segmentList);
+        }
 
         private void mnuViewErrors_Click(object sender, RoutedEventArgs e)
         {
@@ -189,5 +195,6 @@ namespace WpfDebugger
         }
 
         #endregion
+
     }
 }

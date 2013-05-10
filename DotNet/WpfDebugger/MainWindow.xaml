@@ -4,12 +4,9 @@
         xmlns:avalonDock="http://avalondock.codeplex.com"
         xmlns:my="clr-namespace:WpfDebugger"
         Title="MainWindow" Height="400" Width="600"
+        WindowState="Maximized"
         Loaded="Window_Loaded" Unloaded="Window_Unloaded">
     <Window.Resources>
-        <BitmapImage x:Key="BackwardImage" UriSource="Resources/left_circular-26.png"/>
-        <BitmapImage x:Key="ForwardImage" UriSource="Resources/right_circular-26.png"/>
-        <Image x:Key="BackwardIcon" Width="16" Height="16" Source="{StaticResource BackwardImage}"/>
-        <Image x:Key="ForwardIcon" Width="16" Height="16" Source="{StaticResource ForwardImage}"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -43,12 +40,24 @@
                 <MenuItem Header="Boo_kmarks..."/>
             </MenuItem>
             <MenuItem Header="_View">
-                <MenuItem Header="Navigate _Backward" Icon="{StaticResource BackwardIcon}" IsEnabled="False"/>
-                <MenuItem Header="Navigate _Forward" Icon="{StaticResource ForwardIcon}"/>
+                <MenuItem Header="Navigate _Backward" IsEnabled="False">
+                    <MenuItem.Icon>
+                        <Image Width="16" Height="16" Source="{StaticResource BackwardIcon}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Navigate _Forward">
+                    <MenuItem.Icon>
+                        <Image Width="16" Height="16" Source="{StaticResource ForwardIcon}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <Separator/>
-                <MenuItem Header="Segment List" Name="mnuViewSegments"/>
+                <MenuItem Header="Segment List" Name="mnuViewSegments" Click="mnuViewSegments_Click"/>
                 <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click"/>
-                <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click"/>
+                <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click">
+                    <MenuItem.Icon>
+                        <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="Properties" Name="mnuViewProperties"/>
                 <Separator/>
                 <MenuItem Header="Theme">
@@ -109,10 +118,9 @@
                             <avalonDock:LayoutAnchorable ContentId="errorList" Title="Error List">
                                 <my:ErrorListControl x:Name="errorList"/>
                             </avalonDock:LayoutAnchorable>
-                            <!--<avalonDock:LayoutAnchorable ContentId="segmentList" Title="Segments">
-                                <TextBlock Text="Nothing yet"/>
+                            <avalonDock:LayoutAnchorable ContentId="segmentList" Title="Segments">
+                                <my:SegmentListControl x:Name="segmentList"/>
                             </avalonDock:LayoutAnchorable>
-                            -->
                         </avalonDock:LayoutAnchorGroup>
                     </avalonDock:LayoutAnchorSide>
                 </avalonDock:LayoutRoot.LeftSide>

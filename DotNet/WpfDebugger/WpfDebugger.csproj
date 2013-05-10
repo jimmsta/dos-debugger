@@ -89,6 +89,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="SegmentListControl.xaml.cs">
+      <DependentUpon>SegmentListControl.xaml</DependentUpon>
+    </Compile>
     <Page Include="DisassemblyControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -117,6 +120,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="ProcedureListControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="SegmentListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -171,6 +178,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\right_circular-26.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\cancel-26.png" />
+    <Resource Include="Resources\error-26.png" />
+    <Resource Include="Resources\info-26.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

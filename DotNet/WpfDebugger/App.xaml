@@ -3,6 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        
+        <!-- Icons -->
+        <BitmapImage x:Key="BackwardIcon" UriSource="Resources/left_circular-26.png"/>
+        <BitmapImage x:Key="ForwardIcon" UriSource="Resources/right_circular-26.png"/>
+        <BitmapImage x:Key="ErrorIcon" UriSource="Resources/cancel-26.png"/>
+        <BitmapImage x:Key="WarningIcon" UriSource="Resources/error-26.png"/>
+
+        <!-- Control Styles -->
         <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}"
                TargetType="{x:Type Separator}">
             <Setter Property="Template">

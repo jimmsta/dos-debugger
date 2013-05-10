@@ -27,7 +27,7 @@ namespace WpfDebugger
         }
 
         private BinaryImage image;
-        private ErrorViewItem[] viewItems;
+        private ErrorListViewModel viewModel;
 
         public BinaryImage Image
         {
@@ -41,16 +41,11 @@ namespace WpfDebugger
 
         private void UpdateUI()
         {
-            this.viewItems = null;
-            this.lvErrors.ItemsSource = null;
-            if (image == null)
-                return;
+            this.viewModel = new ErrorListViewModel(image);
 
-            this.viewItems = (from Error error in image.Errors
-                              orderby error.Location.LinearAddress
-                              select new ErrorViewItem(error)).ToArray();
-
-            this.lvErrors.ItemsSource = viewItems;
+            //this.lvErrors.ItemsSource = viewItems;
+            //this.txtError.DataContext = this;
+            this.DataContext = viewModel;
             //DisplayErrors();
         }
 
@@ -117,6 +112,52 @@ namespace WpfDebugger
             DisplayErrors();
         }
 #endif
+    }
+
+    class ErrorListViewModel
+    {
+        public ErrorViewItem[] Items { get; private set; }
+        public int ErrorCount { get; private set; }
+        public int WarningCount { get; private set; }
+        public int MessageCount { get; private set; }
+
+        public ErrorListViewModel(BinaryImage image)
+        {
+            if (image == null)
+                return;
+
+            int errorCount = 0;
+            int warningCount = 0;
+            int messageCount = 0;
+
+            List<ErrorViewItem> items = new List<ErrorViewItem>();
+            foreach (Error error in image.Errors)
+            {
+                items.Add(new ErrorViewItem(error));
+#if false
+                if ((error.Category & category) != 0)
+                {
+                    ListViewItem item = new ListViewItem();
+                    item.Text = error.Location.ToString();
+                    item.SubItems.Add(error.Message);
+                    item.Tag = error;
+                    lvErrors.Items.Add(item);
+                }
+#endif
+                switch (error.Category)
+                {
+                    case ErrorCategory.Error: errorCount++; break;
+                    case ErrorCategory.Warning: warningCount++; break;
+                    case ErrorCategory.Message: messageCount++; break;
+                }
+            }
+            items.Sort((x, y) => x.Error.Location.LinearAddress.CompareTo(y.Error.Location.LinearAddress));
+
+            this.Items = items.ToArray();
+            this.ErrorCount = errorCount;
+            this.WarningCount = warningCount;
+            this.MessageCount = messageCount;
+        }
     }
 
     class ErrorViewItem

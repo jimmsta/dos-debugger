@@ -12,7 +12,7 @@
                   SelectionMode="Single">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Entry Point" Width="100">
+                    <GridViewColumn Header="Entry Point" Width="90">
                         <GridViewColumn.HeaderContainerStyle>
                             <Style TargetType="{x:Type GridViewColumnHeader}">
                                 <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -25,14 +25,14 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="150">
+                    <GridViewColumn Header="Name" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Size" Width="100">
+                    <GridViewColumn Header="Size" Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Size}"/>
