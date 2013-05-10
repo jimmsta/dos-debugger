@@ -197,7 +197,7 @@ namespace X86Codec
             s.Append('[');
             if (Base == Register.None) // only displacement
             {
-                s.Append(FormatImmediate((UInt32)Displacement.Value));
+                s.Append(FormatImmediate((UInt16)Displacement.Value));
             }
             else // base+index*scale+displacement
             {

@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using Disassembler;
 using X86Codec;
 using Util.Forms;
+using Util;
 
 namespace DosDebugger
 {
@@ -48,6 +49,8 @@ namespace DosDebugger
 
         private void UpdateUI()
         {
+            dataGridView1.DataSource = null;
+
             lvListing.SetWindowTheme("explorer");
             lvListing.VirtualListSize = 0;
             viewModel = null;
@@ -59,6 +62,12 @@ namespace DosDebugger
 
             // Create the view model.
             viewModel = new ListingViewModel(document.Image);
+            //dataGridView1.Columns.Clear();
+            dataGridView1.AutoGenerateColumns = false;
+            dataGridView1.Font = new System.Drawing.Font(FontFamily.GenericMonospace, this.Font.Size);
+            dataGridView1.DataSource = null;
+            dataGridView1.DataSource = viewModel.Rows;
+            dataGridView1.Refresh();
 
             // Fill the procedure window.
             cbProcedures.Items.Clear();
@@ -370,7 +379,7 @@ namespace DosDebugger
             if (row is CodeListingRow)
             {
                 Operation op = ((CodeListingRow)row).Instruction.Operation;
-                string desc = GetEnumMemberDescription(op);
+                string desc = op.GetDescription();
                 if (desc != null)
                 {
                     txtStatus.Text = string.Format("{0} - {1}",
@@ -387,20 +396,6 @@ namespace DosDebugger
             document.Navigator.SetLocation(row.Location, this, LocationChangeType.Minor);
 
             // this.ActiveSegment = address.Segment;
-        }
-
-        private string GetEnumMemberDescription<T>(T value)
-        {
-            var type = typeof(T);
-            var memInfo = type.GetMember(value.ToString());
-            if (memInfo != null && memInfo.Length > 0)
-            {
-                var attributes = memInfo[0].GetCustomAttributes(
-                    typeof(DescriptionAttribute), false);
-                if (attributes != null && attributes.Length > 0)
-                    return ((DescriptionAttribute)attributes[0]).Description;
-            }
-            return null;
         }
 
         // Keeps track of the segment selected. If this value is different
@@ -488,182 +483,49 @@ namespace DosDebugger
 
         private void lvListing_DrawItem(object sender, DrawListViewItemEventArgs e)
         {
+            //e.DrawBackground();
             //e.Graphics.DrawString(e.Item.Text, e.Item.Font, Brushes.Black, e.Bounds);
             //e.Graphics.DrawString("AAAA", e.Item.Font, Brushes.Black, e.Bounds);
+            
             //e.DrawDefault = true;
-        }
-
-        private TextWithInfo[] MeasureSubItemTexts(Graphics g, ListViewItem.ListViewSubItem subItem)
-        {
-            string s = subItem.Text;
-
-            // Create a Text array, so that we can display segments
-            // of the text with different format, and also retrieve
-            // the location of each segment of text.
-            List<TextWithInfo> textList = new List<TextWithInfo>(10);
-            for (int index = 0; index < s.Length; )
-            {
-                // Get separaters.
-                int k = index;
-                while (k < s.Length && (s[k] == ' ' || s[k] == ','))
-                    k++;
-
-                if (k > index)
-                {
-                    textList.Add(new TextWithInfo
-                    {
-                        Text = s.Substring(index, k - index),
-                        Font = subItem.Font,
-                        Color = Color.Black
-                    });
-                }
-                index = k;
-
-                // Get word.
-                while (k < s.Length && (s[k] != ' ' && s[k] != ','))
-                    k++;
-
-                if (k > index)
-                {
-                    textList.Add(new TextWithInfo
-                    {
-                        Text = s.Substring(index, k - index),
-                        Font = subItem.Font,
-                        Color = (s[index] == '_') ? Color.Blue : Color.Black
-                    });
-                }
-                index = k;
-            }
-
-            // Measure the texts.
-            TextWithInfo[] texts = textList.ToArray();
-            g.MeasureTexts(texts, subItem.Bounds);
-            return texts;
-        }
-
-        private bool DisplayLinkText(
-            string s, Graphics g, Rectangle bounds, Font font)
-        {
-            if (s == null)
-                throw new ArgumentNullException("s");
-            if (s.Length == 0)
-                return true;
-
-            // Create a Text array, so that we can display segments
-            // of the text with different format, and also retrieve
-            // the location of each segment of text.
-            List<TextWithInfo> textList = new List<TextWithInfo>(10);
-            for (int index = 0; index < s.Length; )
-            {
-                // Get separaters.
-                int k = index;
-                while (k < s.Length && (s[k] == ' ' || s[k] == ','))
-                    k++;
-
-                if (k > index)
-                {
-                    textList.Add(new TextWithInfo
-                    {
-                        Text = s.Substring(index, k - index),
-                        Font = font,
-                        Color = Color.Black
-                    });
-                }
-                index = k;
-
-                // Get word.
-                while (k < s.Length && (s[k] != ' ' && s[k] != ','))
-                    k++;
-
-                if (k > index)
-                {
-                    textList.Add(new TextWithInfo
-                    {
-                        Text = s.Substring(index, k - index),
-                        Font = font,
-                        Color = (s[index] == '_') ? Color.Blue : Color.Black
-                    });
-                }
-                index = k;
-            }
-
-            // Measure the texts.
-            TextWithInfo[] texts = textList.ToArray();
-            g.MeasureTexts(texts, bounds);
-
-            // Check if the mouse cursor is on a link. If it is, change the
-            // font to underlined.
-            Point pt = lvListing.PointToClient(Cursor.Position);
-            foreach (var text in texts)
-            {
-                if (text.Color == Color.Blue && text.Bounds.Contains(pt))
-                {
-                    text.Font = linkHoverFont;
-                    lvListing.Cursor = Cursors.Hand;
-                }
-            }
-
-            // Display the text.
-            g.DrawTexts(texts);
-
-            return true;
+            //e.DrawFocusRectangle();
+            //e.DrawBackground();
         }
 
         private void lvListing_DrawSubItem(object sender, DrawListViewSubItemEventArgs e)
         {
+            //e.Graphics.FillRectangle(Brushes.LightGray, e.Bounds);
+
             // Use default drawing routine if this cell doesn't contain html.
             if (!e.SubItem.Text.Contains("<"))
             {
+                //e.DrawBackground();
+                //e.DrawFocusRectangle(e.SubItem.Bounds);
                 e.DrawDefault = true;
                 return;
             }
 
-            Rectangle rect = e.SubItem.Bounds;
-            if (e.ColumnIndex == 0)
-            {
-                rect = new Rectangle(rect.X, rect.Y, e.Item.ListView.Columns[0].Width, rect.Height);
-            }
+#if false
+            Point pt=e.Bounds.Location;
+            pt =lvListing.PointToScreen(pt);
+            pt=this.PointToClient(pt);
+            linkLabel1.Location = pt;
+            linkLabel1.Size = e.Bounds.Size;
+            return;
+#endif
 
+            //e.DrawFocusRectangle(e.Bounds);
+            //e.DrawBackground();
+            if (e.Item.Selected)
+            {
+                //e.Graphics.FillRectangle(Brushes.LightGray, e.Bounds);
+                //e.Graphics.DrawRectangle(Pens.Gray, e.Bounds);
+            }
+            Rectangle rect = e.Item.GetSubItemBounds(e.ColumnIndex);
             HtmlRenderer renderer = new HtmlRenderer(
                 e.SubItem.Text, e.SubItem.Font, linkHoverFont);
             renderer.Measure(e.Graphics, rect);
-            if (renderer.Draw(e.Graphics, lvListing.PointToClient(Cursor.Position)))
-                ; // lvListing.Cursor = Cursors.Hand;
-            return;
-
-#if false
-            // If the text has a word starting with _, make the word a link.
-            if (e.SubItem.Text.Contains(" _"))
-            {
-                Rectangle r = e.Bounds;
-
-                DisplayLinkText(e.SubItem.Text, e.Graphics, r, e.SubItem.Font);
-
-                return;
-            }
-
-            if (e.ColumnIndex == 0)
-            {
-                //e.Graphics.DrawString("AAAA", e.Item.Font, Brushes.Black, e.Bounds);
-                //if (lvListing. Cursor.Position
-                Point pt = lvListing.PointToClient(Cursor.Position);
-                if (e.Bounds.Contains(pt))
-                {
-                    using (Font font = new Font(e.Item.Font, FontStyle.Underline))
-                    {
-                        e.Graphics.DrawText(e.SubItem.Text, font, e.Bounds, Color.Blue);
-                    }
-                }
-                else
-                {
-                    e.DrawDefault = true;
-                }
-            }
-            else
-            {
-                e.DrawDefault = true;
-            }
-#endif
+            renderer.Draw(e.Graphics, lvListing.PointToClient(Cursor.Position));
         }
 
         private void lvListing_MouseMove(object sender, MouseEventArgs e)
@@ -679,7 +541,7 @@ namespace DosDebugger
             }
 
             // Update cursor shape.
-            if (ht.Item == null)
+            if (ht.Item == null || ht.SubItem == null)
             {
                 lvListing.Cursor = Cursors.Default;
             }
@@ -720,63 +582,9 @@ namespace DosDebugger
                 }
             }
 #endif
-
-#if false
-            if (ht.Item != null && ht.SubItem.Text.IndexOf(':') > 0)
-            {
-                lvListing.Cursor = Cursors.Hand;
-            }
-            else
-            {
-                lvListing.Cursor = Cursors.Default;
-            }
-#endif
         }
 
         ToolTip opcodeToolTip;
         ListViewItem lastItem;
     }
-
-    static class ListViewItemExtensions
-    {
-        public static void ScrollToTop(this ListViewItem item)
-        {
-            if (item == null)
-                throw new ArgumentNullException("item");
-            if (item.ListView == null)
-                throw new InvalidOperationException("The ListViewItem is not part of a ListView.");
-
-            item.ListView.TopItem = item;
-        }
-
-#if false
-        public static void Activate(this ListViewItem item)
-        {   
-            //item.ListView.Focus();
-            //if (bringToTop)
-            //    lvListing.TopItem = item;
-            item.ListView.TopItem = item;
-            //else
-            //    item.EnsureVisible();
-            item.Focused = true;
-            item.Selected = true;
-        }
-#endif
-    }
-
-#if false
-    [Flags]
-    enum ListViewItemActivationOptions
-    {
-        None = 0,
-        Default = Select | Focus | EnsureVisible ,
-
-        Select = 1,
-        Focus = 2,
-        FocusOwner = 4,
-
-        EnsureVisible = 8,
-        ScrollToTop = 16,
-    }
-#endif
 }

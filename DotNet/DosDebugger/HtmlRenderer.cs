@@ -12,7 +12,7 @@ namespace DosDebugger
     class HtmlRenderer
     {
         string html;
-        TextComponent[] components;
+        TextBlock[] components;
         Font normalFont;
         Font hoverFont;
 
@@ -33,7 +33,7 @@ namespace DosDebugger
 
         public TextFormatFlags FormatFlags { get; private set; }
 
-        class TextComponent
+        class TextBlock
         {
             public string Text;
             public string Url;
@@ -102,12 +102,12 @@ namespace DosDebugger
 
         // Supported syntax:
         // <a href="...">label</a>
-        private static TextComponent[] GetTextComponents(string html)
+        private static TextBlock[] GetTextComponents(string html)
         {
             // Short-cut for plain text.
             if (html.IndexOf('<') == -1)
             {
-                return new TextComponent[] { new TextComponent { Text = html } };
+                return new TextBlock[] { new TextBlock { Text = html } };
             }
 
             // Parse HTML.
@@ -127,8 +127,8 @@ namespace DosDebugger
             {
             }
 #else
-            List<TextComponent> components = new List<TextComponent>(10);
-            TextComponent current = null;
+            List<TextBlock> components = new List<TextBlock>(10);
+            TextBlock current = null;
             html = "<html>" + html + "</html>";
 
             using (StringReader input = new StringReader(html))
@@ -148,7 +148,7 @@ namespace DosDebugger
 
                             if (current != null)
                                 components.Add(current);
-                            current = new TextComponent();
+                            current = new TextBlock();
 
                             if (reader.HasAttributes)
                             {
@@ -173,7 +173,7 @@ namespace DosDebugger
                         case XmlNodeType.Text:
                             if (current == null)
                             {
-                                components.Add(new TextComponent { Text = reader.Value });
+                                components.Add(new TextBlock { Text = reader.Value });
                             }
                             else
                             {

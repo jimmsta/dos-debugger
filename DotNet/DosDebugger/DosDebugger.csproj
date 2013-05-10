@@ -85,6 +85,9 @@
     <Compile Include="CallGraphWindow.Designer.cs">
       <DependentUpon>CallGraphWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="DataGridViewLinkLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Document.cs" />
     <Compile Include="ErrorWindow.cs">
       <SubType>Form</SubType>
