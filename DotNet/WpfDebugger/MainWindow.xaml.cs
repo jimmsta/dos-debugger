@@ -197,5 +197,33 @@ namespace WpfDebugger
 
         #endregion
 
+        #region Select Theme
+
+        private void mnuViewThemeItem_Click(object sender, RoutedEventArgs e)
+        {
+            mnuViewThemeDefault.IsChecked = false;
+            mnuViewThemeAero.IsChecked = false;
+            mnuViewThemeExpressionDark.IsChecked = false;
+            mnuViewThemeExpressionLight.IsChecked = false;
+            mnuViewThemeMetro.IsChecked = false;
+            mnuViewThemeVS2010.IsChecked = false;
+
+            if (sender == mnuViewThemeVS2010)
+                dockingManager.Theme = new AvalonDock.Themes.VS2010Theme();
+            else if (sender == mnuViewThemeExpressionDark)
+                dockingManager.Theme = new AvalonDock.Themes.ExpressionDarkTheme();
+            else if (sender == mnuViewThemeExpressionLight)
+                dockingManager.Theme = new AvalonDock.Themes.ExpressionLightTheme();
+            else if (sender == mnuViewThemeAero)
+                dockingManager.Theme = new AvalonDock.Themes.AeroTheme();
+            else if (sender == mnuViewThemeMetro)
+                dockingManager.Theme = new AvalonDock.Themes.MetroTheme();
+            else
+                dockingManager.Theme = null;
+
+            ((MenuItem)sender).IsChecked = true;
+        }
+        
+        #endregion
     }
 }

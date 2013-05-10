@@ -7,9 +7,9 @@
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
         <ListView Name="lvProcedures" 
-                  Foreground="Black" 
-                  FontFamily="Consolas" 
-                  SelectionMode="Single">
+            Foreground="Black" 
+            FontFamily="Consolas" 
+            SelectionMode="Single">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Entry Point" Width="90">
@@ -21,7 +21,8 @@
                         </GridViewColumn.HeaderContainerStyle>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding EntryPoint}"/>
+                                <!--<TextBlock Text="{Binding EntryPoint}"/>-->
+                                <TextBlock><Hyperlink Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

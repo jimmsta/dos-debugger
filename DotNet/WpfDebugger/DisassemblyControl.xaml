@@ -17,6 +17,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
+                <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <ComboBox Grid.Column="0">
                 
@@ -24,6 +25,11 @@
             <ComboBox Grid.Column="1">
                 
             </ComboBox>
+            <Frame Grid.Column="2">
+                <Frame.Content>
+                <TextBlock><Hyperlink NavigateUri="somewhere">Click me</Hyperlink></TextBlock>
+                </Frame.Content>
+            </Frame>
         </Grid>
         
         <!-- Main disassembly listing -->

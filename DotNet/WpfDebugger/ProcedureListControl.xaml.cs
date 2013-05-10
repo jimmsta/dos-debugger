@@ -56,6 +56,15 @@ namespace WpfDebugger
 
             lvProcedures.ItemsSource = viewItems;
         }
+
+        private void Hyperlink_Click(object sender, RoutedEventArgs e)
+        {
+            //if (Control.ModifierKeys == ModifierKeys.Control)
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+                MessageBox.Show("Control+Click");
+            else
+                MessageBox.Show("Click");
+        }
     }
 
     class ProcedureListItem

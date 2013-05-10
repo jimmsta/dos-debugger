@@ -5,7 +5,7 @@
         xmlns:my="clr-namespace:WpfDebugger"
         Title="MainWindow" Height="400" Width="600"
         WindowState="Maximized"
-        Loaded="Window_Loaded" Unloaded="Window_Unloaded">
+        Loaded="Window_Loaded" Unloaded="Window_Unloaded" Icon="Resources/App-1.ico">
     <Window.Resources>
     </Window.Resources>
     <Grid>
@@ -64,8 +64,12 @@
                 <MenuItem Header="Properties" Name="mnuViewProperties"/>
                 <Separator/>
                 <MenuItem Header="Theme">
-                    <MenuItem Header="Default"/>
-                    <MenuItem Header="VS2010"/>
+                    <MenuItem IsChecked="True" Header="Default" Name="mnuViewThemeDefault" Click="mnuViewThemeItem_Click"/>
+                    <MenuItem Header="Aero" Name="mnuViewThemeAero" Click="mnuViewThemeItem_Click"/>
+                    <MenuItem Header="Expression Dark" Name="mnuViewThemeExpressionDark" Click="mnuViewThemeItem_Click"/>
+                    <MenuItem Header="Expression Light" Name="mnuViewThemeExpressionLight" Click="mnuViewThemeItem_Click"/>
+                    <MenuItem Header="Metro" Name="mnuViewThemeMetro" Click="mnuViewThemeItem_Click"/>
+                    <MenuItem Header="VS2010" Name="mnuViewThemeVS2010" Click="mnuViewThemeItem_Click"/>
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
@@ -110,7 +114,11 @@
                                 </Frame.Content>
                             </Frame>
                             -->
-                            <my:ProcedureListControl x:Name="procedureList"/>
+                            <Frame>
+                                <Frame.Content>
+                                    <my:ProcedureListControl x:Name="procedureList"/>
+                                </Frame.Content>
+                            </Frame>
                         </avalonDock:LayoutAnchorable>
                     </avalonDock:LayoutAnchorablePane>
                 </avalonDock:LayoutPanel>
@@ -130,7 +138,7 @@
                 
             </avalonDock:LayoutRoot>
         </avalonDock:DockingManager>
-
+        
         <!-- Status Bar -->
         <StackPanel Grid.Row="3" Margin="4,2,4,2">
             <TextBlock>Status Bar</TextBlock>
