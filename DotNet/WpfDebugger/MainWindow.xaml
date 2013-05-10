@@ -42,12 +42,14 @@
             <MenuItem Header="_View">
                 <MenuItem Header="Navigate _Backward" IsEnabled="False">
                     <MenuItem.Icon>
-                        <Image Width="16" Height="16" Source="{StaticResource BackwardIcon}"/>
+                        <Image Source="{StaticResource BackwardIcon}"
+                               Style="{StaticResource StandardIcon}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Navigate _Forward">
                     <MenuItem.Icon>
-                        <Image Width="16" Height="16" Source="{StaticResource ForwardIcon}"/>
+                        <Image Source="{StaticResource ForwardIcon}"
+                               Style="{StaticResource StandardIcon}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -55,7 +57,8 @@
                 <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click"/>
                 <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click">
                     <MenuItem.Icon>
-                        <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                        <Image Source="{StaticResource WarningIcon}"
+                               Style="{StaticResource StandardIcon}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Properties" Name="mnuViewProperties"/>

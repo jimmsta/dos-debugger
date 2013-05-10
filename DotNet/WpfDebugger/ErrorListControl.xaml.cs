@@ -1,17 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.ComponentModel;
 using Disassembler;
 
 namespace WpfDebugger
@@ -42,11 +33,22 @@ namespace WpfDebugger
         private void UpdateUI()
         {
             this.viewModel = new ErrorListViewModel(image);
+            this.viewModel.ShowErrors = true;
 
             //this.lvErrors.ItemsSource = viewItems;
             //this.txtError.DataContext = this;
             this.DataContext = viewModel;
             //DisplayErrors();
+        }
+
+        private void ToolBar_Loaded(object sender, RoutedEventArgs e)
+        {
+	        ToolBar toolBar = sender as ToolBar;
+	        var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
+	        if (overflowGrid != null)
+	        {
+		        overflowGrid.Visibility = Visibility.Hidden;
+	        }
         }
 
 #if false
@@ -59,67 +61,80 @@ namespace WpfDebugger
             }
         }
 #endif
-
-#if false
-        private void DisplayErrors(ErrorCategory category)
-        {
-            lvErrors.Items.Clear();
-            if (errors == null)
-                return;
-
-            int errorCount = 0, warningCount = 0, messageCount = 0;
-            foreach (Error error in errors)
-            {
-                if ((error.Category & category) != 0)
-                {
-                    ListViewItem item = new ListViewItem();
-                    item.Text = error.Location.ToString();
-                    item.SubItems.Add(error.Message);
-                    item.Tag = error;
-                    lvErrors.Items.Add(item);
-                }
-                switch (error.Category)
-                {
-                    case ErrorCategory.Error: errorCount++; break;
-                    case ErrorCategory.Warning: warningCount++; break;
-                    case ErrorCategory.Message: messageCount++; break;
-                }
-            }
-
-            btnErrors.Text = errorCount + " Errors";
-            btnWarnings.Text = warningCount + " Warnings";
-            btnMessages.Text = messageCount + " Messages";
-
-            btnErrors.Enabled = (errorCount > 0);
-            btnWarnings.Enabled = (warningCount > 0);
-            btnMessages.Enabled = (messageCount > 0);
-        }
-
-        private void DisplayErrors()
-        {
-            ErrorCategory category = ErrorCategory.None;
-            if (btnErrors.Checked)
-                category |= ErrorCategory.Error;
-            if (btnWarnings.Checked)
-                category |= ErrorCategory.Warning;
-            if (btnMessages.Checked)
-                category |= ErrorCategory.Message;
-            DisplayErrors(category);
-        }
-
-        private void btnErrorCategory_CheckedChanged(object sender, EventArgs e)
-        {
-            DisplayErrors();
-        }
-#endif
     }
 
-    class ErrorListViewModel
+    // Note: while we might be able to use the supplied WPF Filtering
+    // capability as described in 
+    // http://msdn.microsoft.com/en-us/library/ms752347.aspx#filtering,
+    // I think it's better to handle filtering ourselves as that will
+    // be faster.
+    class ErrorListViewModel : INotifyPropertyChanged
     {
+        private ErrorViewItem[] allItems;
+
         public ErrorViewItem[] Items { get; private set; }
+
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
         public int MessageCount { get; private set; }
+
+        public bool HasErrors { get { return ErrorCount > 0; } }
+        public bool HasWarnings { get { return WarningCount > 0; } }
+        public bool HasMessages { get { return MessageCount > 0; } }
+
+        private ErrorCategory filter = ErrorCategory.None;
+
+        /// <summary>
+        /// This should only be called internally, because it doesn't
+        /// raise PropertyChanged notifications on ShowXXX properties!
+        /// </summary>
+        private ErrorCategory Filter
+        {
+            get { return filter; }
+            set
+            {
+                if (filter == value)
+                    return;
+                filter = value;
+                UpdateFilter();
+            }
+        }
+
+        public bool ShowErrors
+        {
+            get { return Filter.HasFlag(ErrorCategory.Error); }
+            set
+            {
+                if (value && ErrorCount > 0)
+                    Filter |= ErrorCategory.Error;
+                else
+                    Filter &= ~ErrorCategory.Error;
+            }
+        }
+
+        public bool ShowWarnings
+        {
+            get { return Filter.HasFlag(ErrorCategory.Warning); }
+            set
+            {
+                if (value && WarningCount > 0)
+                    Filter |= ErrorCategory.Warning;
+                else
+                    Filter &= ~ErrorCategory.Warning;
+            }
+        }
+
+        public bool ShowMessages
+        {
+            get { return Filter.HasFlag(ErrorCategory.Message); }
+            set
+            {
+                if (value && MessageCount > 0)
+                    Filter |= ErrorCategory.Message;
+                else
+                    Filter &= ~ErrorCategory.Message;
+            }
+        }
 
         public ErrorListViewModel(BinaryImage image)
         {
@@ -130,20 +145,13 @@ namespace WpfDebugger
             int warningCount = 0;
             int messageCount = 0;
 
-            List<ErrorViewItem> items = new List<ErrorViewItem>();
-            foreach (Error error in image.Errors)
+            int n = image.Errors.Count;
+            allItems = new ErrorViewItem[n];
+            for (int i=0;i<n;i++)
             {
-                items.Add(new ErrorViewItem(error));
-#if false
-                if ((error.Category & category) != 0)
-                {
-                    ListViewItem item = new ListViewItem();
-                    item.Text = error.Location.ToString();
-                    item.SubItems.Add(error.Message);
-                    item.Tag = error;
-                    lvErrors.Items.Add(item);
-                }
-#endif
+                Error error = image.Errors[i];
+                allItems[i] = new ErrorViewItem(error);
+
                 switch (error.Category)
                 {
                     case ErrorCategory.Error: errorCount++; break;
@@ -151,13 +159,37 @@ namespace WpfDebugger
                     case ErrorCategory.Message: messageCount++; break;
                 }
             }
-            items.Sort((x, y) => x.Error.Location.LinearAddress.CompareTo(y.Error.Location.LinearAddress));
+            Array.Sort(allItems, 
+                       (x, y) => x.Error.Location.LinearAddress.CompareTo(y.Error.Location.LinearAddress));
 
-            this.Items = items.ToArray();
+            //this.Items = items.ToArray();
+            this.Items = null; // no item to display initially
             this.ErrorCount = errorCount;
             this.WarningCount = warningCount;
             this.MessageCount = messageCount;
         }
+
+        /// <summary>
+        /// Refresh Items[] according to Filter.
+        /// </summary>
+        private void UpdateFilter()
+        {
+            if (allItems == null)
+                return;
+
+            Items = (from errorItem in allItems
+                     where (errorItem.Error.Category & filter) != 0
+                     select errorItem
+                   ).ToArray();
+
+            if (PropertyChanged != null)
+            {
+                var e = new PropertyChangedEventArgs("Items");
+                PropertyChanged(this, e);
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     class ErrorViewItem

@@ -48,6 +48,7 @@ namespace WpfDebugger
 
             this.image = dasm.Image;
             //this.viewModel = new ListingViewModel(dasm.Image);
+            mnuHelpTest_Click(null, null);
         }
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)

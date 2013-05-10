@@ -4,33 +4,42 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300" ToolTip="Error List">
+             d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ToolBar>
-            <Button>
+        <ToolBar ToolBarTray.IsLocked="True" Loaded="ToolBar_Loaded">
+            <ToggleButton ToolBar.OverflowMode="Never" 
+                          IsChecked="{Binding ShowErrors}"
+                          IsEnabled="{Binding HasErrors}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Width="16" Height="16" Source="{StaticResource ErrorIcon}"/>
+                    <Image Source="{StaticResource ErrorIcon}"
+                           Style="{StaticResource StandardIcon}"/>
                     <TextBlock x:Name="txtError" Margin="4,0,0,0" Text="{Binding ErrorCount, StringFormat='\{0\} Errors'}" />
                 </StackPanel>
-            </Button>
-            <Separator/>
-            <Button>
+            </ToggleButton>
+            <Separator ToolBar.OverflowMode="Never"/>
+            <ToggleButton ToolBar.OverflowMode="Never" 
+                          IsChecked="{Binding ShowWarnings}"
+                          IsEnabled="{Binding HasWarnings}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                    <Image Source="{StaticResource WarningIcon}"
+                           Style="{StaticResource StandardIcon}"/>
                     <TextBlock Margin="4,0,0,0" Text="{Binding WarningCount, StringFormat='\{0\} Warnings'}" />
                 </StackPanel>
-            </Button>
-            <Separator/>
-            <Button>
+            </ToggleButton>
+            <Separator ToolBar.OverflowMode="Never"/>
+            <ToggleButton ToolBar.OverflowMode="Never" 
+                          IsChecked="{Binding ShowMessages}"
+                          IsEnabled="{Binding HasMessages}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Width="16" Height="16" Source="{StaticResource WarningIcon}"/>
+                    <Image Source="{StaticResource MessageIcon}"
+                           Style="{StaticResource StandardIcon}"/>
                     <TextBlock Margin="4,0,0,0" Text="{Binding MessageCount, StringFormat='\{0\} Messages'}" />
                 </StackPanel>
-            </Button>
+            </ToggleButton>
         </ToolBar>
         
         <ListView Name="lvErrors" Grid.Row="1"
