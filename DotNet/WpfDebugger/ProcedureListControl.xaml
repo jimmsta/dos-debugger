@@ -6,42 +6,74 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <ListView Name="lvProcedures" 
-            Foreground="Black" 
-            FontFamily="Consolas" 
-            SelectionMode="Single">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Entry Point" Width="90">
-                        <GridViewColumn.HeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}">
-                                <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                <Setter Property="Padding" Value="5,0,0,0"/>
-                            </Style>
-                        </GridViewColumn.HeaderContainerStyle>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <!--<TextBlock Text="{Binding EntryPoint}"/>-->
-                                <TextBlock><Hyperlink Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Name" Width="80">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Name}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Size" Width="60">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Size}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <!-- It would be nice if DataGrid supports smooth scrolling, which
+             would remove the gray padding at the end of the list. -->
+        <DataGrid Name="gridProcedures"
+                  FontFamily="Consolas" 
+                  AutoGenerateColumns="False" 
+                  GridLinesVisibility="None"
+                  HeadersVisibility="Column"
+                  CanUserAddRows="False"
+                  CanUserResizeRows="False"
+                  EnableRowVirtualization="True"
+                  Background="White"
+                  SelectionMode="Single">
+            
+            <!-- Make an attempt to remove the blank area above the vertical
+                 scroll bar. Doesn't really work. See
+                 http://stackoverflow.com/questions/3844421/how-to-make-wpf-datagrid-scrollbar-cover-the-non-scrollable-area-as-well
+                 http://stackoverflow.com/questions/9412114/is-it-possible-to-stop-the-vertical-scrollbar-from-pushing-the-datagrid-columns
+            -->
+            <DataGrid.Resources>
+                <!--<Style x:Key="{x:Type DataGridColumnHeadersPresenter}" TargetType="{x:Type DataGridColumnHeadersPresenter}">
+                    <Setter Property="Grid.ColumnSpan" Value="2" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type DataGridColumnHeadersPresenter}">
+                                <Grid>
+                                    <DataGridColumnHeader IsHitTestVisible="False" Name="PART_FillerColumnHeader"/>
+                                    <ItemsPresenter/>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>-->
+                <!--<Style x:Key="{x:Type ScrollBar}" TargetType="{x:Type ScrollBar}">
+                    <Setter Property="Grid.Row" Value="0"/>
+                    <Setter Property="Grid.RowSpan" Value="2"/>
+                </Style>-->
+            </DataGrid.Resources>
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                </Style>
+            </DataGrid.CellStyle>
+            <DataGrid.Columns>
+                <!--<DataGridTextColumn Header="Entry Point" Width="90"                    
+                                    Binding="{Binding EntryPoint}"/>-->
+                <DataGridTemplateColumn Header="Entry Point" Width="90" SortMemberPath="Name">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2"><Hyperlink Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Name" Width="80" SortMemberPath="Name">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2" Text="{Binding Name}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Size" Width="60" SortMemberPath="Size">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2" Text="{Binding Size}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
     </Grid>
 </UserControl>

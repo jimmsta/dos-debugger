@@ -1,17 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Disassembler;
 
 namespace WpfDebugger
@@ -41,7 +32,7 @@ namespace WpfDebugger
 
         private void UpdateUI()
         {
-            lvProcedures.ItemsSource = null;
+            gridProcedures.ItemsSource = null;
             if (image == null)
                 return;
 
@@ -54,7 +45,7 @@ namespace WpfDebugger
                 //item.SubItems.Add(proc.ByteRange.Length.ToString());
             }
 
-            lvProcedures.ItemsSource = viewItems;
+            gridProcedures.ItemsSource = viewItems;
         }
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
