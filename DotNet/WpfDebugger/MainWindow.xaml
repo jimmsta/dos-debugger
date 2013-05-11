@@ -114,11 +114,13 @@
                                 </Frame.Content>
                             </Frame>
                             -->
-                            <Frame>
-                                <Frame.Content>
-                                    <my:ProcedureListControl x:Name="procedureList"/>
-                                </Frame.Content>
-                            </Frame>
+                            <!--<Frame>
+                                <Frame.Content>-->
+                                    <my:ProcedureListControl 
+                                        x:Name="procedureList"
+                                        RequestNavigate="OnRequestNavigate"/>
+                                <!--</Frame.Content>
+                            </Frame>-->
                         </avalonDock:LayoutAnchorable>
                     </avalonDock:LayoutAnchorablePane>
                 </avalonDock:LayoutPanel>

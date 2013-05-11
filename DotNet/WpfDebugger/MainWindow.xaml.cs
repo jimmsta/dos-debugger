@@ -236,5 +236,11 @@ namespace WpfDebugger
         }
         
         #endregion
+
+        private void OnRequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            MessageBox.Show(string.Format(
+                "Navigating to {0} in {1}", e.Uri, e.Target));
+        }
     }
 }

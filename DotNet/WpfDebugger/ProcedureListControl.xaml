@@ -17,14 +17,42 @@
                   CanUserResizeRows="False"
                   EnableRowVirtualization="True"
                   Background="White"
-                  SelectionMode="Single">
+                  SelectionMode="Single"
+                  PreviewKeyDown="gridProcedures_PreviewKeyDown">
+
+            <DataGrid.Resources>
+                <!--<ContextMenu x:Key="RowMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                    <MenuItem Header="Edit" Command="{Binding EditCommand}"/>
+                </ContextMenu>-->
+                <ContextMenu x:Key="RowContextMenu">
+                    <MenuItem Name="mnuContextOpenDisassembly" 
+                              Header="Open _Disassembly" 
+                              Click="mnuContextOpenLink_Click"/><!-- DblClk -->
+                    <MenuItem Name="mnuContextOpenDisassemblyInNewTab"
+                              Header="Open Disassembly in _New Tab"
+                              InputGestureText="Ctrl"
+                              Click="mnuContextOpenLink_Click"/><!-- Ctrl+Clk -->
+                    <Separator/>
+                    <MenuItem Name="mnuContextOpenHexView"
+                              Header="Open _Hex View"
+                              InputGestureText="Shift"
+                              Click="mnuContextOpenLink_Click"/><!-- Shift+Clk -->
+                    <MenuItem Name="mnuContextOpenHexViewInNewTab" 
+                              Header="Open Hex View in New _Tab"
+                              InputGestureText="Ctrl+Shift"
+                              Click="mnuContextOpenLink_Click"/><!-- Ctrl+Shift+Clk -->
+                </ContextMenu>
+                <!--<Style x:Key="RowWithContextMenu" TargetType="{x:Type DataGridRow}">
+                    <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}"/>
+                </Style>-->
+            </DataGrid.Resources>
             
             <!-- Make an attempt to remove the blank area above the vertical
                  scroll bar. Doesn't really work. See
                  http://stackoverflow.com/questions/3844421/how-to-make-wpf-datagrid-scrollbar-cover-the-non-scrollable-area-as-well
                  http://stackoverflow.com/questions/9412114/is-it-possible-to-stop-the-vertical-scrollbar-from-pushing-the-datagrid-columns
             -->
-            <DataGrid.Resources>
+            <!--<DataGrid.Resources>-->
                 <!--<Style x:Key="{x:Type DataGridColumnHeadersPresenter}" TargetType="{x:Type DataGridColumnHeadersPresenter}">
                     <Setter Property="Grid.ColumnSpan" Value="2" />
                     <Setter Property="Template">
@@ -42,20 +70,30 @@
                     <Setter Property="Grid.Row" Value="0"/>
                     <Setter Property="Grid.RowSpan" Value="2"/>
                 </Style>-->
-            </DataGrid.Resources>
+            <!--</DataGrid.Resources>-->
+            
+            <!--<DataGrid.RowStyle>
+                <StaticResource ResourceKey="RowWithContextMenu"/>
+            </DataGrid.RowStyle>-->
+            
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">
                     <Setter Property="BorderThickness" Value="0"/>
                     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}"/>
+                    <EventSetter Event="MouseDoubleClick" Handler="DataGrid_MouseDoubleClick"/>
                 </Style>
             </DataGrid.CellStyle>
+            
             <DataGrid.Columns>
                 <!--<DataGridTextColumn Header="Entry Point" Width="90"                    
                                     Binding="{Binding EntryPoint}"/>-->
                 <DataGridTemplateColumn Header="Entry Point" Width="90" SortMemberPath="Name">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Margin="3,3,3,2"><Hyperlink Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
+                            <TextBlock Margin="3,3,3,2"><Hyperlink
+                                NavigateUri="{Binding Uri}"
+                                Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -74,6 +112,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
+            
         </DataGrid>
     </Grid>
 </UserControl>
