@@ -239,8 +239,10 @@ namespace WpfDebugger
 
         private void OnRequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            MessageBox.Show(string.Format(
-                "Navigating to {0} in {1}", e.Uri, e.Target));
+            //MessageBox.Show(string.Format(
+            //    "Navigating to {0} in {1}", e.Uri, e.Target));
+            Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
+            disassemblyList.GoToAddress(address);
         }
     }
 }

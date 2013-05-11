@@ -48,5 +48,19 @@ namespace WpfDebugger
             this.viewModel = new ListingViewModel(image);
             gridListing.ItemsSource = viewModel.Rows;
         }
+
+        public void GoToAddress(Pointer address)
+        {
+            int index = viewModel.FindRowIndex(address.LinearAddress);
+            //var row = viewModel.Rows[index];
+            gridListing.SelectedIndex = index;
+
+            // This will make sure the item is scrolled to the top of
+            // the visible rows.
+            gridListing.ScrollIntoView(viewModel.Rows[viewModel.Rows.Count - 1]);
+            gridListing.UpdateLayout();
+            gridListing.ScrollIntoView(viewModel.Rows[index]);
+            gridListing.Focus();
+        }
     }
 }

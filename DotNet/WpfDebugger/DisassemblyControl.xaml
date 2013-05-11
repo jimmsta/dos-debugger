@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" d:DesignWidth="300"
+             FocusManager.FocusedElement="{Binding ElementName=gridListing}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -42,7 +43,12 @@
                 CanUserResizeRows="False"
                 EnableRowVirtualization="True"
                 Background="White"
-                SelectionMode="Single">
+                SelectionMode="Single"
+                KeyboardNavigation.TabNavigation="Once">
+            <!-- Note: KeyboardNavigation.TabNavigation doesn't work. Need to see 
+                 http://stackoverflow.com/questions/2111281/disable-tabstop-between-columns-in-a-wpf-datagrid
+                 for a solution.
+            --> 
 
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">
