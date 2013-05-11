@@ -384,7 +384,7 @@ namespace Disassembler
 
         public bool IsReadOnly
         {
-            get { throw new NotImplementedException(); }
+            get { return true; }
         }
 
         public bool Remove(Procedure item)

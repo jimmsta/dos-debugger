@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using X86Codec;
 
@@ -80,6 +81,7 @@ namespace Disassembler
             get { return image; }
         }
 
+        [Browsable(false)]
         public Range<LinearPointer> AddressRange
         {
             get { return new Range<LinearPointer>(StartAddress, EndAddress); }
@@ -114,6 +116,7 @@ namespace Disassembler
         /// <summary>
         /// Gets the CS:IP address of the first byte in the image.
         /// </summary>
+        [Browsable(false)]
         public Pointer BaseAddress
         {
             get { return baseAddress; }
@@ -288,6 +291,7 @@ namespace Disassembler
         /// Gets a collection of analyzed segments. The segments are returned
         /// in order of their 16-bit segment number.
         /// </summary>
+        [Browsable(false)]
         public ICollection<Segment> Segments
         {
             get { return segments.Values; }
@@ -379,11 +383,13 @@ namespace Disassembler
             return block;
         }
 
+        [Browsable(false)]
         public ProcedureCollection Procedures
         {
             get { return procedures; }
         }
 
+        [Browsable(false)]
         public XRefCollection CrossReferences
         {
             get { return xrefs; }

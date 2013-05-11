@@ -17,17 +17,16 @@ using Disassembler;
 namespace WpfDebugger
 {
     /// <summary>
-    /// Interaction logic for DisassemblyControl.xaml
+    /// Interaction logic for PropertiesControl.xaml
     /// </summary>
-    public partial class DisassemblyControl : UserControl
+    public partial class PropertiesControl : UserControl
     {
-        public DisassemblyControl()
+        public PropertiesControl()
         {
             InitializeComponent();
         }
 
-        private BinaryImage image;
-        private ListingViewModel viewModel;
+        BinaryImage image;
 
         public BinaryImage Image
         {
@@ -35,18 +34,19 @@ namespace WpfDebugger
             set
             {
                 image = value;
-                UpdateUI();
+                // The PropertyGrid control is extremely slow when
+                // a property has type byte[]. Need to fix this before
+                // we use it at all.
+                //UpdateUI();
             }
         }
 
         private void UpdateUI()
         {
-            gridListing.ItemsSource = null;
             if (image == null)
                 return;
 
-            this.viewModel = new ListingViewModel(image);
-            gridListing.ItemsSource = viewModel.Rows;
+            propertyGrid1.SelectedObject = image;
         }
     }
 }

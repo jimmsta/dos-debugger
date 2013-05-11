@@ -61,7 +61,7 @@
                                Style="{StaticResource StandardIcon}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Properties" Name="mnuViewProperties"/>
+                <MenuItem Header="Properties" Name="mnuViewProperties" Click="mnuViewProperties_Click"/>
                 <Separator/>
                 <MenuItem Header="Theme">
                     <MenuItem IsChecked="True" Header="Default" Name="mnuViewThemeDefault" Click="mnuViewThemeItem_Click"/>
@@ -131,6 +131,9 @@
                             </avalonDock:LayoutAnchorable>
                             <avalonDock:LayoutAnchorable ContentId="segmentList" Title="Segments">
                                 <my:SegmentListControl x:Name="segmentList"/>
+                            </avalonDock:LayoutAnchorable>
+                            <avalonDock:LayoutAnchorable ContentId="propertiesWindow" Title="Properties">
+                                <my:PropertiesControl x:Name="propertiesWindow"/>
                             </avalonDock:LayoutAnchorable>
                         </avalonDock:LayoutAnchorGroup>
                     </avalonDock:LayoutAnchorSide>

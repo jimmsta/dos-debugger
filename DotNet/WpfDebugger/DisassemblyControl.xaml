@@ -33,42 +33,49 @@
         </Grid>
         
         <!-- Main disassembly listing -->
-        <ListView Name="lvListing" Grid.Row="1" Margin="0"
-                  Foreground="Black" FontFamily="Consolas" SelectionMode="Single">
-            <ListView.View>
-                <GridView VirtualizingPanel.IsVirtualizing="True"
-                              VirtualizingPanel.VirtualizationMode="Recycling"
-                              ScrollViewer.IsDeferredScrollingEnabled="True">
-                    <GridViewColumn Header="Address" Width="100">
-                        <GridViewColumn.HeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}">
-                                <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                <Setter Property="Padding" Value="5,0,0,0"/>
-                            </Style>
-                        </GridViewColumn.HeaderContainerStyle>
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Location}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Opcode" Width="150">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding OpcodeText}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="Disassembly" Width="200">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Text}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <DataGrid Grid.Row="1" Name="gridListing"
+                FontFamily="Consolas" 
+                AutoGenerateColumns="False" 
+                GridLinesVisibility="None"
+                HeadersVisibility="Column"
+                CanUserAddRows="False"
+                CanUserResizeRows="False"
+                EnableRowVirtualization="True"
+                Background="White"
+                SelectionMode="Single">
+
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                </Style>
+            </DataGrid.CellStyle>
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="Address" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2" Text="{Binding Location}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Opcode" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2" Text="{Binding OpcodeText}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Disassembly" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="3,3,3,2" Text="{Binding Text}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+                
+        </DataGrid>
         
         <!-- Status bar -->
         <StackPanel Grid.Row="2">

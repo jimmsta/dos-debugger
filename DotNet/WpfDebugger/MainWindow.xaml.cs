@@ -104,6 +104,7 @@ namespace WpfDebugger
             this.procedureList.Image = image;
             this.errorList.Image = image;
             this.segmentList.Image = image;
+            this.propertiesWindow.Image = image;
         }
 
         private void mnuFileExit_Click(object sender, RoutedEventArgs e)
@@ -126,6 +127,11 @@ namespace WpfDebugger
         private void mnuViewProcedures_Click(object sender, RoutedEventArgs e)
         {
             ActivateToolWindow(procedureList);
+        }
+
+        private void mnuViewProperties_Click(object sender, RoutedEventArgs e)
+        {
+            ActivateToolWindow(propertiesWindow);
         }
 
         /// <summary>
@@ -193,6 +199,11 @@ namespace WpfDebugger
                     AnchorableShowStrategy.Bottom |
                     AnchorableShowStrategy.Most);
             }
+
+            //control.Focus
+            //if (!control.Focus())
+            //    throw new InvalidOperationException();
+            //Keyboard.Focus(control);
         }
 
         #endregion
