@@ -19,7 +19,7 @@
         <!-- Menu bar -->
         <Menu HorizontalAlignment="Left" Grid.Row="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open"/>
+                <MenuItem Header="_Open" Name="mnuFileOpen" Click="mnuFileOpen_Click"/>
                 <Separator/>
                 <MenuItem Name="mnuFileSaveLayout" Header="Save Layout" Click="mnuFileSaveLayout_Click"/>
                 <MenuItem Name="mnuFileLoadLayout" Header="Load Layout" Click="mnuFileLoadLayout_Click"/>
@@ -74,7 +74,7 @@
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Name="mnuHelpTest" Header="_Test" Click="mnuHelpTest_Click"/>
-                <MenuItem Header="_About"/>
+                <MenuItem Header="_About" Name="mnuHelpAbout" Click="mnuHelpAbout_Click"/>
             </MenuItem>
         </Menu>
         

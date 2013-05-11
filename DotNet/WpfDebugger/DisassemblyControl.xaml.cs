@@ -41,12 +41,13 @@ namespace WpfDebugger
 
         private void UpdateUI()
         {
-            gridListing.ItemsSource = null;
+            this.DataContext = null;
             if (image == null)
                 return;
 
             this.viewModel = new ListingViewModel(image);
-            gridListing.ItemsSource = viewModel.Rows;
+            //gridListing.ItemsSource = viewModel.Rows;
+            this.DataContext = viewModel;
         }
 
         public void GoToAddress(Pointer address)

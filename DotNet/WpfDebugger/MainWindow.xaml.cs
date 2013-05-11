@@ -41,14 +41,7 @@ namespace WpfDebugger
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
-            MZFile mzFile = new MZFile(fileName);
-            mzFile.Relocate(0);
-            Disassembler16 dasm = new Disassembler16(mzFile.Image, mzFile.BaseAddress);
-            dasm.Analyze(mzFile.EntryPoint);
-
-            this.image = dasm.Image;
-            //this.viewModel = new ListingViewModel(dasm.Image);
-            mnuHelpTest_Click(null, null);
+            DoOpenFile(fileName);
         }
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -98,13 +91,24 @@ namespace WpfDebugger
 
         #endregion
 
-        private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
+        private void DoOpenFile(string fileName)
         {
+            MZFile mzFile = new MZFile(fileName);
+            mzFile.Relocate(0);
+            Disassembler16 dasm = new Disassembler16(mzFile.Image, mzFile.BaseAddress);
+            dasm.Analyze(mzFile.EntryPoint);
+
+            this.image = dasm.Image;
             this.disassemblyList.Image = image;
             this.procedureList.Image = image;
             this.errorList.Image = image;
             this.segmentList.Image = image;
             this.propertiesWindow.Image = image;
+        }
+
+        private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
+        {
+            
         }
 
         private void mnuFileExit_Click(object sender, RoutedEventArgs e)
@@ -243,6 +247,24 @@ namespace WpfDebugger
             //    "Navigating to {0} in {1}", e.Uri, e.Target));
             Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
             disassemblyList.GoToAddress(address);
+        }
+
+        private void mnuFileOpen_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.Filter = "Executable file|*.exe";
+            dlg.Title = "Select File To Analyze";
+            
+            if (dlg.ShowDialog(this) == true)
+            {
+                DoOpenFile(dlg.FileName);
+            }
+        }
+
+        private void mnuHelpAbout_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(this, "DOS Disassembler\r\nCopyright fanci 2012-2013\r\n",
+                            "About", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }

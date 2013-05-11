@@ -20,12 +20,11 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            <ComboBox Grid.Column="0">
+            
+            <ComboBox Grid.Column="0" ItemsSource="{Binding SegmentItems}"/>
                 
-            </ComboBox>
-            <ComboBox Grid.Column="1">
+            <ComboBox Grid.Column="1" ItemsSource="{Binding ProcedureItems}"/>
                 
-            </ComboBox>
             <Frame Grid.Column="2">
                 <Frame.Content>
                 <TextBlock><Hyperlink NavigateUri="somewhere">Click me</Hyperlink></TextBlock>
@@ -35,16 +34,17 @@
         
         <!-- Main disassembly listing -->
         <DataGrid Grid.Row="1" Name="gridListing"
-                FontFamily="Consolas" 
-                AutoGenerateColumns="False" 
-                GridLinesVisibility="None"
-                HeadersVisibility="Column"
-                CanUserAddRows="False"
-                CanUserResizeRows="False"
-                EnableRowVirtualization="True"
-                Background="White"
-                SelectionMode="Single"
-                KeyboardNavigation.TabNavigation="Once">
+                  FontFamily="Consolas" 
+                  AutoGenerateColumns="False" 
+                  GridLinesVisibility="None"
+                  HeadersVisibility="Column"
+                  CanUserAddRows="False"
+                  CanUserResizeRows="False"
+                  EnableRowVirtualization="True"
+                  Background="White"
+                  SelectionMode="Single"
+                  ItemsSource="{Binding Rows}"
+                  KeyboardNavigation.TabNavigation="Once">
             <!-- Note: KeyboardNavigation.TabNavigation doesn't work. Need to see 
                  http://stackoverflow.com/questions/2111281/disable-tabstop-between-columns-in-a-wpf-datagrid
                  for a solution.
@@ -58,7 +58,7 @@
             </DataGrid.CellStyle>
 
             <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Address" Width="100">
+                <DataGridTemplateColumn Header="Address" Width="90">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Margin="3,3,3,2" Text="{Binding Location}"/>
@@ -72,7 +72,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Disassembly" Width="200">
+                <DataGridTemplateColumn Header="Disassembly" Width="250">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Margin="3,3,3,2" Text="{Binding Text}"/>
