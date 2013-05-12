@@ -63,5 +63,15 @@ namespace WpfDebugger
             gridListing.ScrollIntoView(viewModel.Rows[index]);
             gridListing.Focus();
         }
+
+        private void ChildHyperlink_Click(object sender, RoutedEventArgs e)
+        {
+            Hyperlink hyperlink = e.OriginalSource as Hyperlink;
+            if (hyperlink != null)
+            {
+                MessageBox.Show(string.Format(
+                    "Hyperlink clicked: Uri={0}", hyperlink.NavigateUri));
+            }
+        }
     }
 }

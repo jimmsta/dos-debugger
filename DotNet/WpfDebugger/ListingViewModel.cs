@@ -244,6 +244,11 @@ namespace WpfDebugger
         /// </summary>
         public abstract string Text { get; }
 
+        public virtual string RichText
+        {
+            get { return Text; }
+        }
+
         protected ListingRow(int index)
         {
             if (index < 0)
@@ -368,6 +373,29 @@ namespace WpfDebugger
         {
             //get { return instruction.ToString(); }
             get { return strInstruction; }
+        }
+
+        public override string RichText
+        {
+            get
+            {
+                if (instruction.Operands.Length == 1 &&
+                    instruction.Operands[0] is RelativeOperand)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    // TODO: add prefix
+                    sb.Append(instruction.Operation.ToString());
+
+                    sb.AppendFormat(" <a href=\"ddd://document1/#{0}\">{1}</a>",
+                        "somewhere",
+                        instruction.Operands[0]);
+                    return sb.ToString();
+                }
+                else
+                {
+                    return Text;
+                }
+            }
         }
     }
 
