@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Disassembler;
+using Disassembler.Omf;
 using AvalonDock.Layout;
 
 namespace WpfDebugger
@@ -40,8 +41,9 @@ namespace WpfDebugger
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
-            DoOpenFile(fileName);
+            //string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
+            //DoOpenFile(fileName);
+            mnuHelpTest_Click(null, null);
         }
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -108,7 +110,11 @@ namespace WpfDebugger
 
         private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
         {
-            
+            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
+            library.BuildDependencyGraph();
+
+            this.libraryBrowser.Library = library;
         }
 
         private void mnuFileExit_Click(object sender, RoutedEventArgs e)
@@ -136,6 +142,11 @@ namespace WpfDebugger
         private void mnuViewProperties_Click(object sender, RoutedEventArgs e)
         {
             ActivateToolWindow(propertiesWindow);
+        }
+
+        private void mnuViewLibraryBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            ActivateToolWindow(libraryBrowser);
         }
 
         /// <summary>

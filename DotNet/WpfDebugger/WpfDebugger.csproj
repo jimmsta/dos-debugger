@@ -97,6 +97,9 @@
     </ApplicationDefinition>
     <Compile Include="DebuggerCommands.cs" />
     <Compile Include="HtmlConverter.cs" />
+    <Compile Include="LibraryBrowserControl.xaml.cs">
+      <DependentUpon>LibraryBrowserControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PropertiesControl.xaml.cs">
       <DependentUpon>PropertiesControl.xaml</DependentUpon>
     </Compile>
@@ -108,6 +111,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="ErrorListControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LibraryBrowserControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

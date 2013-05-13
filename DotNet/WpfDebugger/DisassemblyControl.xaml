@@ -6,8 +6,8 @@
              xmlns:my="clr-namespace:WpfDebugger"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
-             FocusManager.FocusedElement="{Binding ElementName=lvListing}"
              Hyperlink.Click="ChildHyperlink_Click">
+            <!--FocusedElement="{Binding ElementName=lvListing}"-->
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -68,6 +68,10 @@
                     <GridViewColumn Header="Disassembly" Width="250">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
+                                <DataTemplate.Resources>
+                                    <Style TargetType="{x:Type Hyperlink}"
+                                           BasedOn="{StaticResource HoverHyperlinkStyle}"/>
+                                </DataTemplate.Resources>
                                 <TextBlock TextTrimming="CharacterEllipsis" 
                                            my:HtmlConverter.InnerHtml="{Binding RichText,Mode=OneTime}"/>
                             </DataTemplate>

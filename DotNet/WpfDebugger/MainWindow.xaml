@@ -69,6 +69,7 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Properties" Name="mnuViewProperties" Click="mnuViewProperties_Click"/>
+                <MenuItem Header="Library Browser" Name="mnuViewLibraryBrowser" Click="mnuViewLibraryBrowser_Click"/>
                 <Separator/>
                 <MenuItem Header="Theme">
                     <MenuItem IsChecked="True" Header="Default" Name="mnuViewThemeDefault" Click="mnuViewThemeItem_Click"/>
@@ -143,6 +144,9 @@
                             </avalonDock:LayoutAnchorable>
                             <avalonDock:LayoutAnchorable ContentId="propertiesWindow" Title="Properties">
                                 <my:PropertiesControl x:Name="propertiesWindow"/>
+                            </avalonDock:LayoutAnchorable>
+                            <avalonDock:LayoutAnchorable ContentId="libraryBrowser" Title="Library">
+                                <my:LibraryBrowserControl x:Name="libraryBrowser"/>
                             </avalonDock:LayoutAnchorable>
                         </avalonDock:LayoutAnchorGroup>
                     </avalonDock:LayoutAnchorSide>

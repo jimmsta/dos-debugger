@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Navigation;
 using Disassembler;
@@ -67,10 +68,38 @@ namespace WpfDebugger
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            Uri uri = (sender as System.Windows.Documents.Hyperlink).NavigateUri;
-            string targetName = GetTargetNameFromModifierKeys();
-            RaiseRequestNavigate(uri, targetName);
+            Hyperlink hyperlink = sender as Hyperlink;
+            if (hyperlink != null)
+            {
+                // Select the containing ListViewItem.
+                ListViewItem item = lvProcedures.ItemContainerGenerator.ContainerFromItem(
+                    hyperlink.DataContext) as ListViewItem;
+                if (item != null)
+                {
+                    item.IsSelected = true;
+                    item.Focus();
+                }
+
+                // Raise RequestNavigate event.
+                Uri uri = hyperlink.NavigateUri;
+                string targetName = GetTargetNameFromModifierKeys();
+                RaiseRequestNavigate(uri, targetName);
+            }
         }
+
+#if false
+        private static T FindParent<T>(DependencyObject element)
+            where T : DependencyObject
+        {
+            while (element != null)
+            {
+                element = System.Windows.Media.VisualTreeHelper.GetParent(element);
+                if (element is T)
+                    return (T)element;
+            }
+            return null;
+        }
+#endif
 
         private void RaiseRequestNavigate(Uri uri, string targetName)
         {

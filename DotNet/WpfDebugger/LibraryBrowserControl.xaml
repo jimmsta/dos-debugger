@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="WpfDebugger.LibraryBrowserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:my="clr-namespace:WpfDebugger"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <TreeView ItemsSource="{Binding Libraries}"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True">
+
+            <TreeView.Resources>
+                <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+LibraryItem}" 
+			                              ItemsSource="{Binding Modules}">
+                    <TextBlock Margin="2" Text="{Binding Path=Name}"/>
+                </HierarchicalDataTemplate>
+                <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+ModuleItem}" 
+			                              ItemsSource="{Binding Symbols,Mode=OneTime}">
+                    <TextBlock Margin="2" Text="{Binding Path=Name}"/>
+                </HierarchicalDataTemplate>
+                <DataTemplate DataType="{x:Type my:LibraryBrowserViewModel+SymbolItem}">
+                    <TextBlock Margin="2" Text="{Binding}"/>
+                </DataTemplate>
+            </TreeView.Resources>
+
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type TreeViewItem}">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded,Mode=TwoWay}" />
+                    <Setter Property="IsSelected" Value="{Binding IsSelected,Mode=TwoWay}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
+
+        </TreeView>
+        
+        <!--
+        <TreeView ItemsSource="{Binding Libraries}">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Modules}">
+                    <TextBlock Text="{Binding Name}" />
+                    <HierarchicalDataTemplate.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Symbols}">
+                            <TextBlock Text="{Binding}"/>
+                        </HierarchicalDataTemplate>
+                    </HierarchicalDataTemplate.ItemTemplate>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+        -->
+    </Grid>
+</UserControl>
