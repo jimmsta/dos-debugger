@@ -15,10 +15,10 @@ namespace WpfDebugger
         public ErrorListControl()
         {
             InitializeComponent();
+            this.DataContext = new ErrorListViewModel(null);
         }
 
         private BinaryImage image;
-        private ErrorListViewModel viewModel;
 
         public BinaryImage Image
         {
@@ -26,29 +26,18 @@ namespace WpfDebugger
             set
             {
                 image = value;
-                UpdateUI();
+                this.DataContext = new ErrorListViewModel(image);
             }
-        }
-
-        private void UpdateUI()
-        {
-            this.viewModel = new ErrorListViewModel(image);
-            this.viewModel.ShowErrors = true;
-
-            //this.lvErrors.ItemsSource = viewItems;
-            //this.txtError.DataContext = this;
-            this.DataContext = viewModel;
-            //DisplayErrors();
         }
 
         private void ToolBar_Loaded(object sender, RoutedEventArgs e)
         {
-	        ToolBar toolBar = sender as ToolBar;
-	        var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
-	        if (overflowGrid != null)
-	        {
-		        overflowGrid.Visibility = Visibility.Hidden;
-	        }
+            ToolBar toolBar = sender as ToolBar;
+            var overflowGrid = toolBar.Template.FindName("OverflowGrid", toolBar) as FrameworkElement;
+            if (overflowGrid != null)
+            {
+                overflowGrid.Visibility = Visibility.Hidden;
+            }
         }
 
 #if false
@@ -70,9 +59,9 @@ namespace WpfDebugger
     // be faster.
     class ErrorListViewModel : INotifyPropertyChanged
     {
-        private ErrorViewItem[] allItems;
+        private ErrorListItem[] allItems;
 
-        public ErrorViewItem[] Items { get; private set; }
+        public ErrorListItem[] Items { get; private set; }
 
         public int ErrorCount { get; private set; }
         public int WarningCount { get; private set; }
@@ -146,11 +135,11 @@ namespace WpfDebugger
             int messageCount = 0;
 
             int n = image.Errors.Count;
-            allItems = new ErrorViewItem[n];
-            for (int i=0;i<n;i++)
+            allItems = new ErrorListItem[n];
+            for (int i = 0; i < n; i++)
             {
                 Error error = image.Errors[i];
-                allItems[i] = new ErrorViewItem(error);
+                allItems[i] = new ErrorListItem(error);
 
                 switch (error.Category)
                 {
@@ -159,7 +148,7 @@ namespace WpfDebugger
                     case ErrorCategory.Message: messageCount++; break;
                 }
             }
-            Array.Sort(allItems, 
+            Array.Sort(allItems,
                        (x, y) => x.Error.Location.LinearAddress.CompareTo(y.Error.Location.LinearAddress));
 
             //this.Items = items.ToArray();
@@ -167,6 +156,7 @@ namespace WpfDebugger
             this.ErrorCount = errorCount;
             this.WarningCount = warningCount;
             this.MessageCount = messageCount;
+            this.ShowErrors = true;
         }
 
         /// <summary>
@@ -190,25 +180,25 @@ namespace WpfDebugger
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-    }
 
-    class ErrorViewItem
-    {
-        public Error Error { get; private set; }
-
-        public ErrorViewItem(Error error)
+        internal class ErrorListItem
         {
-            this.Error = error;
-        }
+            public Error Error { get; private set; }
 
-        public Pointer Location
-        {
-            get { return Error.Location; }
-        }
+            public ErrorListItem(Error error)
+            {
+                this.Error = error;
+            }
 
-        public string Message
-        {
-            get { return Error.Message; }
+            public Pointer Location
+            {
+                get { return Error.Location; }
+            }
+
+            public string Message
+            {
+                get { return Error.Message; }
+            }
         }
     }
 }

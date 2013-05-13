@@ -27,6 +27,9 @@ namespace WpfDebugger
         public LibraryBrowserControl()
         {
             InitializeComponent();
+#if false
+        typeof(VirtualizingStackPanel).GetProperty("IsPixelBased", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(this, true, null);
+#endif
         }
 
         private ObjectLibrary library;
@@ -43,11 +46,19 @@ namespace WpfDebugger
                     this.DataContext = new LibraryBrowserViewModel(library);
             }
         }
+
+        private void TreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Check if we are really in virtual mode.
+            bool b1 = VirtualizingPanel.GetIsVirtualizing(tvLibraries);
+            var x2 = ScrollViewer.GetCanContentScroll(tvLibraries);
+        }
     }
 
     internal class LibraryBrowserViewModel
     {
         public LibraryItem[] Libraries { get; private set; }
+        public LibraryItem Library { get { return Libraries[0]; } }
 
         public LibraryBrowserViewModel(ObjectLibrary library)
         {
@@ -56,7 +67,7 @@ namespace WpfDebugger
 
         internal class TreeViewItemBase : INotifyPropertyChanged
         {
-            private bool isExpanded;
+            private bool isExpanded = true;
             private bool isSelected;
 
             public bool IsExpanded

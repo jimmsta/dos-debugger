@@ -7,16 +7,22 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <TreeView ItemsSource="{Binding Libraries}"
+        <TreeView Name="tvLibraries"
+                  DataContext="{Binding Library}"
+                  ItemsSource="{Binding Modules}"
                   VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.IsContainerVirtualizable="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
-                  ScrollViewer.CanContentScroll="True">
+                  ScrollViewer.CanContentScroll="True" 
+                  MouseDoubleClick="TreeView_MouseDoubleClick">
 
             <TreeView.Resources>
+                <!--
                 <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+LibraryItem}" 
 			                              ItemsSource="{Binding Modules}">
                     <TextBlock Margin="2" Text="{Binding Path=Name}"/>
                 </HierarchicalDataTemplate>
+                -->
                 <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+ModuleItem}" 
 			                              ItemsSource="{Binding Symbols,Mode=OneTime}">
                     <TextBlock Margin="2" Text="{Binding Path=Name}"/>
@@ -24,12 +30,19 @@
                 <DataTemplate DataType="{x:Type my:LibraryBrowserViewModel+SymbolItem}">
                     <TextBlock Margin="2" Text="{Binding}"/>
                 </DataTemplate>
+                
+                <ContextMenu x:Key="contextMenu">
+                    <MenuItem Header="Test1"/>
+                    <MenuItem Header="Test2"/>
+                </ContextMenu>
+                
             </TreeView.Resources>
 
             <TreeView.ItemContainerStyle>
                 <Style TargetType="{x:Type TreeViewItem}">
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded,Mode=TwoWay}" />
                     <Setter Property="IsSelected" Value="{Binding IsSelected,Mode=TwoWay}" />
+                    <Setter Property="ContextMenu" Value="{StaticResource contextMenu}"/>
                 </Style>
             </TreeView.ItemContainerStyle>
 
