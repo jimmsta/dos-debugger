@@ -6,7 +6,7 @@
              xmlns:my="clr-namespace:WpfDebugger"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
-             FocusManager.FocusedElement="{Binding ElementName=gridListing}"
+             FocusManager.FocusedElement="{Binding ElementName=lvListing}"
              Hyperlink.Click="ChildHyperlink_Click">
     <Grid>
         <Grid.RowDefinitions>
@@ -35,65 +35,49 @@
         </Grid>
         
         <!-- Main disassembly listing -->
-        <DataGrid Grid.Row="1"
-                  Name="gridListing"
-                  FontFamily="Consolas" 
-                  AutoGenerateColumns="False" 
-                  GridLinesVisibility="None"
-                  HeadersVisibility="Column"
-                  CanUserAddRows="False"
-                  CanUserResizeRows="False"
-                  EnableRowVirtualization="True"
-                  Background="White"
-                  SelectionMode="Single"
+        <ListView Name="lvListing"
+                  Grid.Row="1"
                   ItemsSource="{Binding Rows}"
-                  KeyboardNavigation.TabNavigation="Once">
-            <!-- Note: KeyboardNavigation.TabNavigation doesn't work. Need to see 
-                 http://stackoverflow.com/questions/2111281/disable-tabstop-between-columns-in-a-wpf-datagrid
-                 for a solution.
-            --> 
+                  FontFamily="Consolas"
+                  SelectionMode="Single"
+                  VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling">
 
-            <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                </Style>
-            </DataGrid.CellStyle>
+            <ListView.View>
+                <GridView>
 
-            <DataGrid.Columns>
-                <DataGridTemplateColumn Header="Address" Width="90">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2" Text="{Binding Location}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Opcode" Width="150">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2" Text="{Binding OpcodeText}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Disassembly" Width="250">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2" Text="{Binding Text}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Rich Text" Width="250">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <!--<TextBlock Margin="3,3,3,2" Text="{Binding RichText}"/>-->
-                            <!--<TextBlock><Binding Source="RichText"/></TextBlock>-->
-                            <TextBlock Margin="3,3,3,2" my:HtmlConverter.InnerHtml="{Binding RichText}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-                
-        </DataGrid>
+                    <GridViewColumn Header="Address" Width="90">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextTrimming="CharacterEllipsis" 
+                                           Text="{Binding Location,Mode=OneTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Opcode" Width="150">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextTrimming="CharacterEllipsis"
+                                           Text="{Binding OpcodeText,Mode=OneTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Disassembly" Width="250">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextTrimming="CharacterEllipsis" 
+                                           my:HtmlConverter.InnerHtml="{Binding RichText,Mode=OneTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    
+                </GridView>
+            </ListView.View>
+            
+        </ListView>
         
         <!-- Status bar -->
         <StackPanel Grid.Row="2">

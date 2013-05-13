@@ -34,7 +34,42 @@
         <Style x:Key="{x:Type ListView}" TargetType="{x:Type ListView}">
             <Setter Property="Foreground" Value="Black"/>
         </Style>
+
+        <!-- 
+        Do take a look at this:
+        http://stackoverflow.com/questions/5182135/how-to-propagate-styles-to-hyperlinks-inside-a-datatemplate
         
+        It points out that "elements that are not derived from Control (like
+        TextBlock and Hyperlink) do not look for implicit styles outside the
+        DataTemplate boundary".
+        
+        This means that hyperlinks inside DataTemplates (such as those defined
+        in a ListView) will not automatically apply the styles we define here
+        unless we explicitly give them a key.
+        -->
+        <Style x:Key="HoverHyperlinkStyle" TargetType="{x:Type Hyperlink}">
+            <Setter Property="Foreground" Value="Blue"/>
+            <Setter Property="TextBlock.TextDecorations" Value="{x:Null}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <!--<Setter Property="Foreground" Value="SteelBlue"/>-->
+                    <Setter Property="TextBlock.TextDecorations" Value="Underline"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Make ListView header left-aligned -->
+        <Style TargetType="{x:Type GridViewColumnHeader}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="6,0,6,0"/>
+        </Style>
+
+        <!-- Make ListViewItems stretch so that text can be right-aligned -->
+        <Style TargetType="{x:Type ListViewItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        
+        <!-- Make menu separators narrower -->
         <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}"
                TargetType="{x:Type Separator}">
             <Setter Property="Template">

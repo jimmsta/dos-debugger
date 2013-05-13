@@ -56,7 +56,7 @@
             </ListView.Resources>
 
             <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                     <EventSetter Event="MouseDoubleClick" Handler="ListViewItem_MouseDoubleClick"/>
                     <Setter Property="ContextMenu" Value="{StaticResource contextMenu}"/>
                 </Style>
@@ -68,7 +68,8 @@
                     <GridViewColumn Header="Entry Point" Width="90">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock><Hyperlink
+                                <TextBlock TextTrimming="CharacterEllipsis"><Hyperlink
+                                    Style="{StaticResource HoverHyperlinkStyle}"
                                     NavigateUri="{Binding Uri}"
                                     Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
                             </DataTemplate>
@@ -78,7 +79,7 @@
                     <GridViewColumn Header="Name" Width="80">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -86,7 +87,9 @@
                     <GridViewColumn Header="Size" Width="60">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Size}"/>
+                                <TextBlock TextTrimming="CharacterEllipsis"
+                                           TextAlignment="Right"
+                                           Text="{Binding Size}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

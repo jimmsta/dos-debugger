@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Disassembler;
 
 namespace WpfDebugger
@@ -53,15 +42,33 @@ namespace WpfDebugger
         public void GoToAddress(Pointer address)
         {
             int index = viewModel.FindRowIndex(address.LinearAddress);
-            //var row = viewModel.Rows[index];
-            gridListing.SelectedIndex = index;
 
-            // This will make sure the item is scrolled to the top of
-            // the visible rows.
-            gridListing.ScrollIntoView(viewModel.Rows[viewModel.Rows.Count - 1]);
-            gridListing.UpdateLayout();
-            gridListing.ScrollIntoView(viewModel.Rows[index]);
-            gridListing.Focus();
+            // Scroll to the bottom first so that the actual item will be
+            // on the top when we scroll again.
+            lvListing.ScrollIntoView(viewModel.Rows[viewModel.Rows.Count - 1]);
+
+            // We must UpdateLayout() now, otherwise the first dummy scroll
+            // won't have any effect.
+            lvListing.UpdateLayout();
+
+            // Now scroll the actual item into view.
+            lvListing.ScrollIntoView(viewModel.Rows[index]);
+
+            // Select the item.
+            lvListing.SelectedIndex = index;
+
+            // Note: we MUST get the ListViewItem and call Focus() on this
+            // item. If we instead call Focus() on lvListing, the UI will
+            // hang if
+            //   1) the focused item is out of the screen, and
+            //   2) we press Up/Down arrow.
+            // The reason is probably that there is no ListViewItem created
+            // for an off-the-screen row, and somehow WPF chokes on this.
+            ListViewItem item = lvListing.ItemContainerGenerator.ContainerFromIndex(index) as ListViewItem;
+            if (item != null)
+            {
+                item.Focus();
+            }
         }
 
         private void ChildHyperlink_Click(object sender, RoutedEventArgs e)

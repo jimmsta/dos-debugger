@@ -46,9 +46,11 @@
         
         <ListView Name="lvErrors" Grid.Row="1"
                   ItemsSource="{Binding Items}"
-                  Foreground="Black" 
                   FontFamily="Consolas" 
-                  SelectionMode="Single">
+                  SelectionMode="Single"
+                  VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Location" Width="100">
