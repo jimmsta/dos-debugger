@@ -2,117 +2,98 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:my="clr-namespace:WpfDebugger"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300" Focusable="True">
     <Grid>
-        <!-- It would be nice if DataGrid supports smooth scrolling, which
-             would remove the gray padding at the end of the list. -->
-        <DataGrid Name="gridProcedures"
-                  FontFamily="Consolas" 
-                  AutoGenerateColumns="False" 
-                  GridLinesVisibility="None"
-                  HeadersVisibility="Column"
-                  CanUserAddRows="False"
-                  CanUserResizeRows="False"
-                  EnableRowVirtualization="True"
-                  Background="White"
-                  SelectionMode="Single"
-                  PreviewKeyDown="gridProcedures_PreviewKeyDown">
 
-            <DataGrid.Resources>
-                <!--<ContextMenu x:Key="RowMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                    <MenuItem Header="Edit" Command="{Binding EditCommand}"/>
-                </ContextMenu>-->
-                <ContextMenu x:Key="RowContextMenu">
-                    <MenuItem Name="mnuContextOpenDisassembly" 
-                              Header="Open _Disassembly" 
-                              Click="mnuContextOpenLink_Click"/><!-- DblClk -->
-                    <MenuItem Name="mnuContextOpenDisassemblyInNewTab"
-                              Header="Open Disassembly in _New Tab"
+        <ListView Name="lvProcedures"
+                  ItemsSource="{Binding Items}"
+                  FontFamily="Consolas"
+                  SelectionMode="Single"
+                  VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  PreviewKeyDown="ListView_PreviewKeyDown">
+
+            <ListView.CommandBindings>
+                <CommandBinding Command="my:DebuggerCommands.OpenDisassembly"
+                                CanExecute="OpenLinkCommand_CanExecute"
+                                Executed="OpenDisassemblyCommand_Executed"/>
+                <CommandBinding Command="my:DebuggerCommands.OpenNewDisassembly"
+                                CanExecute="OpenLinkCommand_CanExecute"
+                                Executed="OpenNewDisassemblyCommand_Executed"/>
+                <CommandBinding Command="my:DebuggerCommands.OpenHexView"
+                                CanExecute="OpenLinkCommand_CanExecute"
+                                Executed="OpenHexViewCommand_Executed"/>
+                <CommandBinding Command="my:DebuggerCommands.OpenNewHexView"
+                                CanExecute="OpenLinkCommand_CanExecute"
+                                Executed="OpenNewHexViewCommand_Executed"/>
+            </ListView.CommandBindings>
+            
+            <ListView.Resources>
+                <ContextMenu x:Key="contextMenu">
+                    <!-- The DataContext of the menu item is automatically
+                         set to the underlying ProcedureListItem. Nice! -->
+                    <MenuItem Header="Open _Disassembly"
+                              Command="my:DebuggerCommands.OpenDisassembly"
+                              CommandParameter="{Binding Uri}"/>
+                    <MenuItem Header="Open Disassembly in _New Tab"
                               InputGestureText="Ctrl"
-                              Click="mnuContextOpenLink_Click"/><!-- Ctrl+Clk -->
+                              Command="my:DebuggerCommands.OpenNewDisassembly"
+                              CommandParameter="{Binding Uri}"/>
                     <Separator/>
-                    <MenuItem Name="mnuContextOpenHexView"
-                              Header="Open _Hex View"
+                    <MenuItem Header="Open _Hex View"
                               InputGestureText="Shift"
-                              Click="mnuContextOpenLink_Click"/><!-- Shift+Clk -->
-                    <MenuItem Name="mnuContextOpenHexViewInNewTab" 
-                              Header="Open Hex View in New _Tab"
+                              Command="my:DebuggerCommands.OpenHexView"
+                              CommandParameter="{Binding Uri}"/>
+                    <MenuItem Header="Open Hex View in New _Tab"
                               InputGestureText="Ctrl+Shift"
-                              Click="mnuContextOpenLink_Click"/><!-- Ctrl+Shift+Clk -->
+                              Command="my:DebuggerCommands.OpenNewHexView"
+                              CommandParameter="{Binding Uri}"/>
                 </ContextMenu>
-                <!--<Style x:Key="RowWithContextMenu" TargetType="{x:Type DataGridRow}">
-                    <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}"/>
-                </Style>-->
-            </DataGrid.Resources>
-            
-            <!-- Make an attempt to remove the blank area above the vertical
-                 scroll bar. Doesn't really work. See
-                 http://stackoverflow.com/questions/3844421/how-to-make-wpf-datagrid-scrollbar-cover-the-non-scrollable-area-as-well
-                 http://stackoverflow.com/questions/9412114/is-it-possible-to-stop-the-vertical-scrollbar-from-pushing-the-datagrid-columns
-            -->
-            <!--<DataGrid.Resources>-->
-                <!--<Style x:Key="{x:Type DataGridColumnHeadersPresenter}" TargetType="{x:Type DataGridColumnHeadersPresenter}">
-                    <Setter Property="Grid.ColumnSpan" Value="2" />
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="{x:Type DataGridColumnHeadersPresenter}">
-                                <Grid>
-                                    <DataGridColumnHeader IsHitTestVisible="False" Name="PART_FillerColumnHeader"/>
-                                    <ItemsPresenter/>
-                                </Grid>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>-->
-                <!--<Style x:Key="VerticalScrollBar" TargetType="{x:Type ScrollBar}">
-                    <Setter Property="Grid.Row" Value="0"/>
-                    <Setter Property="Grid.RowSpan" Value="2"/>
-                </Style>-->
-            <!--</DataGrid.Resources>-->
-            
-            <!--<DataGrid.RowStyle>
-                <StaticResource ResourceKey="RowWithContextMenu"/>
-            </DataGrid.RowStyle>-->
-            
-            <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                    <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}"/>
-                    <EventSetter Event="MouseDoubleClick" Handler="DataGrid_MouseDoubleClick"/>
+            </ListView.Resources>
+
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <EventSetter Event="MouseDoubleClick" Handler="ListViewItem_MouseDoubleClick"/>
+                    <Setter Property="ContextMenu" Value="{StaticResource contextMenu}"/>
                 </Style>
-            </DataGrid.CellStyle>
+            </ListView.ItemContainerStyle>
             
-            <DataGrid.Columns>
-                <!--<DataGridTextColumn Header="Entry Point" Width="90"                    
-                                    Binding="{Binding EntryPoint}"/>-->
-                <DataGridTemplateColumn Header="Entry Point" Width="90" SortMemberPath="Name">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2"><Hyperlink
-                                NavigateUri="{Binding Uri}"
-                                Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Name" Width="80" SortMemberPath="Name">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2" Text="{Binding Name}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="Size" Width="60" SortMemberPath="Size">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Margin="3,3,3,2" Text="{Binding Size}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-            
-        </DataGrid>
+            <ListView.View>
+                <GridView>
+                    
+                    <GridViewColumn Header="Entry Point" Width="90">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock><Hyperlink
+                                    NavigateUri="{Binding Uri}"
+                                    Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Name" Width="80">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Size" Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Size}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    
+                </GridView>
+            </ListView.View>
+        </ListView>
+        
     </Grid>
 </UserControl>

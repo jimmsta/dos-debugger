@@ -249,12 +249,17 @@ namespace WpfDebugger
             disassemblyList.GoToAddress(address);
         }
 
-        private void mnuFileOpen_Click(object sender, RoutedEventArgs e)
+        private void FileOpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = true;
+        }
+
+        private void FileOpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog();
             dlg.Filter = "Executable file|*.exe";
             dlg.Title = "Select File To Analyze";
-            
+
             if (dlg.ShowDialog(this) == true)
             {
                 DoOpenFile(dlg.FileName);

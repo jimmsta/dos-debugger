@@ -8,6 +8,13 @@
         Loaded="Window_Loaded" Unloaded="Window_Unloaded" Icon="Resources/App-1.ico">
     <Window.Resources>
     </Window.Resources>
+    
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.Open"
+                        Executed="FileOpenCommand_Executed"
+                        CanExecute="FileOpenCommand_CanExecute"/>
+    </Window.CommandBindings>
+    
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,7 +26,7 @@
         <!-- Menu bar -->
         <Menu HorizontalAlignment="Left" Grid.Row="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open" Name="mnuFileOpen" Click="mnuFileOpen_Click"/>
+                <MenuItem Header="_Open" Name="mnuFileOpen" Command="ApplicationCommands.Open"/>
                 <Separator/>
                 <MenuItem Name="mnuFileSaveLayout" Header="Save Layout" Click="mnuFileSaveLayout_Click"/>
                 <MenuItem Name="mnuFileLoadLayout" Header="Load Layout" Click="mnuFileLoadLayout_Click"/>
