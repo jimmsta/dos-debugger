@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -44,6 +45,9 @@ namespace WpfDebugger
                     this.DataContext = null;
                 else
                     this.DataContext = new LibraryBrowserViewModel(library);
+
+                var lib = new LibraryBrowserViewModel(library);
+                dummyTreeView.DataContext = new MyTreeViewModel(lib.Libraries);
             }
         }
 
@@ -108,7 +112,7 @@ namespace WpfDebugger
             public event PropertyChangedEventHandler PropertyChanged;
         }
 
-        internal class LibraryItem : TreeViewItemBase
+        internal class LibraryItem : TreeViewItemBase, ITreeNode
         {
             public ObjectLibrary Library { get; private set; }
             public ObservableCollection<ModuleItem> Modules { get; private set; }
@@ -125,9 +129,24 @@ namespace WpfDebugger
                         from module in library.Modules
                         select new ModuleItem(module));
             }
+
+            public string Text
+            {
+                get { return "Library"; }
+            }
+
+            public bool HasChildren
+            {
+                get { return Modules.Count > 0; }
+            }
+
+            public IEnumerable<ITreeNode> GetChildren()
+            {
+                return Modules;
+            }
         }
 
-        internal class ModuleItem : TreeViewItemBase
+        internal class ModuleItem : TreeViewItemBase,ITreeNode
         {
             public ObjectModule Module { get; private set; }
             public string Name { get { return Module.ObjectName; } }
@@ -144,9 +163,24 @@ namespace WpfDebugger
                         from publicName in module.PublicNames
                         select new SymbolItem(publicName));
             }
+
+            public string Text
+            {
+                get { return this.Name; }
+            }
+
+            public bool HasChildren
+            {
+                get { return Symbols.Count > 0; }
+            }
+
+            public IEnumerable<ITreeNode> GetChildren()
+            {
+                return Symbols;
+            }
         }
 
-        internal class SymbolItem : TreeViewItemBase
+        internal class SymbolItem : TreeViewItemBase,ITreeNode
         {
             public PublicNameDefinition Symbol { get; private set; }
 
@@ -169,6 +203,21 @@ namespace WpfDebugger
                     return string.Format("{0} : {1}+{2:X}h",
                         Symbol.Name, Symbol.BaseSegment.SegmentName, Symbol.Offset);
                 }
+            }
+
+            public string Text
+            {
+                get { return this.ToString(); }
+            }
+
+            public bool HasChildren
+            {
+                get { return false; }
+            }
+
+            public IEnumerable<ITreeNode> GetChildren()
+            {
+                return null;
             }
         }
     }

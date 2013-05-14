@@ -100,6 +100,9 @@
     <Compile Include="LibraryBrowserControl.xaml.cs">
       <DependentUpon>LibraryBrowserControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MyTreeView.xaml.cs">
+      <DependentUpon>MyTreeView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PropertiesControl.xaml.cs">
       <DependentUpon>PropertiesControl.xaml</DependentUpon>
     </Compile>
@@ -137,6 +140,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="MyTreeView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ProcedureListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

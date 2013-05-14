@@ -7,6 +7,11 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
         <TreeView Name="tvLibraries"
                   DataContext="{Binding Library}"
                   ItemsSource="{Binding Modules}"
@@ -48,19 +53,8 @@
 
         </TreeView>
         
-        <!--
-        <TreeView ItemsSource="{Binding Libraries}">
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate ItemsSource="{Binding Modules}">
-                    <TextBlock Text="{Binding Name}" />
-                    <HierarchicalDataTemplate.ItemTemplate>
-                        <HierarchicalDataTemplate ItemsSource="{Binding Symbols}">
-                            <TextBlock Text="{Binding}"/>
-                        </HierarchicalDataTemplate>
-                    </HierarchicalDataTemplate.ItemTemplate>
-                </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
-        -->
+        <my:MyTreeView 
+            x:Name="dummyTreeView"
+            Grid.Row="1"/>
     </Grid>
 </UserControl>
