@@ -7,12 +7,16 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
+        
+        <my:MyTreeView x:Name="myTreeView"/>
+        
+        <!--
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        
-        <TreeView Name="tvLibraries"
+
+        <TreeView Name="tvLibraries" Grid.Row="1"
                   DataContext="{Binding Library}"
                   ItemsSource="{Binding Modules}"
                   VirtualizingPanel.IsVirtualizing="True"
@@ -22,12 +26,6 @@
                   MouseDoubleClick="TreeView_MouseDoubleClick">
 
             <TreeView.Resources>
-                <!--
-                <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+LibraryItem}" 
-			                              ItemsSource="{Binding Modules}">
-                    <TextBlock Margin="2" Text="{Binding Path=Name}"/>
-                </HierarchicalDataTemplate>
-                -->
                 <HierarchicalDataTemplate DataType="{x:Type my:LibraryBrowserViewModel+ModuleItem}" 
 			                              ItemsSource="{Binding Symbols,Mode=OneTime}">
                     <TextBlock Margin="2" Text="{Binding Path=Name}"/>
@@ -52,9 +50,7 @@
             </TreeView.ItemContainerStyle>
 
         </TreeView>
+        -->
         
-        <my:MyTreeView 
-            x:Name="dummyTreeView"
-            Grid.Row="1"/>
     </Grid>
 </UserControl>

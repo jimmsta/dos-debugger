@@ -4,6 +4,8 @@ using System.Linq;
 using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using System.Windows.Data;
+using System.ComponentModel;
+using System.Windows.Input;
 
 namespace WpfDebugger
 {
@@ -16,16 +18,94 @@ namespace WpfDebugger
         {
             InitializeComponent();
         }
+
+        MyTreeViewModel viewModel;
+
+        public IEnumerable<ITreeNode> ItemsSource
+        {
+            set
+            {
+                this.viewModel = new MyTreeViewModel(value);
+                this.treeView.ItemsSource = viewModel.Items;
+            }
+        }
+
+        private void treeView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (!(sender is ListBoxItem))
+                return;
+
+            MyTreeViewItem item = ((ListBoxItem)sender).DataContext as MyTreeViewItem;
+            if (item == null)
+                return;
+
+            if (e.Key == Key.Left)
+            {
+                // If the item is expanded, collapse it; otherwise, 
+                // navigate to its parent.
+                if (item.IsExpanded)
+                {
+                    item.IsExpanded = false;
+                }
+                else
+                {
+                    MyTreeViewItem parent = item.Parent;
+                    if (parent != null)
+                    {
+                        parent.IsSelected = true;
+                        treeView.ScrollIntoView(parent);
+                        var container = treeView.ItemContainerGenerator.ContainerFromItem(parent)
+                            as ListBoxItem;
+                        if (container != null)
+                            container.Focus();
+                    }
+                }
+            }
+            else if (e.Key == Key.Right)
+            {
+                // If the item can be expanded but is not expanded, expand
+                // it; if the item is already expanded, go to the first
+                // child.
+                if (item.IsExpanded)
+                {
+                    MyTreeViewItem child = item.FirstChild;
+                    if (child != null)
+                    {
+                        child.IsSelected = true;
+                        treeView.ScrollIntoView(child);
+                        var container = treeView.ItemContainerGenerator.ContainerFromItem(child)
+                            as ListBoxItem;
+                        if (container != null)
+                            container.Focus();
+                    }
+                }
+                else if (item.HasChildren)
+                {
+                    item.IsExpanded = true;
+                }
+            }
+        }
     }
 
     public interface ITreeNode
     {
+        /// <summary>
+        /// Gets the text to display for the tree node.
+        /// </summary>
         string Text { get; }
+
+        /// <summary>
+        /// Gets a flag that indicates whether this node has any child.
+        /// </summary>
         bool HasChildren { get; }
+
+        /// <summary>
+        /// Gets a collection of child nodes.
+        /// </summary>
         IEnumerable<ITreeNode> GetChildren();
     }
 
-    public class MyTreeViewModel
+    internal class MyTreeViewModel
     {
         public ObservableCollection<MyTreeViewItem> Items { get; private set; }
 
@@ -37,18 +117,17 @@ namespace WpfDebugger
                     select new MyTreeViewItem(node, 0, this));
         }
 
-        internal ITreeNode SelectedNode { get; set; }
+        internal readonly HashSet<ITreeNode> SelectedNodes = new HashSet<ITreeNode>();
         internal readonly HashSet<ITreeNode> ExpandedNodes = new HashSet<ITreeNode>();
     }
 
-    public class MyTreeViewItem
+    internal class MyTreeViewItem : INotifyPropertyChanged
     {
-        private MyTreeViewModel model;
+        private readonly MyTreeViewModel model;
+        private readonly ITreeNode node;
+        private readonly int level;
         private bool isExpanded;
-
-        public int Level { get; private set; }
-
-        public ITreeNode Node { get; private set; }
+        private bool isSelected;
 
         public MyTreeViewItem(ITreeNode node, int level, MyTreeViewModel model)
         {
@@ -59,12 +138,53 @@ namespace WpfDebugger
             if (level < 0)
                 throw new ArgumentOutOfRangeException("level");
 
-            this.Node = node;
+            this.node = node;
             this.model = model;
-            this.Level = level;
+            this.level = level;
             this.isExpanded = model.ExpandedNodes.Contains(node);
+            this.isSelected = model.SelectedNodes.Contains(node);
         }
 
+        /// <summary>
+        /// Gets the indention level of this node; 0 indicates root.
+        /// </summary>
+        public int Level { get { return level; } }
+
+        /// <summary>
+        /// Gets the parent of this node.
+        /// </summary>
+        public MyTreeViewItem Parent
+        {
+            get
+            {
+                int index = model.Items.IndexOf(this);
+                while (--index >= 0 && model.Items[index].level >= this.level)
+                    continue;
+                if (index < 0)
+                    return null;
+                else
+                    return model.Items[index];
+            }
+        }
+
+        /// <summary>
+        /// Gets the first child of this node.
+        /// </summary>
+        public MyTreeViewItem FirstChild
+        {
+            get
+            {
+                int index = model.Items.IndexOf(this) + 1;
+                if (index < model.Items.Count && model.Items[index].Level > this.level)
+                    return model.Items[index];
+                else
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether this tree node is expanded in the UI.
+        /// </summary>
         public bool IsExpanded
         {
             get { return isExpanded; }
@@ -76,14 +196,15 @@ namespace WpfDebugger
                 isExpanded = value;
                 if (isExpanded)
                 {
-                    model.ExpandedNodes.Add(Node);
+                    model.ExpandedNodes.Add(node);
                     ExpandChildren();
                 }
                 else
                 {
-                    model.ExpandedNodes.Remove(Node);
+                    model.ExpandedNodes.Remove(node);
                     CollapseChildren();
                 }
+                RaisePropertyChanged("IsExpanded");
             }
         }
 
@@ -91,7 +212,7 @@ namespace WpfDebugger
         {
             int index = model.Items.IndexOf(this);
             int count = 0;
-            foreach (var child in Node.GetChildren())
+            foreach (var child in node.GetChildren())
             {
                 ++count;
                 MyTreeViewItem item = new MyTreeViewItem(child, Level + 1, model);
@@ -109,31 +230,52 @@ namespace WpfDebugger
             int index = model.Items.IndexOf(this) + 1;
             while (index < model.Items.Count && model.Items[index].Level > this.Level)
             {
+                model.Items[index].IsSelected = false;
                 model.Items.RemoveAt(index);
             }
         }
 
         public bool IsSelected
         {
-            get { return model.SelectedNode == Node; }
+            get { return isSelected; }
             set
             {
                 if (IsSelected == value)
                     return;
 
-                model.SelectedNode = Node;
+                isSelected = value;
+                if (value)
+                {
+                    model.SelectedNodes.Add(node);
+                }
+                else
+                {
+                    model.SelectedNodes.Remove(node);
+                }
+                RaisePropertyChanged("IsSelected");
             }
         }
 
         public string Text
         {
-            get { return Node.Text; }
+            get { return node.Text; }
         }
 
         public bool HasChildren
         {
-            get { return Node.HasChildren; }
+            get { return node.HasChildren; }
         }
+
+        protected void RaisePropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChangedEventArgs e = new PropertyChangedEventArgs(propertyName);
+                PropertyChanged(this, e);
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     internal class ConvertLevelToIndent : IValueConverter

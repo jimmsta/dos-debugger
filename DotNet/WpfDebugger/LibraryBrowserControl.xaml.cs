@@ -42,20 +42,23 @@ namespace WpfDebugger
             {
                 library = value;
                 if (library == null)
+                {
                     this.DataContext = null;
+                }
                 else
-                    this.DataContext = new LibraryBrowserViewModel(library);
-
-                var lib = new LibraryBrowserViewModel(library);
-                dummyTreeView.DataContext = new MyTreeViewModel(lib.Libraries);
+                {
+                    var viewModel = new LibraryBrowserViewModel(library);
+                    this.DataContext = viewModel;
+                    myTreeView.ItemsSource = viewModel.Libraries;
+                }
             }
         }
 
         private void TreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Check if we are really in virtual mode.
-            bool b1 = VirtualizingPanel.GetIsVirtualizing(tvLibraries);
-            var x2 = ScrollViewer.GetCanContentScroll(tvLibraries);
+            //bool b1 = VirtualizingPanel.GetIsVirtualizing(tvLibraries);
+            //var x2 = ScrollViewer.GetCanContentScroll(tvLibraries);
         }
     }
 
@@ -69,50 +72,7 @@ namespace WpfDebugger
             this.Libraries = new LibraryItem[1] { new LibraryItem(library) };    
         }
 
-        internal class TreeViewItemBase : INotifyPropertyChanged
-        {
-            private bool isExpanded = true;
-            private bool isSelected;
-
-            public bool IsExpanded
-            {
-                get { return isExpanded; }
-                set
-                {
-                    if (isExpanded != value)
-                    {
-                        isExpanded = value;
-                        //RaisePropertyChanged("IsExpanded");
-                    }
-                }
-            }
-
-            public bool IsSelected
-            {
-                get { return isSelected; }
-                set
-                {
-                    if (isSelected != value)
-                    {
-                        isSelected = value;
-                        //RaisePropertyChanged("IsSelected");
-                    }
-                }
-            }
-
-            protected void RaisePropertyChanged(string propertyName)
-            {
-                if (PropertyChanged != null)
-                {
-                    PropertyChangedEventArgs e = new PropertyChangedEventArgs(propertyName);
-                    PropertyChanged(this, e);
-                }
-            }
-
-            public event PropertyChangedEventHandler PropertyChanged;
-        }
-
-        internal class LibraryItem : TreeViewItemBase, ITreeNode
+        internal class LibraryItem : ITreeNode
         {
             public ObjectLibrary Library { get; private set; }
             public ObservableCollection<ModuleItem> Modules { get; private set; }
@@ -146,7 +106,7 @@ namespace WpfDebugger
             }
         }
 
-        internal class ModuleItem : TreeViewItemBase,ITreeNode
+        internal class ModuleItem : ITreeNode
         {
             public ObjectModule Module { get; private set; }
             public string Name { get { return Module.ObjectName; } }
@@ -180,7 +140,7 @@ namespace WpfDebugger
             }
         }
 
-        internal class SymbolItem : TreeViewItemBase,ITreeNode
+        internal class SymbolItem : ITreeNode
         {
             public PublicNameDefinition Symbol { get; private set; }
 
