@@ -85,6 +85,30 @@ namespace WpfDebugger
                 }
             }
         }
+
+        private void treeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is ListBoxItem))
+                return;
+
+            MyTreeViewItem item = ((ListBoxItem)sender).DataContext as MyTreeViewItem;
+            if (item == null)
+                return;
+
+            // If this item is expandable, toggle its expanding status.
+            if (item.HasChildren)
+            {
+                item.IsExpanded = !item.IsExpanded;
+            }
+
+            // Raise an ItemActivate event, as a WinForms tree view would.
+            if (ItemActivate != null)
+            {
+                ItemActivate(item.Node, null);
+            }
+        }
+
+        public event EventHandler ItemActivate;
     }
 
     public interface ITreeNode
@@ -149,6 +173,11 @@ namespace WpfDebugger
         /// Gets the indention level of this node; 0 indicates root.
         /// </summary>
         public int Level { get { return level; } }
+
+        /// <summary>
+        /// Gets the underlying node.
+        /// </summary>
+        public ITreeNode Node { get { return node; } }
 
         /// <summary>
         /// Gets the parent of this node.

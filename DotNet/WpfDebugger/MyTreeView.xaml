@@ -12,12 +12,12 @@
 
         <!-- Control template for unselected expander -->
         <ControlTemplate x:Key="ToggleButtonTemplate" TargetType="{x:Type ToggleButton}">
-            <Border Width="16" Height="16" Background="Transparent" Padding="4">
-                <Polygon x:Name="ExpandPath" Fill="Transparent" Stroke="Black">
+            <Border Width="16" Height="16" Background="Transparent">
+                <Polygon StrokeThickness="0.75" x:Name="ExpandPath" Fill="Transparent" Stroke="Black">
                     <Polygon.Points>
-                        <Point X="0" Y="0"/>
                         <Point X="4" Y="4"/>
-                        <Point X="0" Y="8"/>
+                        <Point X="8" Y="8"/>
+                        <Point X="4" Y="12"/>
                     </Polygon.Points>
                 </Polygon>
             </Border>
@@ -29,7 +29,7 @@
                 <Trigger Property="IsChecked" Value="True">
                     <Setter TargetName="ExpandPath" Property="RenderTransform">
                         <Setter.Value>
-                            <RotateTransform Angle="45" CenterX="0" CenterY="8"/>
+                            <RotateTransform Angle="45" CenterX="4" CenterY="12"/>
                         </Setter.Value>
                     </Setter>
                     <Setter TargetName="ExpandPath" Property="Fill" Value="#FF595959"/>
@@ -46,12 +46,12 @@
 
         <!-- Control template for selected expander -->
         <ControlTemplate x:Key="SelectedToggleButtonTemplate" TargetType="{x:Type ToggleButton}">
-            <Border Width="16" Height="16" Background="Transparent" Padding="4">
+            <Border Width="16" Height="16" Background="Transparent">
                 <Polygon x:Name="ExpandPath" Fill="Transparent" Stroke="White">
                     <Polygon.Points>
-                        <Point X="0" Y="0"/>
                         <Point X="4" Y="4"/>
-                        <Point X="0" Y="8"/>
+                        <Point X="8" Y="8"/>
+                        <Point X="4" Y="12"/>
                     </Polygon.Points>
                 </Polygon>
             </Border>
@@ -62,7 +62,7 @@
                 <Trigger Property="IsChecked" Value="True">
                     <Setter TargetName="ExpandPath" Property="RenderTransform">
                         <Setter.Value>
-                            <RotateTransform Angle="45" CenterX="0" CenterY="8"/>
+                            <RotateTransform Angle="45" CenterX="4" CenterY="12"/>
                         </Setter.Value>
                     </Setter>
                     <Setter TargetName="ExpandPath" Property="Fill" Value="White"/>
@@ -93,6 +93,7 @@
                 <Style TargetType="{x:Type ListBoxItem}">
                     <Setter Property="IsSelected" Value="{Binding IsSelected,Mode=TwoWay}"/>
                     <EventSetter Event="KeyDown" Handler="treeView_KeyDown"/>
+                    <EventSetter Event="MouseDoubleClick" Handler="treeView_MouseDoubleClick"/>
                 </Style>
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>

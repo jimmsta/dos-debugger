@@ -54,11 +54,18 @@ namespace WpfDebugger
             }
         }
 
-        private void TreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void TreeView_ItemActivate(object sender, EventArgs e)
         {
-            // Check if we are really in virtual mode.
-            //bool b1 = VirtualizingPanel.GetIsVirtualizing(tvLibraries);
-            //var x2 = ScrollViewer.GetCanContentScroll(tvLibraries);
+            if (sender is LibraryBrowserViewModel.LibraryItem)
+            {
+            }
+            else if (sender is LibraryBrowserViewModel.ModuleItem)
+            {
+            }
+            else if (sender is LibraryBrowserViewModel.SymbolItem)
+            {
+                MessageBox.Show("Show info about " + sender.ToString());
+            }
         }
     }
 
