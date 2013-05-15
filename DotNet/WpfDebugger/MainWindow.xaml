@@ -66,8 +66,19 @@
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
+                <MenuItem Header="Disassembly Window" Name="mnuViewDisassembly">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource ResourceKey=DisassemblyImage}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Hex View" Name="mnuViewHex"/>
+                <Separator/>
                 <MenuItem Header="Segment List" Name="mnuViewSegments" Click="mnuViewSegments_Click"/>
-                <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click"/>
+                <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource ResourceKey=ProcedureListImage}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click">
                     <MenuItem.Icon>
                         <Image Source="{StaticResource ResourceKey=ErrorListImage}"/>

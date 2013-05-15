@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Collections.ObjectModel;
 using System.Windows.Data;
 using System.ComponentModel;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace WpfDebugger
 {
@@ -117,6 +119,12 @@ namespace WpfDebugger
         /// Gets the text to display for the tree node.
         /// </summary>
         string Text { get; }
+
+        /// <summary>
+        /// Gets a key that points to the StaticResource that contains the
+        /// image to display for the node; null if none.
+        /// </summary>
+        string ImageKey { get; }
 
         /// <summary>
         /// Gets a flag that indicates whether this node has any child.
@@ -288,6 +296,29 @@ namespace WpfDebugger
         public string Text
         {
             get { return node.Text; }
+        }
+
+        public Visibility ImageVisibility
+        {
+            get
+            {
+                if (node.ImageKey != null)
+                    return Visibility.Visible;
+                else
+                    return Visibility.Collapsed;
+            }
+        }
+
+        public ImageSource Image
+        {
+            get
+            {
+                string imageKey = node.ImageKey;
+                if (imageKey != null)
+                    return (ImageSource)Application.Current.FindResource(imageKey);
+                else
+                    return null;
+            }
         }
 
         public bool HasChildren

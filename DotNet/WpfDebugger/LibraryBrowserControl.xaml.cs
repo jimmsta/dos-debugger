@@ -102,6 +102,11 @@ namespace WpfDebugger
                 get { return "Library"; }
             }
 
+            public string ImageKey
+            {
+                get { return "LibraryImage"; }
+            }
+
             public bool HasChildren
             {
                 get { return Modules.Count > 0; }
@@ -137,6 +142,11 @@ namespace WpfDebugger
             public string Text
             {
                 get { return this.Name; }
+            }
+
+            public string ImageKey
+            {
+                get { return "ModuleImage"; }
             }
 
             public bool HasChildren
@@ -178,6 +188,23 @@ namespace WpfDebugger
             public string Text
             {
                 get { return this.ToString(); }
+            }
+
+            public string ImageKey
+            {
+                get
+                {
+                    if (Symbol.BaseSegment == null)
+                        return null;
+                    switch (Symbol.BaseSegment.ClassName)
+                    {
+                        case "CODE":
+                            return "ProcedureImage";
+                        case "DATA":
+                            return "FieldImage";
+                    }
+                    return null;
+                }
             }
 
             public bool HasChildren

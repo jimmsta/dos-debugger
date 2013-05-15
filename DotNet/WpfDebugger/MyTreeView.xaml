@@ -104,6 +104,9 @@
                                       ClickMode="Press"
                                       IsChecked="{Binding Path=IsExpanded,Mode=TwoWay}"
                                       Style="{StaticResource ExpandCollapseToggleStyle}"/>
+                        <Image Width="16" Height="16" 
+                               Source="{Binding Path=Image}" 
+                               Visibility="{Binding Path=ImageVisibility}"/>
                         <TextBlock Margin="2" Text="{Binding Path=Text}" />
                     </StackPanel>
                     <DataTemplate.Triggers>

@@ -8,16 +8,24 @@
         <BitmapImage x:Key="BackwardImage" UriSource="Resources/NavigateBackwards_6270.png"/>
         <BitmapImage x:Key="ForwardImage" UriSource="Resources/NavigateForward_6271.png"/>
 
-        <!-- Error icons -->
+        <!-- Object icons -->
         <BitmapImage x:Key="ErrorImage" UriSource="Resources/Error_red_21x20.png"/>
         <BitmapImage x:Key="WarningImage" UriSource="Resources/Warning_yellow_7231_21x20.png"/>
         <BitmapImage x:Key="MessageImage" UriSource="Resources/Information_blue_6227_21x20.png"/>
+        <BitmapImage x:Key="FieldImage" UriSource="Resources/Field_Blue.png"/>
+        <BitmapImage x:Key="ProcedureImage" UriSource="Resources/Method_636.png"/>
+        <BitmapImage x:Key="LocalProcedureImage" UriSource="Resources/Method-Private_640.png"/>
+        <BitmapImage x:Key="ProcedureAliasImage" UriSource="Resources/Method-Shortcut_641.png"/>
+        <BitmapImage x:Key="ModuleImage" UriSource="Resources/Module_648.png"/>
+        <BitmapImage x:Key="LibraryImage" UriSource="Resources/Library_6213.png"/>
 
         <!-- Action icons -->
         <BitmapImage x:Key="OpenFileImage" UriSource="Resources/Open_6529.png"/>
 
         <!-- Tool window icons -->
+        <BitmapImage x:Key="DisassemblyImage" UriSource="Resources/DisassemblyWindow_6536.png"/>
         <BitmapImage x:Key="ErrorListImage" UriSource="Resources/BuildErrorList_7237.png"/>
+        <BitmapImage x:Key="ProcedureListImage" UriSource="Resources/ShowMethodPane_10446.png"/>
         <BitmapImage x:Key="PropertyImage" UriSource="Resources/Property_501.png"/>
 
         <!-- Control Behavior -->

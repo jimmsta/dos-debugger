@@ -177,6 +177,7 @@
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -222,6 +223,26 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Open_6529.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\DisassemblyWindow_6536.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\ShowMethodPane_10446.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Method-Private_640.png" />
+    <Resource Include="Resources\Method-Shortcut_641.png" />
+    <Resource Include="Resources\Method_636.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Field_Blue.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Module_648.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Library_6213.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
