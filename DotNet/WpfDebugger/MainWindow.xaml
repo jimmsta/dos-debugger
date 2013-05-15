@@ -25,8 +25,16 @@
 
         <!-- Menu bar -->
         <Menu HorizontalAlignment="Left" Grid.Row="0" Grid.ColumnSpan="3" VerticalAlignment="Top">
+            <Menu.Resources>
+                <!-- Default menu item icon style -->
+                <Style TargetType="{x:Type Image}" BasedOn="{StaticResource ResourceKey=StandardIcon}"/>
+            </Menu.Resources>
             <MenuItem Header="_File">
-                <MenuItem Header="_Open" Name="mnuFileOpen" Command="ApplicationCommands.Open"/>
+                <MenuItem Header="_Open" Name="mnuFileOpen" Command="ApplicationCommands.Open">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource ResourceKey=OpenFileImage}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <Separator/>
                 <MenuItem Name="mnuFileSaveLayout" Header="Save Layout" Click="mnuFileSaveLayout_Click"/>
                 <MenuItem Name="mnuFileLoadLayout" Header="Load Layout" Click="mnuFileLoadLayout_Click"/>
@@ -49,14 +57,12 @@
             <MenuItem Header="_View">
                 <MenuItem Header="Navigate _Backward" IsEnabled="False">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource BackwardIcon}"
-                               Style="{StaticResource StandardIcon}"/>
+                        <Image Source="{StaticResource ResourceKey=BackwardImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Navigate _Forward">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ForwardIcon}"
-                               Style="{StaticResource StandardIcon}"/>
+                        <Image Source="{StaticResource ResourceKey=ForwardImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -64,11 +70,14 @@
                 <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click"/>
                 <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource WarningIcon}"
-                               Style="{StaticResource StandardIcon}"/>
+                        <Image Source="{StaticResource ResourceKey=ErrorListImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Properties" Name="mnuViewProperties" Click="mnuViewProperties_Click"/>
+                <MenuItem Header="Properties" Name="mnuViewProperties" Click="mnuViewProperties_Click">
+                    <MenuItem.Icon>
+                        <Image Source="{StaticResource ResourceKey=PropertyImage}"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="Library Browser" Name="mnuViewLibraryBrowser" Click="mnuViewLibraryBrowser_Click"/>
                 <Separator/>
                 <MenuItem Header="Theme">

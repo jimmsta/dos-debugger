@@ -203,18 +203,25 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Resources\left_circular-26.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\right_circular-26.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\cancel-26.png" />
-    <Resource Include="Resources\error-26.png" />
-    <Resource Include="Resources\info-26.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\App-1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Error_red_21x20.png" />
+    <Resource Include="Resources\Information_blue_6227_21x20.png" />
+    <Resource Include="Resources\Warning_yellow_7231_21x20.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\NavigateBackwards_6270.png" />
+    <Resource Include="Resources\NavigateForward_6271.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\BuildErrorList_7237.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Property_501.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Open_6529.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

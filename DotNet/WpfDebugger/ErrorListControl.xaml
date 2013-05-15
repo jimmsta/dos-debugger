@@ -17,7 +17,7 @@
                           IsChecked="{Binding ShowErrors}"
                           IsEnabled="{Binding HasErrors}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Source="{StaticResource ErrorIcon}"
+                    <Image Source="{StaticResource ResourceKey=ErrorImage}"
                            Style="{StaticResource StandardIcon}"/>
                     <TextBlock x:Name="txtError" Margin="4,0,0,0" Text="{Binding ErrorCount, StringFormat='\{0\} Errors'}" />
                 </StackPanel>
@@ -27,7 +27,7 @@
                           IsChecked="{Binding ShowWarnings}"
                           IsEnabled="{Binding HasWarnings}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Source="{StaticResource WarningIcon}"
+                    <Image Source="{StaticResource ResourceKey=WarningImage}"
                            Style="{StaticResource StandardIcon}"/>
                     <TextBlock Margin="4,0,0,0" Text="{Binding WarningCount, StringFormat='\{0\} Warnings'}" />
                 </StackPanel>
@@ -37,7 +37,7 @@
                           IsChecked="{Binding ShowMessages}"
                           IsEnabled="{Binding HasMessages}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Source="{StaticResource MessageIcon}"
+                    <Image Source="{StaticResource ResourceKey=MessageImage}"
                            Style="{StaticResource StandardIcon}"/>
                     <TextBlock Margin="4,0,0,0" Text="{Binding MessageCount, StringFormat='\{0\} Messages'}" />
                 </StackPanel>

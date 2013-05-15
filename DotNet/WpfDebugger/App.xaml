@@ -4,12 +4,21 @@
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         
-        <!-- Icons -->
-        <BitmapImage x:Key="BackwardIcon" UriSource="Resources/left_circular-26.png"/>
-        <BitmapImage x:Key="ForwardIcon" UriSource="Resources/right_circular-26.png"/>
-        <BitmapImage x:Key="ErrorIcon" UriSource="Resources/cancel-26.png"/>
-        <BitmapImage x:Key="WarningIcon" UriSource="Resources/error-26.png"/>
-        <BitmapImage x:Key="MessageIcon" UriSource="Resources/info-26.png"/>
+        <!-- Navigation icons -->
+        <BitmapImage x:Key="BackwardImage" UriSource="Resources/NavigateBackwards_6270.png"/>
+        <BitmapImage x:Key="ForwardImage" UriSource="Resources/NavigateForward_6271.png"/>
+
+        <!-- Error icons -->
+        <BitmapImage x:Key="ErrorImage" UriSource="Resources/Error_red_21x20.png"/>
+        <BitmapImage x:Key="WarningImage" UriSource="Resources/Warning_yellow_7231_21x20.png"/>
+        <BitmapImage x:Key="MessageImage" UriSource="Resources/Information_blue_6227_21x20.png"/>
+
+        <!-- Action icons -->
+        <BitmapImage x:Key="OpenFileImage" UriSource="Resources/Open_6529.png"/>
+
+        <!-- Tool window icons -->
+        <BitmapImage x:Key="ErrorListImage" UriSource="Resources/BuildErrorList_7237.png"/>
+        <BitmapImage x:Key="PropertyImage" UriSource="Resources/Property_501.png"/>
 
         <!-- Control Behavior -->
         <Style x:Key="GrayOnDisable" TargetType="Image">

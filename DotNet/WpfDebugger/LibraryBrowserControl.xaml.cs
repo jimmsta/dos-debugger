@@ -128,6 +128,9 @@ namespace WpfDebugger
                 this.Symbols = 
                     new ObservableCollection<SymbolItem>(
                         from publicName in module.PublicNames
+                        let segName = (publicName.BaseSegment == null)? 
+                                      "" : publicName.BaseSegment.SegmentName
+                        orderby segName, publicName.Offset, publicName.Name
                         select new SymbolItem(publicName));
             }
 
@@ -162,12 +165,12 @@ namespace WpfDebugger
             {
                 if (Symbol.BaseSegment == null)
                 {
-                    return string.Format("{0} : {1:X4}:{2:X4}",
+                    return string.Format("{1:X4}:{2:X4}  {0}",
                         Symbol.Name, Symbol.BaseFrame, Symbol.Offset);
                 }
                 else
                 {
-                    return string.Format("{0} : {1}+{2:X}h",
+                    return string.Format("{1}+{2:X4}  {0}",
                         Symbol.Name, Symbol.BaseSegment.SegmentName, Symbol.Offset);
                 }
             }
