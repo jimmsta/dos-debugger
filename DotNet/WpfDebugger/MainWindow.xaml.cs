@@ -282,5 +282,10 @@ namespace WpfDebugger
             MessageBox.Show(this, "DOS Disassembler\r\nCopyright fanci 2012-2013\r\n",
                             "About", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+        public void libraryBrowser_RequestProperty(object sender, RequestPropertyEventArgs e)
+        {
+            propertiesWindow.SelectedObject = e.SelectedObject;
+        }
     }
 }

@@ -4,9 +4,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:wpg="clr-namespace:System.Windows.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        
         <xctk:PropertyGrid Name="propertyGrid1"/>
+        
+        <wpg:WpfPropertyGrid 
+            Grid.Row="1" x:Name="propertyGrid"
+            ToolbarVisible="False"
+            PropertySort="Alphabetical"/>
+        
     </Grid>
 </UserControl>

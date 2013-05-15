@@ -9,7 +9,8 @@
     <Grid>
         
         <my:MyTreeView x:Name="myTreeView"
-                       ItemActivate="TreeView_ItemActivate"/>
+                       ItemActivate="TreeView_ItemActivate"
+                       SelectionChanged="TreeView_SelectionChanged" />
         
         <!--
         <Grid.RowDefinitions>

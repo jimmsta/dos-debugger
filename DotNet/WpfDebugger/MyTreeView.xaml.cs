@@ -27,7 +27,7 @@ namespace WpfDebugger
         {
             set
             {
-                this.viewModel = new MyTreeViewModel(value);
+                this.viewModel = new MyTreeViewModel(value, this);
                 this.treeView.ItemsSource = viewModel.Items;
             }
         }
@@ -110,7 +110,14 @@ namespace WpfDebugger
             }
         }
 
+        public void RaiseSelectionChanged(object sender, EventArgs e)
+        {
+            if (SelectionChanged != null)
+                SelectionChanged(sender, e);
+        }
+
         public event EventHandler ItemActivate;
+        public event EventHandler SelectionChanged;
     }
 
     public interface ITreeNode
@@ -140,9 +147,11 @@ namespace WpfDebugger
     internal class MyTreeViewModel
     {
         public ObservableCollection<MyTreeViewItem> Items { get; private set; }
+        public MyTreeView Visual { get; private set; }
 
-        public MyTreeViewModel(IEnumerable<ITreeNode> nodes)
+        public MyTreeViewModel(IEnumerable<ITreeNode> nodes, MyTreeView visual)
         {
+            this.Visual = visual;
             this.Items =
                 new ObservableCollection<MyTreeViewItem>(
                     from node in nodes
@@ -284,6 +293,7 @@ namespace WpfDebugger
                 if (value)
                 {
                     model.SelectedNodes.Add(node);
+                    model.Visual.RaiseSelectionChanged(this.node, null);
                 }
                 else
                 {

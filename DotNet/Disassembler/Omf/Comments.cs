@@ -196,6 +196,29 @@ namespace Disassembler.Omf
         }
     }
 
+    /// <summary>
+    /// Represents a DOSSEG comment. See Remarks for details.
+    /// </summary>
+    /// <remarks>
+    /// The DOSSEG option forces segments to be ordered as follows:
+    /// 1. All segments with a class name ending in CODE.
+    /// 2. All other segments outside DGROUP.
+    /// 3. DGROUP segments in the following order:
+    ///    a. Any segments of class BEGDATA.
+    ///    b. Any segments not of class BEGDATA, BSS, or STACK.
+    ///    c. Segments of class BSS.
+    ///    d. Segments of class STACK.
+    ///
+    /// In addition, the DOSSEG option defines the following two labels:
+    /// __edata = DGROUP : BSS
+    /// __end = DGROUP : STACK.
+    ///
+    /// The DOSSEG option also inserts 16 null bytes at the beginning of
+    /// the _TEXT segment (if this segment is defined); unassigned pointers
+    /// point to this area. This behavior of the option is overridden by the
+    /// /NONULLS option when both are used; use /NONULLS to override the
+    /// DOSSEG comment record commonly found in standard Microsoft libraries.
+    /// </remarks>
     public class DOSSEGComment : Comment
     {
         internal DOSSEGComment(RecordReader reader)

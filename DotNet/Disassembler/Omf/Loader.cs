@@ -103,12 +103,14 @@ namespace Disassembler.Omf
         /// Gets the name of the object module in the library. This name is
         /// defined by the LIBMOD subrecord of COMENT.
         /// </summary>
+        [Browsable(true)]
         public string ObjectName { get; internal set; }
 
         /// <summary>
         /// Gets the source file name of the object module. This name is
         /// defined in the THEADR record.
         /// </summary>
+        [Browsable(true)]
         public string SourceName { get; internal set; }
 
         /// <summary>

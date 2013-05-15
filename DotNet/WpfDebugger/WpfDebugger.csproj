@@ -70,6 +70,9 @@
       <HintPath>..\packages\AvalonDock.2.0.1746\lib\net40\AvalonDock.Themes.VS2010.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Activities" />
+    <Reference Include="System.Activities.Core.Presentation" />
+    <Reference Include="System.Activities.Presentation" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
@@ -109,6 +112,7 @@
     <Compile Include="SegmentListControl.xaml.cs">
       <DependentUpon>SegmentListControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="WpfPropertyGrid.cs" />
     <Page Include="DisassemblyControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -243,6 +247,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Library_6213.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Constant_495.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Field-Private_545.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

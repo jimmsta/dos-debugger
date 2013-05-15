@@ -717,6 +717,9 @@ namespace Disassembler.Omf
                 symbol.BaseSegment = BaseSegment;
                 symbol.BaseGroup = BaseGroup;
                 symbol.BaseFrame = BaseFrame;
+                symbol.IsLocal =
+                    reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
+                    reader.RecordNumber == Omf.RecordNumber.LPUBDEF32;
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();

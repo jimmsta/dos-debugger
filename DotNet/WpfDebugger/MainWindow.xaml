@@ -166,7 +166,8 @@
                                 <my:PropertiesControl x:Name="propertiesWindow"/>
                             </avalonDock:LayoutAnchorable>
                             <avalonDock:LayoutAnchorable ContentId="libraryBrowser" Title="Library">
-                                <my:LibraryBrowserControl x:Name="libraryBrowser"/>
+                                <my:LibraryBrowserControl x:Name="libraryBrowser"
+                                                          RequestProperty="libraryBrowser_RequestProperty"/>
                             </avalonDock:LayoutAnchorable>
                         </avalonDock:LayoutAnchorGroup>
                     </avalonDock:LayoutAnchorSide>

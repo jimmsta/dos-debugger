@@ -41,6 +41,16 @@ namespace WpfDebugger
             }
         }
 
+        public object SelectedObject
+        {
+            get { return propertyGrid1.SelectedObject; }
+            set
+            {
+                propertyGrid1.SelectedObject = value;
+                propertyGrid.SelectedObject = value;
+            }
+        }
+
         private void UpdateUI()
         {
             if (image == null)

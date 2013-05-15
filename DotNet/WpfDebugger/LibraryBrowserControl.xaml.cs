@@ -67,6 +67,34 @@ namespace WpfDebugger
                 MessageBox.Show("Show info about " + sender.ToString());
             }
         }
+
+        private void TreeView_SelectionChanged(object sender, EventArgs e)
+        {
+            if (RequestProperty != null)
+            {
+                object obj = null;
+                if (sender is LibraryBrowserViewModel.LibraryItem)
+                    obj = ((LibraryBrowserViewModel.LibraryItem)sender).Library;
+                else if (sender is LibraryBrowserViewModel.ModuleItem)
+                    obj = ((LibraryBrowserViewModel.ModuleItem)sender).Module;
+                else if (sender is LibraryBrowserViewModel.SymbolItem)
+                    obj = ((LibraryBrowserViewModel.SymbolItem)sender).Symbol;
+
+                if (obj != null)
+                    RequestProperty(this, new RequestPropertyEventArgs(obj));
+            }
+        }
+
+        public event EventHandler<RequestPropertyEventArgs> RequestProperty;
+    }
+
+    public class RequestPropertyEventArgs : EventArgs
+    {
+        public object SelectedObject { get; private set; }
+        public RequestPropertyEventArgs(object selectedObject)
+        {
+            this.SelectedObject = selectedObject;
+        }
     }
 
     internal class LibraryBrowserViewModel
@@ -81,6 +109,7 @@ namespace WpfDebugger
 
         internal class LibraryItem : ITreeNode
         {
+            [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public ObjectLibrary Library { get; private set; }
             public ObservableCollection<ModuleItem> Modules { get; private set; }
             public string Name { get { return "Library"; } }
@@ -120,6 +149,7 @@ namespace WpfDebugger
 
         internal class ModuleItem : ITreeNode
         {
+            [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public ObjectModule Module { get; private set; }
             public string Name { get { return Module.ObjectName; } }
             public ObservableCollection<SymbolItem> Symbols { get; private set; }
@@ -162,6 +192,7 @@ namespace WpfDebugger
 
         internal class SymbolItem : ITreeNode
         {
+            [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public PublicNameDefinition Symbol { get; private set; }
 
             public SymbolItem(PublicNameDefinition symbol)
@@ -195,15 +226,29 @@ namespace WpfDebugger
                 get
                 {
                     if (Symbol.BaseSegment == null)
-                        return null;
-                    switch (Symbol.BaseSegment.ClassName)
                     {
-                        case "CODE":
+                        // An absolute symbol is typically used to store
+                        // a constant.
+                        return "ConstantImage";
+                    }
+
+                    string className = Symbol.BaseSegment.ClassName;
+                    if (className.EndsWith("CODE"))
+                    {
+                        if (Symbol.IsLocal)
+                            return "LocalProcedureImage";
+                        else
                             return "ProcedureImage";
-                        case "DATA":
+                    }
+                    else if (className.EndsWith("DATA"))
+                    {
+                        if (Symbol.IsLocal)
+                            return "LocalFieldImage";
+                        else
                             return "FieldImage";
                     }
-                    return null;
+                    else
+                        return null;
                 }
             }
 

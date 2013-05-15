@@ -16,12 +16,14 @@ namespace Disassembler.Omf
         /// Gets the segment's name, such as "_TEXT". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
+        [Browsable(true)]
         public string SegmentName { get; internal set; }
 
         /// <summary>
         /// Gets the segment's class name, such as "CODE". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
+        [Browsable(true)]
         public string ClassName { get; internal set; }
 
         /// <summary>
@@ -30,13 +32,17 @@ namespace Disassembler.Omf
         [Browsable(false)]
         public string OverlayName { get; internal set; }
 
+        [Browsable(true)]
         public SegmentAlignment Alignment { get; internal set; }
+
+        [Browsable(true)]
         public SegmentCombination Combination { get; internal set; }
 
         /// <summary>
         /// Gets the start address of an absolute segment. This value is only
         /// relevant if Alignment is Absolute.
         /// </summary>
+        [Browsable(true)]
         public Pointer StartAddress { get; internal set; }
 
         /// <summary>
@@ -44,6 +50,7 @@ namespace Disassembler.Omf
         /// does not include COMDAT records. If COMDAT records are present,
         /// their size should be added to this length.
         /// </summary>
+        [Browsable(true)]
         public long Length { get; internal set; }
 
         [Browsable(false)]
@@ -53,6 +60,7 @@ namespace Disassembler.Omf
 
         // datafixups[i] corresponds to data[i]
         // it is 1+index of the fix up that covers this byte. 0=none
+        [TypeConverter(typeof(ExpandableObjectConverter))]
         public UInt16[] DataFixups { get; internal set; }
 
         internal readonly List<FixupDefinition> fixups = new List<FixupDefinition>();
@@ -228,7 +236,11 @@ namespace Disassembler.Omf
         /// If BaseSegment is not null, the Offset field is relative to the
         /// beginning of BaseSegment. If BaseSegment is null, the Offset field
         /// is relative to the physical frame indicated by FrameNumber.
+        /// 
+        /// Note: when BaseSegment is null, the public name is typically used
+        /// to represent a constant.
         /// </summary>
+        [Browsable(true)]
         public LogicalSegment BaseSegment { get; internal set; }
 
         /// <summary>
@@ -236,6 +248,7 @@ namespace Disassembler.Omf
         /// used to resolve the FRAME in a FIXUPP -- if BaseGroup is not null,
         /// then the group's frame is used as the FRAME of the fixup.
         /// </summary>
+        [Browsable(true)]
         public GroupDefinition BaseGroup { get; internal set; }
 
         /// <summary>
@@ -243,13 +256,22 @@ namespace Disassembler.Omf
         /// relevant if BaseSegment is null, which indicates that the symbol
         /// refers to an absolute SEG:OFF address.
         /// </summary>
+        [Browsable(true)]
         public UInt16 BaseFrame { get; internal set; }
 
         /// <summary>
         /// Gets the offset of the symbol relative to the start of the LSEG
         /// (logical segment) in which it is defined.
         /// </summary>
+        [Browsable(true)]
         public UInt32 Offset { get; internal set; }
+
+        /// <summary>
+        /// Gets a flag indicating whether this symbol is local, i.e. is only
+        /// visible within the object module where it is defined.
+        /// </summary>
+        [Browsable(true)]
+        public bool IsLocal { get; internal set; }
 
         public override string ToString()
         {
