@@ -79,6 +79,8 @@ namespace WpfDebugger
                     obj = ((LibraryBrowserViewModel.ModuleItem)sender).Module;
                 else if (sender is LibraryBrowserViewModel.SymbolItem)
                     obj = ((LibraryBrowserViewModel.SymbolItem)sender).Symbol;
+                else if (sender is LibraryBrowserViewModel.SymbolAliasItem)
+                    obj = ((LibraryBrowserViewModel.SymbolAliasItem)sender).Alias;
 
                 if (obj != null)
                     RequestProperty(this, new RequestPropertyEventArgs(obj));
@@ -123,6 +125,7 @@ namespace WpfDebugger
                 this.Modules = 
                     new ObservableCollection<ModuleItem>(
                         from module in library.Modules
+                        orderby module.ObjectName
                         select new ModuleItem(module));
             }
 
@@ -152,7 +155,7 @@ namespace WpfDebugger
             [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public ObjectModule Module { get; private set; }
             public string Name { get { return Module.ObjectName; } }
-            public ObservableCollection<SymbolItem> Symbols { get; private set; }
+            public ObservableCollection<ITreeNode> Symbols { get; private set; }
 
             public ModuleItem(ObjectModule module)
             {
@@ -160,13 +163,17 @@ namespace WpfDebugger
                     throw new ArgumentNullException("module");
 
                 this.Module = module;
-                this.Symbols = 
-                    new ObservableCollection<SymbolItem>(
-                        from publicName in module.PublicNames
-                        let segName = (publicName.BaseSegment == null)? 
-                                      "" : publicName.BaseSegment.Name
-                        orderby segName, publicName.Offset, publicName.Name
-                        select new SymbolItem(publicName));
+                this.Symbols =
+                    new ObservableCollection<ITreeNode>(
+                        (from alias in module.Aliases
+                         select (ITreeNode)new SymbolAliasItem(alias)
+                        ).Concat(
+                         from symbol in module.DefinedNames
+                         let segName = (symbol.BaseSegment != null) ?
+                                       symbol.BaseSegment.Name : null
+                         orderby segName, symbol.Offset, symbol.Name
+                         select (ITreeNode)new SymbolItem(symbol)
+                        ));
             }
 
             public string Text
@@ -192,10 +199,9 @@ namespace WpfDebugger
 
         internal class SymbolItem : ITreeNode
         {
-            [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
-            public PublicNameDefinition Symbol { get; private set; }
+            public DefinedSymbol Symbol { get; private set; }
 
-            public SymbolItem(PublicNameDefinition symbol)
+            public SymbolItem(DefinedSymbol symbol)
             {
                 if (symbol == null)
                     throw new ArgumentNullException("symbol");
@@ -235,14 +241,14 @@ namespace WpfDebugger
                     string className = Symbol.BaseSegment.Class;
                     if (className.EndsWith("CODE"))
                     {
-                        if (Symbol.IsLocal)
+                        if (Symbol.Scope == SymbolScope.Private)
                             return "LocalProcedureImage";
                         else
                             return "ProcedureImage";
                     }
                     else if (className.EndsWith("DATA"))
                     {
-                        if (Symbol.IsLocal)
+                        if (Symbol.Scope == SymbolScope.Private)
                             return "LocalFieldImage";
                         else
                             return "FieldImage";
@@ -250,6 +256,44 @@ namespace WpfDebugger
                     else
                         return null;
                 }
+            }
+
+            public bool HasChildren
+            {
+                get { return false; }
+            }
+
+            public IEnumerable<ITreeNode> GetChildren()
+            {
+                return null;
+            }
+        }
+
+        internal class SymbolAliasItem : ITreeNode
+        {
+            public SymbolAlias Alias { get; private set; }
+
+            public SymbolAliasItem(SymbolAlias alias)
+            {
+                if (alias == null)
+                    throw new ArgumentNullException("alias");
+                this.Alias = alias;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0} -> {1}",
+                    Alias.Name, Alias.SubstituteName);
+            }
+
+            public string Text
+            {
+                get { return this.ToString(); }
+            }
+
+            public string ImageKey
+            {
+                get { return "ProcedureAliasImage"; }
             }
 
             public bool HasChildren

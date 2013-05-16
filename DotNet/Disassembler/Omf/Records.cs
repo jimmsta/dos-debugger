@@ -543,22 +543,22 @@ namespace Disassembler.Omf
     /// </remarks>
     public class ExternalNamesDefinitionRecord : Record
     {
-        public ExternalNameDefinition[] Symbols { get; private set; }
+        public ExternalSymbol[] Symbols { get; private set; }
 
         internal ExternalNamesDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<ExternalNameDefinition> symbols = new List<ExternalNameDefinition>();
+            List<ExternalSymbol> symbols = new List<ExternalSymbol>();
             while (!reader.IsEOF)
             {
-                ExternalNameDefinition symbol = new ExternalNameDefinition();
+                ExternalSymbol symbol = new ExternalSymbol();
                 symbol.Name = reader.ReadPrefixedString();
                 symbol.TypeIndex = reader.ReadIndex();
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
 
-            context.Module.externalNames.AddRange(Symbols);
+            context.Module.ExternalNames.AddRange(Symbols);
         }
     }
 
@@ -612,7 +612,7 @@ namespace Disassembler.Omf
             }
             this.Definitions = defs.ToArray();
 
-            context.Module.externalNames.AddRange(this.Definitions);
+            context.Module.ExternalNames.AddRange(this.Definitions);
         }
 
         private static UInt32 ReadEncodedInteger(RecordReader reader)
@@ -640,13 +640,13 @@ namespace Disassembler.Omf
     /// </remarks>
     public class COMDATExternalNamesDefinitionRecord : Record
     {
-        public ExternalNameDefinition[] Symbols { get; private set; }
+        public ExternalSymbol[] Symbols { get; private set; }
 
         internal COMDATExternalNamesDefinitionRecord(
             RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<ExternalNameDefinition> symbols = new List<ExternalNameDefinition>();
+            List<ExternalSymbol> symbols = new List<ExternalSymbol>();
             while (!reader.IsEOF)
             {
                 UInt16 nameIndex = reader.ReadIndex();
@@ -654,22 +654,13 @@ namespace Disassembler.Omf
                     throw new InvalidDataException("LogicalNameIndex is out of range.");
 
                 UInt16 typeIndex = reader.ReadIndex();
-                ExternalNameDefinition symbol = new ExternalNameDefinition();
+                ExternalSymbol symbol = new ExternalSymbol();
                 symbol.Name = context.Names[nameIndex - 1];
                 symbol.TypeIndex = typeIndex;
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
-
-            //if (reader.RecordNumber == Omf.RecordNumber.LEXTDEF ||
-            //    reader.RecordNumber == Omf.RecordNumber.LEXTDEF32)
-            //{
-            //    context.LocalExternalNames.AddRange(Symbols);
-            //}
-            //else
-            //{
-                context.Module.externalNames.AddRange(Symbols);
-            //}
+            context.Module.ExternalNames.AddRange(Symbols);
         }
     }
 
@@ -686,11 +677,17 @@ namespace Disassembler.Omf
     public class PublicNamesDefinitionRecord : Record
     {
         public LogicalSegment BaseSegment { get; private set; }
-        public GroupDefinition BaseGroup { get; private set; }
+        public SegmentGroup BaseGroup { get; private set; }
         public UInt16 BaseFrame { get; private set; }
-        public PublicNameDefinition[] Symbols { get; private set; }
+        public DefinedSymbol[] Symbols { get; private set; }
 
         internal PublicNamesDefinitionRecord(RecordReader reader, RecordContext context)
+            : this(reader, context, SymbolScope.Public)
+        {
+        }
+
+        internal PublicNamesDefinitionRecord(
+            RecordReader reader, RecordContext context, SymbolScope scope)
             : base(reader, context)
         {
             int baseGroupIndex = reader.ReadIndex();
@@ -707,32 +704,22 @@ namespace Disassembler.Omf
             else
                 this.BaseSegment = context.Module.segments[baseSegmentIndex - 1];
 
-            List<PublicNameDefinition> symbols = new List<PublicNameDefinition>();
+            List<DefinedSymbol> symbols = new List<DefinedSymbol>();
             while (!reader.IsEOF)
             {
-                PublicNameDefinition symbol = new PublicNameDefinition();
+                DefinedSymbol symbol = new DefinedSymbol();
                 symbol.Name = reader.ReadPrefixedString();
                 symbol.Offset = reader.ReadUInt16Or32();
                 symbol.TypeIndex = reader.ReadIndex();
                 symbol.BaseSegment = BaseSegment;
                 symbol.BaseGroup = BaseGroup;
                 symbol.BaseFrame = BaseFrame;
-                symbol.IsLocal =
-                    reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
-                    reader.RecordNumber == Omf.RecordNumber.LPUBDEF32;
+                symbol.Scope = scope;
                 symbols.Add(symbol);
             }
             this.Symbols = symbols.ToArray();
             
-            //if (reader.RecordNumber == Omf.RecordNumber.LPUBDEF ||
-            //    reader.RecordNumber == Omf.RecordNumber.LPUBDEF32)
-            //{
-            //    context.LocalPublicNames.AddRange(Symbols);
-            //}
-            //else
-            //{
-                context.Module.publicNames.AddRange(Symbols);
-            //}
+            context.Module.DefinedNames.AddRange(Symbols);
         }
     }
 
@@ -740,7 +727,7 @@ namespace Disassembler.Omf
     {
         internal LocalPublicNameDefinitionRecord(
             RecordReader reader, RecordContext context)
-            : base(reader, context)
+            : base(reader, context, SymbolScope.Private)
         {
         }
     }
@@ -856,12 +843,12 @@ namespace Disassembler.Omf
 
     public class GroupDefinitionRecord : Record
     {
-        public GroupDefinition Definition { get; private set; }
+        public SegmentGroup Definition { get; private set; }
 
         internal GroupDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            GroupDefinition def = new GroupDefinition();
+            SegmentGroup def = new SegmentGroup();
 
             UInt16 groupNameIndex = reader.ReadIndex();
             if (groupNameIndex == 0 || groupNameIndex > context.Names.Count)
@@ -956,25 +943,21 @@ namespace Disassembler.Omf
 
     public class AliasDefinitionRecord : Record
     {
-        public AliasDefinition[] Aliases { get; private set; }
+        public SymbolAlias[] Aliases { get; private set; }
 
         internal AliasDefinitionRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<AliasDefinition> aliases = new List<AliasDefinition>();
+            List<SymbolAlias> aliases = new List<SymbolAlias>();
             while (!reader.IsEOF)
             {
-                AliasDefinition alias = new AliasDefinition();
+                SymbolAlias alias = new SymbolAlias();
                 alias.AliasName = reader.ReadPrefixedString();
                 alias.SubstituteName = reader.ReadPrefixedString();
+                aliases.Add(alias);
+                context.Module.Aliases.Add(alias);
             }
             this.Aliases = aliases.ToArray();
         }
-    }
-
-    public struct AliasDefinition
-    {
-        public string AliasName { get; internal set; }
-        public string SubstituteName { get; internal set; }
     }
 }

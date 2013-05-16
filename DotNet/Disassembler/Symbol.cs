@@ -3,38 +3,22 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler.Omf
+namespace Disassembler
 {
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class GroupDefinition
-    {
-        /// <summary>
-        /// Gets the name of the group. Groups from different object modules
-        /// are combined if their names are identical.
-        /// </summary>
-        [Browsable(true)]
-        public string Name { get; internal set; }
-
-        /// <summary>
-        /// Gets the logical segments contained in this group.
-        /// </summary>
-        [Browsable(true)]
-        public LogicalSegment[] Segments { get; internal set; }
-
-        public override string ToString()
-        {
-            return Name;
-        }
-    }
-
     /// <summary>
-    /// Defines a symbolic name.
+    /// Represents a symbol with name and optionally type information.
     /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class NameDefinition
+    public class Symbol
     {
+        [Browsable(true)]
         public string Name { get; internal set; }
+
+        [Browsable(false)]
         public UInt16 TypeIndex { get; internal set; }
+
+        [Browsable(true)]
+        public SymbolScope Scope { get; internal set; }
 
         public override string ToString()
         {
@@ -45,20 +29,35 @@ namespace Disassembler.Omf
         }
     }
 
+    public enum SymbolScope : byte
+    {
+        /// <summary>
+        /// The symbol is visible globally.
+        /// </summary>
+        Public = 0,
+
+        /// <summary>
+        /// The symbol is visible only within the module where it is defined.
+        /// </summary>
+        Private = 1,
+    }
+
     /// <summary>
-    /// Contains information about an external symbolic name defined by one
-    /// of the following records:
-    /// EXTDEF  -- ExternalNamesDefinitionRecord
-    /// LEXTDEF -- LocalExternalNamesDefinitionRecord
-    /// CEXTDEF -- COMDATExternalNamesDefinitionRecord
+    /// Represents an external symbol, i.e. one which must be resolved by a
+    /// matching defined symbol.
+    /// 
+    /// An external symbol is defined by one of the following records:
+    ///   EXTDEF  -- ExternalNamesDefinitionRecord
+    ///   LEXTDEF -- LocalExternalNamesDefinitionRecord
+    ///   CEXTDEF -- COMDATExternalNamesDefinitionRecord
     /// One of these records must be defined so that a FIXUPP record can
     /// refer to the symbol's address.
     /// </summary>
-    public class ExternalNameDefinition : NameDefinition
+    public class ExternalSymbol : Symbol
     {
     }
 
-    public class CommunalNameDefinition : ExternalNameDefinition
+    public class CommunalNameDefinition : ExternalSymbol
     {
         public byte DataType { get; internal set; }
         public UInt32 ElementCount { get; internal set; }
@@ -66,9 +65,10 @@ namespace Disassembler.Omf
     }
 
     /// <summary>
-    /// Contains information about a public (exported) symbol.
+    /// Represents a defined symbol, i.e. one that can be used to resolve
+    /// an external symbol reference.
     /// </summary>
-    public class PublicNameDefinition : NameDefinition
+    public class DefinedSymbol : Symbol
     {
         /// <summary>
         /// Gets the LSEG (logical segment) in which this symbol is defined.
@@ -88,7 +88,7 @@ namespace Disassembler.Omf
         /// then the group's frame is used as the FRAME of the fixup.
         /// </summary>
         [Browsable(true)]
-        public GroupDefinition BaseGroup { get; internal set; }
+        public SegmentGroup BaseGroup { get; internal set; }
 
         /// <summary>
         /// Gets the frame number of the address of this symbol. This is only
@@ -105,13 +105,6 @@ namespace Disassembler.Omf
         [Browsable(true)]
         public UInt32 Offset { get; internal set; }
 
-        /// <summary>
-        /// Gets a flag indicating whether this symbol is local, i.e. is only
-        /// visible within the object module where it is defined.
-        /// </summary>
-        [Browsable(true)]
-        public bool IsLocal { get; internal set; }
-
         public override string ToString()
         {
             if (BaseSegment == null)
@@ -125,14 +118,16 @@ namespace Disassembler.Omf
         }
     }
 
-    public enum MemoryModel
+    public class SymbolAlias : Symbol
     {
-        Unknown = 0,
-        Tiny,
-        Small,
-        Medium,
-        Compact,
-        Large,
-        Huge
+        [Browsable(true)]
+        public string AliasName
+        {
+            get { return Name; }
+            internal set { Name = value; }
+        }
+
+        [Browsable(true)]
+        public string SubstituteName { get; internal set; }
     }
 }

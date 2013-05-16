@@ -88,14 +88,12 @@ namespace Disassembler.Omf
         internal readonly List<LogicalSegment> segments
             = new List<LogicalSegment>();
 
-        internal readonly List<GroupDefinition> groups
-            = new List<GroupDefinition>();
+        internal readonly List<SegmentGroup> groups
+            = new List<SegmentGroup>();
 
-        internal readonly List<PublicNameDefinition> publicNames
-            = new List<PublicNameDefinition>();
-
-        internal readonly List<ExternalNameDefinition> externalNames
-            = new List<ExternalNameDefinition>();
+        readonly List<DefinedSymbol> definedNames = new List<DefinedSymbol>();
+        readonly List<ExternalSymbol> externalNames = new List<ExternalSymbol>();
+        readonly List<SymbolAlias> aliases = new List<SymbolAlias>();
 
         public Record[] Records { get; internal set; }
 
@@ -126,7 +124,7 @@ namespace Disassembler.Omf
         /// Gets a list of groups defined in this module. A group is defined
         /// by GRPDEF records.
         /// </summary>
-        public GroupDefinition[] Groups
+        public SegmentGroup[] Groups
         {
             get { return groups.ToArray(); }
         }
@@ -138,16 +136,25 @@ namespace Disassembler.Omf
         /// CEXTDEF -- refers to a COMDAT name defined in another module 
         ///            (by COMDEF) or in this module (by LCOMDEF)
         /// </summary>
-        public ExternalNameDefinition[] ExternalNames
+        public List<ExternalSymbol> ExternalNames
         {
-            get { return externalNames.ToArray(); }
+            get { return externalNames; }
         }
 
-        [TypeConverter(typeof(CollectionConverter))]
+        //[TypeConverter(typeof(CollectionConverter))]
         [Browsable(true)]
-        public PublicNameDefinition[] PublicNames
+        public List<DefinedSymbol> DefinedNames
         {
-            get { return publicNames.ToArray(); }
+            get { return definedNames; }
+        }
+
+        /// <summary>
+        /// Gets a list of symbol aliases defined in this object module.
+        /// </summary>
+        [Browsable(true)]
+        public List<SymbolAlias> Aliases
+        {
+            get { return aliases; }
         }
 
 #if false
@@ -192,7 +199,7 @@ namespace Disassembler.Omf
             var nameDefs = new Dictionary<string, ObjectModule>();
             foreach (var module in Modules)
             {
-                foreach (var name in module.PublicNames)
+                foreach (var name in module.DefinedNames)
                 {
                     if (nameDefs.ContainsKey(name.Name))
                     {

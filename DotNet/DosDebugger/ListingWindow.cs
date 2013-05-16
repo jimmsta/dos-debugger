@@ -584,7 +584,7 @@ namespace DosDebugger
 #endif
         }
 
-        ToolTip opcodeToolTip;
+        //ToolTip opcodeToolTip;
         ListViewItem lastItem;
     }
 }

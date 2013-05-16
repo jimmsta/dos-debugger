@@ -47,30 +47,31 @@ namespace DosDebugger
             {
                 TreeNode nodeModule = root.Nodes.Add(module.ObjectName);
                 nodeModule.Tag = module;
-                foreach (var sym in module.PublicNames)
+                foreach (DefinedSymbol symbol in module.DefinedNames)
                 {
+                    string s = symbol.Name;
+#if false
                     // Try demangle the symbol's name.
-                    string s = sym.Name;
                     if (sym.BaseSegment != null && sym.BaseSegment.Class == "CODE")
                     {
                         //var sig = NameMangler.Demangle(s);
                         //if (sig != null)
                         //    s = sig.Name;
                     }
-
-                    if (sym.BaseSegment == null)
+#endif
+                    if (symbol.BaseSegment == null)
                     {
                         s = string.Format("{0} : {1:X4}:{2:X4}",
-                            s, sym.BaseFrame, sym.Offset);
+                            s, symbol.BaseFrame, symbol.Offset);
                     }
                     else
                     {
                         s = string.Format("{0} : {1}+{2:X}h",
-                            s, sym.BaseSegment.Name, sym.Offset);
+                            s, symbol.BaseSegment.Name, symbol.Offset);
                     }
 
                     TreeNode node = nodeModule.Nodes.Add(s);
-                    node.Tag = sym;
+                    node.Tag = symbol;
                 }
             }
         }

@@ -19,6 +19,7 @@ namespace Disassembler
         string Label { get; }
     }
 
+#if false
     public struct PhysicalAddress : IAddressable
     {
         ushort Segment;
@@ -40,11 +41,5 @@ namespace Disassembler
             get { throw new NotImplementedException(); }
         }
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    public class SegmentGroup
-    {
-    }
+#endif
 }
