@@ -1,0 +1,8 @@
+ListView Layout Manager
+-----------------------
+
+Author:       Jani Giannoudis
+Date Updated: 27 Sep 2012
+Project URL:  http://www.codeproject.com/Articles/25058/ListView-Layout-Manager
+Licence:      Code Project Open License (CPOL)
+Licence URL:  http://www.codeproject.com/info/cpol10.aspx

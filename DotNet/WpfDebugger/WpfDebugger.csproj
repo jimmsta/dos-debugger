@@ -98,10 +98,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\ListViewLayout\FixedColumn.cs" />
+    <Compile Include="Controls\ListViewLayout\LayoutColumn.cs" />
+    <Compile Include="Controls\ListViewLayout\ListViewLayoutManager.cs" />
+    <Compile Include="Controls\ListViewLayout\ProportionalColumn.cs" />
+    <Compile Include="Controls\ListViewLayout\RangeColumn.cs" />
     <Compile Include="DebuggerCommands.cs" />
     <Compile Include="HtmlConverter.cs" />
     <Compile Include="LibraryBrowserControl.xaml.cs">
       <DependentUpon>LibraryBrowserControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="MyPropertyGrid.xaml.cs">
+      <DependentUpon>MyPropertyGrid.xaml</DependentUpon>
     </Compile>
     <Compile Include="MyTreeView.xaml.cs">
       <DependentUpon>MyTreeView.xaml</DependentUpon>
@@ -144,6 +152,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="MyPropertyGrid.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MyTreeView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -254,6 +266,7 @@
   <ItemGroup>
     <Resource Include="Resources\Field-Private_545.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

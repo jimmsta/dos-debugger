@@ -402,7 +402,7 @@ namespace DosDebugger
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
             propertiesWindow.SelectedObject = library;
 
-            library.BuildDependencyGraph();
+            library.ResolveAllSymbols();
             libraryWindow.Library = library;
             libraryWindow.PropertiesWindow = propertiesWindow;
             libraryWindow.ListingWindow = listingWindow;

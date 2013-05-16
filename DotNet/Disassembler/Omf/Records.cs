@@ -691,18 +691,18 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             int baseGroupIndex = reader.ReadIndex();
-            if (baseGroupIndex > context.Module.groups.Count)
+            if (baseGroupIndex > context.Module.Groups.Count)
                 throw new InvalidDataException("Group index out of range.");
             if (baseGroupIndex > 0)
-                this.BaseGroup = context.Module.groups[baseGroupIndex - 1];
+                this.BaseGroup = context.Module.Groups[baseGroupIndex - 1];
 
             int baseSegmentIndex = reader.ReadIndex();
-            if (baseSegmentIndex > context.Module.segments.Count)
+            if (baseSegmentIndex > context.Module.Segments.Count)
                 throw new InvalidDataException("Segment index out of range.");
             if (baseSegmentIndex == 0)
                 this.BaseFrame = reader.ReadUInt16();
             else
-                this.BaseSegment = context.Module.segments[baseSegmentIndex - 1];
+                this.BaseSegment = context.Module.Segments[baseSegmentIndex - 1];
 
             List<DefinedSymbol> symbols = new List<DefinedSymbol>();
             while (!reader.IsEOF)
@@ -837,7 +837,7 @@ namespace Disassembler.Omf
                 def.OverlayName = context.Names[overlayNameIndex - 1];
 
             this.Definition = def;
-            context.Module.segments.Add(def);
+            context.Module.Segments.Add(def);
         }
     }
 
@@ -862,16 +862,16 @@ namespace Disassembler.Omf
             {
                 reader.ReadByte(); // 'type' ignored
                 UInt16 segmentIndex = reader.ReadIndex();
-                if (segmentIndex == 0 || segmentIndex > context.Module.segments.Count)
+                if (segmentIndex == 0 || segmentIndex > context.Module.Segments.Count)
                 {
                     throw new InvalidDataException("SegmentIndex is out of range.");
                 }
-                segments.Add(context.Module.segments[segmentIndex - 1]);
+                segments.Add(context.Module.Segments[segmentIndex - 1]);
             }
             def.Segments = segments.ToArray();
 
             this.Definition = def;
-            context.Module.groups.Add(def);
+            context.Module.Groups.Add(def);
         }
     }
 
@@ -889,11 +889,11 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             UInt16 segmentIndex = reader.ReadIndex();
-            if (segmentIndex == 0 || segmentIndex > context.Module.segments.Count)
+            if (segmentIndex == 0 || segmentIndex > context.Module.Segments.Count)
             {
                 throw new InvalidDataException("SegmentIndex is out of range.");
             }
-            this.Segment = context.Module.segments[segmentIndex - 1];
+            this.Segment = context.Module.Segments[segmentIndex - 1];
 
             this.DataOffset = reader.ReadUInt16Or32();
             this.Data = reader.ReadToEnd(); // TBD: this can be optimized to
@@ -921,7 +921,7 @@ namespace Disassembler.Omf
             : base(reader, context)
         {
             this.SegmentIndex = reader.ReadIndex();
-            if (SegmentIndex == 0 || SegmentIndex > context.Module.segments.Count)
+            if (SegmentIndex == 0 || SegmentIndex > context.Module.Segments.Count)
                 throw new InvalidDataException("SegmentIndex is out of range.");
 
             this.DataOffset = reader.ReadUInt16Or32();

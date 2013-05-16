@@ -111,7 +111,6 @@ namespace WpfDebugger
 
         internal class LibraryItem : ITreeNode
         {
-            [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public ObjectLibrary Library { get; private set; }
             public ObservableCollection<ModuleItem> Modules { get; private set; }
             public string Name { get { return "Library"; } }

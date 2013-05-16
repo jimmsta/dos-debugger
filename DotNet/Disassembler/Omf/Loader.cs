@@ -83,14 +83,11 @@ namespace Disassembler.Omf
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
+    [Browsable(true)]
     public class ObjectModule
     {
-        internal readonly List<LogicalSegment> segments
-            = new List<LogicalSegment>();
-
-        internal readonly List<SegmentGroup> groups
-            = new List<SegmentGroup>();
-
+        readonly List<LogicalSegment> segments = new List<LogicalSegment>();
+        readonly List<SegmentGroup> groups = new List<SegmentGroup>();
         readonly List<DefinedSymbol> definedNames = new List<DefinedSymbol>();
         readonly List<ExternalSymbol> externalNames = new List<ExternalSymbol>();
         readonly List<SymbolAlias> aliases = new List<SymbolAlias>();
@@ -115,18 +112,18 @@ namespace Disassembler.Omf
         /// Gets a list of logical segments defined in this module. A logical
         /// segment is defined by SEGDEF records.
         /// </summary>
-        public LogicalSegment[] Segments
+        public List<LogicalSegment> Segments
         {
-            get { return segments.ToArray(); }
+            get { return segments; }
         }
 
         /// <summary>
         /// Gets a list of groups defined in this module. A group is defined
         /// by GRPDEF records.
         /// </summary>
-        public SegmentGroup[] Groups
+        public List<SegmentGroup> Groups
         {
-            get { return groups.ToArray(); }
+            get { return groups; }
         }
 
         /// <summary>
@@ -157,20 +154,6 @@ namespace Disassembler.Omf
             get { return aliases; }
         }
 
-#if false
-        [Browsable(false)]
-        public ExternalNameDefinition[] LocalExternalNames
-        {
-            get { return Context.LocalExternalNames.ToArray(); }
-        }
-
-        [Browsable(false)]
-        public Omf.PublicNameDefinition[] LocalPublicNames
-        {
-            get { return Context.LocalPublicNames.ToArray(); }
-        }
-#endif
-
         public override string ToString()
         {
             if (this.ObjectName == null)
@@ -183,7 +166,18 @@ namespace Disassembler.Omf
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ObjectLibrary
     {
+        //[TypeConverter(typeof(ExpandableObjectConverter))]
+        //[TypeConverter(typeof(ArrayConverter))]
+        //[TypeConverter(typeof(CollectionConverter))]
+        //[TypeConverter(typeof(ExpandableCollectionConverter))]
+        [Browsable(true)]
         public ObjectModule[] Modules { get; internal set; }
+
+        [Browsable(true)]
+        public ListWrapper ModuleList
+        {
+            get { return new ListWrapper { Collection = Modules }; }
+        }
 
         public Dictionary<string, List<ObjectModule>> DuplicateSymbols
             = new Dictionary<string, List<ObjectModule>>();
@@ -191,9 +185,7 @@ namespace Disassembler.Omf
         public Dictionary<string, List<ObjectModule>> UnresolvedSymbols
             = new Dictionary<string, List<ObjectModule>>();
 
-        
-
-        public void BuildDependencyGraph()
+        public void ResolveAllSymbols()
         {
             // First, we need to build a map of each public name.
             var nameDefs = new Dictionary<string, ObjectModule>();

@@ -6,7 +6,12 @@
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:wpg="clr-namespace:System.Windows.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" d:DesignWidth="300"
+             DataContext="{Binding RelativeSource={RelativeSource Self}}">
+    <UserControl.Resources>
+        
+    </UserControl.Resources>
+        
     <Grid>
         <!--
         <Grid.RowDefinitions>
@@ -15,9 +20,103 @@
         </Grid.RowDefinitions>
         <xctk:PropertyGrid Grid.Row="1" Name="propertyGrid1"/>
         -->
+        <!--
         <wpg:WpfPropertyGrid 
             x:Name="propertyGrid"
             ToolbarVisible="False"
             PropertySort="Alphabetical"/>
+        -->
+
+        <!--
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ListBox Grid.Column="0"
+                     ItemsSource="{Binding Path=TestArray}"/>
+            <GridSplitter Grid.Column="1"
+                          Width="3"
+                          VerticalAlignment="Stretch"
+                          HorizontalAlignment="Stretch"/>
+            <ListBox Grid.Column="2"/>
+        </Grid>
+            -->
+        
+        <ListView ItemsSource="{Binding Path=TestArray}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Column 1">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Column 2">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        
+        <!--
+        <DataGrid AutoGenerateColumns="False"
+                  ItemsSource="{Binding TestArray}"
+                  CanUserResizeRows="False"
+                  CanUserAddRows="False"
+                  IsReadOnly="True"
+                  EnableRowVirtualization="True"
+                  HeadersVisibility="None"
+                  SelectionMode="Single"
+                  GridLinesVisibility="All"
+                  HorizontalGridLinesBrush="#FFDDDDDD"
+                  VerticalGridLinesBrush="LightGray"
+                  >
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Margin="4,1,4,1" Text="{Binding}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Width="10" MinWidth="0">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Thumb VerticalAlignment="Stretch"
+                                   HorizontalAlignment="Stretch"
+                                   Cursor="SizeWE"
+                                   Width="10">
+                                <Thumb.Template>
+                                    <ControlTemplate>
+                                        <Grid HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Stretch">
+                                            <Rectangle Margin="0"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Stretch"
+                                                   Stroke="Transparent"
+                                                   Fill="Transparent"/>
+                                            
+                                            <Line HorizontalAlignment="Center"
+                                                  VerticalAlignment="Stretch"
+                                                  Width="1"
+                                                  Stroke="#FFDDDDDD"/>
+                                        </Grid>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Width="*" Binding="{Binding}"></DataGridTextColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    -->
     </Grid>
 </UserControl>

@@ -112,7 +112,7 @@ namespace WpfDebugger
         {
             string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
-            library.BuildDependencyGraph();
+            library.ResolveAllSymbols();
 
             this.libraryBrowser.Library = library;
         }
