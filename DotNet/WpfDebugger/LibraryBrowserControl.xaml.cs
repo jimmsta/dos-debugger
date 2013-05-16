@@ -164,7 +164,7 @@ namespace WpfDebugger
                     new ObservableCollection<SymbolItem>(
                         from publicName in module.PublicNames
                         let segName = (publicName.BaseSegment == null)? 
-                                      "" : publicName.BaseSegment.SegmentName
+                                      "" : publicName.BaseSegment.Name
                         orderby segName, publicName.Offset, publicName.Name
                         select new SymbolItem(publicName));
             }
@@ -212,7 +212,7 @@ namespace WpfDebugger
                 else
                 {
                     return string.Format("{1}+{2:X4}  {0}",
-                        Symbol.Name, Symbol.BaseSegment.SegmentName, Symbol.Offset);
+                        Symbol.Name, Symbol.BaseSegment.Name, Symbol.Offset);
                 }
             }
 
@@ -232,7 +232,7 @@ namespace WpfDebugger
                         return "ConstantImage";
                     }
 
-                    string className = Symbol.BaseSegment.ClassName;
+                    string className = Symbol.BaseSegment.Class;
                     if (className.EndsWith("CODE"))
                     {
                         if (Symbol.IsLocal)

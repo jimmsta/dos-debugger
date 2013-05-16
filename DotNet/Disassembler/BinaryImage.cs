@@ -76,10 +76,29 @@ namespace Disassembler
         /// <summary>
         /// Gets the underlying executable image.
         /// </summary>
+        /// <remarks>
+        /// This property MUST be set to Browsable(false). Otherwise the WPF
+        /// PropertyGrid (either the one from WpfToolkits or the one bundled
+        /// in Workflow Foundation) will hang. It appears that they use a
+        /// O(n^2) algorithm to prepare the PropertyGrid (where n is the
+        /// number of items in the array), and ironically doesn't display
+        /// anything in the end.
+        /// </remarks>
+        [Browsable(false)]
         public byte[] Image
         {
             get { return image; }
         }
+
+#if false
+        // The following code shows how to hang PropertyGrid.
+        private byte[] a = new byte[100000];
+        [Browsable(true)]
+        public IEnumerable<byte> Dummy
+        {
+            get { return a; }
+        }
+#endif
 
         [Browsable(false)]
         public Range<LinearPointer> AddressRange
@@ -116,7 +135,7 @@ namespace Disassembler
         /// <summary>
         /// Gets the CS:IP address of the first byte in the image.
         /// </summary>
-        [Browsable(false)]
+        [Browsable(true)]
         public Pointer BaseAddress
         {
             get { return baseAddress; }
@@ -291,7 +310,7 @@ namespace Disassembler
         /// Gets a collection of analyzed segments. The segments are returned
         /// in order of their 16-bit segment number.
         /// </summary>
-        [Browsable(false)]
+        [Browsable(true)]
         public ICollection<Segment> Segments
         {
             get { return segments.Values; }
@@ -383,13 +402,13 @@ namespace Disassembler
             return block;
         }
 
-        [Browsable(false)]
+        [Browsable(true)]
         public ProcedureCollection Procedures
         {
             get { return procedures; }
         }
 
-        [Browsable(false)]
+        [Browsable(true)]
         public XRefCollection CrossReferences
         {
             get { return xrefs; }

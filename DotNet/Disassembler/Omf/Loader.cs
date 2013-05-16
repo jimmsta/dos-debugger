@@ -143,6 +143,8 @@ namespace Disassembler.Omf
             get { return externalNames.ToArray(); }
         }
 
+        [TypeConverter(typeof(CollectionConverter))]
+        [Browsable(true)]
         public PublicNameDefinition[] PublicNames
         {
             get { return publicNames.ToArray(); }

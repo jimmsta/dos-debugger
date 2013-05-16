@@ -51,7 +51,7 @@ namespace DosDebugger
                 {
                     // Try demangle the symbol's name.
                     string s = sym.Name;
-                    if (sym.BaseSegment != null && sym.BaseSegment.ClassName == "CODE")
+                    if (sym.BaseSegment != null && sym.BaseSegment.Class == "CODE")
                     {
                         //var sig = NameMangler.Demangle(s);
                         //if (sig != null)
@@ -66,7 +66,7 @@ namespace DosDebugger
                     else
                     {
                         s = string.Format("{0} : {1}+{2:X}h",
-                            s, sym.BaseSegment.SegmentName, sym.Offset);
+                            s, sym.BaseSegment.Name, sym.Offset);
                     }
 
                     TreeNode node = nodeModule.Nodes.Add(s);
@@ -102,7 +102,7 @@ namespace DosDebugger
             LogicalSegment codeSegment = null;
             foreach (var seg in module.Segments)
             {
-                if (seg.ClassName == "CODE")
+                if (seg.Class == "CODE")
                 {
                     codeSegment = seg;
                     break;

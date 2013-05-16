@@ -75,6 +75,8 @@
     <Compile Include="FunctionSignature.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="BinaryImage.cs" />
+    <Compile Include="IAddressable.cs" />
+    <Compile Include="LogicalSegment.cs" />
     <Compile Include="MZLoader.cs" />
     <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\FixupRecord.cs">

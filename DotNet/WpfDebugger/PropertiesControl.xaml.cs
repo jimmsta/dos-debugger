@@ -38,25 +38,14 @@ namespace WpfDebugger
                 // a property has type byte[]. Need to fix this before
                 // we use it at all.
                 //UpdateUI();
+                propertyGrid.SelectedObject = image;
             }
         }
 
         public object SelectedObject
         {
-            get { return propertyGrid1.SelectedObject; }
-            set
-            {
-                propertyGrid1.SelectedObject = value;
-                propertyGrid.SelectedObject = value;
-            }
-        }
-
-        private void UpdateUI()
-        {
-            if (image == null)
-                return;
-
-            propertyGrid1.SelectedObject = image;
+            get { return propertyGrid.SelectedObject; }
+            set { propertyGrid.SelectedObject = value; }
         }
     }
 }

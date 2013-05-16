@@ -8,17 +8,16 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
+        <!--
         <Grid.RowDefinitions>
             <RowDefinition/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-        
-        <xctk:PropertyGrid Name="propertyGrid1"/>
-        
+        <xctk:PropertyGrid Grid.Row="1" Name="propertyGrid1"/>
+        -->
         <wpg:WpfPropertyGrid 
-            Grid.Row="1" x:Name="propertyGrid"
+            x:Name="propertyGrid"
             ToolbarVisible="False"
             PropertySort="Alphabetical"/>
-        
     </Grid>
 </UserControl>

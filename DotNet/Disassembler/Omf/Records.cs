@@ -776,12 +776,39 @@ namespace Disassembler.Omf
             LogicalSegment def = new LogicalSegment();
 
             byte acbp = reader.ReadByte();
-            def.Alignment = (SegmentAlignment)(acbp >> 5);
-            def.Combination = (SegmentCombination)((acbp >> 2) & 7);
+
+            int alignment = acbp >> 5;
+            switch (alignment)
+            {
+                case 0: def.Alignment = Alignment.None; break;
+                case 1: def.Alignment = Alignment.Byte; break;
+                case 2: def.Alignment = Alignment.Word; break;
+                case 3: def.Alignment = Alignment.Paragraph; break;
+                case 4: def.Alignment = Alignment.Page; break;
+                case 5: def.Alignment = Alignment.DWord; break;
+                case 6:
+                case 7:
+                    throw new InvalidDataException("Unsupported segment alignment: " + alignment);
+            }
+
+            int combination = (acbp >> 2) & 7;
+            switch (combination)
+            {
+                case 0: def.Combination = SegmentCombination.Private; break;
+                case 2:
+                case 4:
+                case 7: def.Combination = SegmentCombination.Public; break;
+                case 5: def.Combination = SegmentCombination.Stack; break;
+                case 6: def.Combination = SegmentCombination.Common; break;
+                case 1:
+                case 3:
+                    throw new InvalidDataException("Unsupported segment combination: " + combination);
+            }
+
             bool isBig = (acbp & 0x02) != 0;
             def.IsUse32 = (acbp & 0x01) != 0;
 
-            if (def.Alignment == SegmentAlignment.Absolute)
+            if (def.Alignment == Alignment.None) // absolute segment
             {
                 UInt16 frame = reader.ReadUInt16();
                 reader.ReadByte(); // Offset is ignored by MS LINK
@@ -808,13 +835,13 @@ namespace Disassembler.Omf
             if (segmentNameIndex > context.Names.Count)
                 throw new InvalidDataException("SegmentNameIndex out of range.");
             if (segmentNameIndex > 0)
-                def.SegmentName = context.Names[segmentNameIndex - 1];
+                def.Name = context.Names[segmentNameIndex - 1];
 
             int classNameIndex = reader.ReadIndex();
             if (classNameIndex > context.Names.Count)
                 throw new InvalidDataException("ClassNameIndex out of range.");
             if (classNameIndex > 0)
-                def.ClassName = context.Names[classNameIndex - 1];
+                def.Class = context.Names[classNameIndex - 1];
 
             int overlayNameIndex = reader.ReadIndex();
             if (overlayNameIndex > context.Names.Count)
