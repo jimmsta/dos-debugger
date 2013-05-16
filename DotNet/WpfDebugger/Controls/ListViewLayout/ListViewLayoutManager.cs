@@ -290,7 +290,7 @@ namespace Itenso.Windows.Controls.ListViewLayout
                 if (scrollViewer.ExtentWidth > totalWidth)
                 {
                     otherColumnsWidth = scrollViewer.ExtentWidth - totalWidth;
-                    System.Diagnostics.Debug.WriteLine("Extra=" + otherColumnsWidth);
+                    //System.Diagnostics.Debug.WriteLine("Extra=" + otherColumnsWidth);
                 }
             }
             // --- end

@@ -76,9 +76,14 @@
             <Setter Property="Height" Value="16"/>
             <Setter Property="Template" Value="{StaticResource ToggleButtonTemplate}"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Path=IsSelected}" Value="True"/>
+                        <Condition Binding="{Binding RelativeSource={RelativeSource Self},Path=(Selector.IsSelectionActive)}"
+                                   Value="True"/>
+                    </MultiDataTrigger.Conditions>
                     <Setter Property="Template" Value="{StaticResource SelectedToggleButtonTemplate}"/>
-                </DataTrigger>
+                </MultiDataTrigger>
             </Style.Triggers>
         </Style>
 
