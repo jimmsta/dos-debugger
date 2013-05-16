@@ -103,7 +103,8 @@ namespace Itenso.Windows.Controls.ListViewLayout
 					scrollViewer = childVisual as ScrollViewer;
 					scrollViewer.ScrollChanged += new ScrollChangedEventHandler( ScrollViewerScrollChanged );
 					// assume we do the regulation of the horizontal scrollbar
-					scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+					// --- fanci: comment out the following line
+                    //scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
 					scrollViewer.VerticalScrollBarVisibility = verticalScrollBarVisibility;
 				}
 
@@ -272,6 +273,27 @@ namespace Itenso.Windows.Controls.ListViewLayout
 
 			double resizeableRegionCount = 0;
 			double otherColumnsWidth = 0;
+            // --- fanci
+            // Compute the difference between
+            //   1) the 'theoretical' width computed by summing
+            //      gridViewColumn.ActualWidth, and
+            //   2) the 'effective' width seen by the scroll viewer.
+            // The difference is the extra width used by column header
+            // separators.
+            if (scrollViewer != null)
+            {
+                double totalWidth = 0.0;
+                foreach (GridViewColumn gridViewColumn in view.Columns)
+                {
+                    totalWidth += gridViewColumn.ActualWidth;
+                }
+                if (scrollViewer.ExtentWidth > totalWidth)
+                {
+                    otherColumnsWidth = scrollViewer.ExtentWidth - totalWidth;
+                    System.Diagnostics.Debug.WriteLine("Extra=" + otherColumnsWidth);
+                }
+            }
+            // --- end
 			// determine column sizes
 			foreach ( GridViewColumn gridViewColumn in view.Columns )
 			{
@@ -327,7 +349,8 @@ namespace Itenso.Windows.Controls.ListViewLayout
 						{
 							if ( scrollViewer != null )
 							{
-								scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+                                // --- fanci: comment the following line out.
+								//scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
 							}
 							fillColumn.Width = fillWidth;
 						}
@@ -402,6 +425,8 @@ namespace Itenso.Windows.Controls.ListViewLayout
 		} // IsFillColumn
 
 		// ----------------------------------------------------------------------
+        // fanci: BUG: if the first column is Fill but the second column is
+        // sizable, the second column may be sized to negative size!
 		private void DoResizeColumns()
 		{
 			if ( resizing )
@@ -571,7 +596,9 @@ namespace Itenso.Windows.Controls.ListViewLayout
 		// ----------------------------------------------------------------------
 		private void ScrollViewerScrollChanged( object sender, ScrollChangedEventArgs e )
 		{
-			if ( loaded && Math.Abs( e.ViewportWidthChange - 0 ) > zeroWidthRange )
+            // --- fanci: always raise DoResizeColumns() to avoid flicker.
+			//if ( loaded && Math.Abs( e.ViewportWidthChange - 0 ) > zeroWidthRange )
+            if (loaded)
 			{
 				DoResizeColumns();
 			}

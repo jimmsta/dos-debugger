@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:itenso="clr-namespace:Itenso.Windows.Controls.ListViewLayout"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
              Focusable="True">
@@ -48,19 +49,23 @@
                   ItemsSource="{Binding Items}"
                   FontFamily="Consolas" 
                   SelectionMode="Single"
+                  itenso:ListViewLayoutManager.Enabled="true"
                   VirtualizingPanel.IsContainerVirtualizable="True"
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Location" Width="100">
+                    <GridViewColumn Header="Location" Width="100"
+                                    itenso:RangeColumn.MinWidth="50">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Location}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Message" Width="500">
+                    <GridViewColumn Header="Message" Width="500"
+                                    itenso:RangeColumn.IsFillColumn="True"
+                                    itenso:RangeColumn.MinWidth="50">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Message}"/>
