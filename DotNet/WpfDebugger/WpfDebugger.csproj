@@ -98,6 +98,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Controls\AutoGrayImage.cs" />
     <Compile Include="Controls\ListViewLayout\FixedColumn.cs" />
     <Compile Include="Controls\ListViewLayout\LayoutColumn.cs" />
     <Compile Include="Controls\ListViewLayout\ListViewLayoutManager.cs" />
