@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:avalonDock="http://avalondock.codeplex.com"
         xmlns:my="clr-namespace:WpfDebugger"
+        xmlns:util="clr-namespace:Util.Windows.Controls;assembly=Util.Windows"
         Title="MainWindow" Height="400" Width="600"
         WindowState="Maximized"
         Loaded="Window_Loaded" Unloaded="Window_Unloaded" Icon="Resources/App-1.ico">
@@ -32,7 +33,7 @@
             <MenuItem Header="_File">
                 <MenuItem Header="_Open" Name="mnuFileOpen" Command="ApplicationCommands.Open">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=OpenFileImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=OpenFileImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -57,18 +58,18 @@
             <MenuItem Header="_View">
                 <MenuItem Header="Navigate _Backward" IsEnabled="False">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=BackwardImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=BackwardImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Navigate _Forward">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=ForwardImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=ForwardImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Disassembly Window" Name="mnuViewDisassembly">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=DisassemblyImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=DisassemblyImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Hex View" Name="mnuViewHex"/>
@@ -76,17 +77,17 @@
                 <MenuItem Header="Segment List" Name="mnuViewSegments" Click="mnuViewSegments_Click"/>
                 <MenuItem Header="Procedure List" Name="mnuViewProcedures" Click="mnuViewProcedures_Click">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=ProcedureListImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=ProcedureListImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Error List" Name="mnuViewErrors" Click="mnuViewErrors_Click">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=ErrorListImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=ErrorListImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Properties" Name="mnuViewProperties" Click="mnuViewProperties_Click">
                     <MenuItem.Icon>
-                        <Image Source="{StaticResource ResourceKey=PropertyImage}"/>
+                        <util:AutoGrayImage Source="{StaticResource ResourceKey=PropertyImage}"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <MenuItem Header="Library Browser" Name="mnuViewLibraryBrowser" Click="mnuViewLibraryBrowser_Click"/>

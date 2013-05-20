@@ -17,6 +17,7 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using Disassembler;
 using Disassembler.Omf;
+using Util.Windows.Controls;
 
 namespace WpfDebugger
 {

@@ -3,8 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:itenso="clr-namespace:Itenso.Windows.Controls.ListViewLayout"
-             xmlns:util="clr-namespace:Util.Windows.Controls"
+             xmlns:itenso="clr-namespace:Itenso.Windows.Controls.ListViewLayout;assembly=Util.Windows"
+             xmlns:util="clr-namespace:Util.Windows.Controls;assembly=Util.Windows"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300"
              Focusable="True">

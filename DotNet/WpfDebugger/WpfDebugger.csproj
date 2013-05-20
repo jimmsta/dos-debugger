@@ -98,22 +98,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Controls\AutoGrayImage.cs" />
-    <Compile Include="Controls\ListViewLayout\FixedColumn.cs" />
-    <Compile Include="Controls\ListViewLayout\LayoutColumn.cs" />
-    <Compile Include="Controls\ListViewLayout\ListViewLayoutManager.cs" />
-    <Compile Include="Controls\ListViewLayout\ProportionalColumn.cs" />
-    <Compile Include="Controls\ListViewLayout\RangeColumn.cs" />
     <Compile Include="DebuggerCommands.cs" />
     <Compile Include="HtmlConverter.cs" />
     <Compile Include="LibraryBrowserControl.xaml.cs">
       <DependentUpon>LibraryBrowserControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="MyPropertyGrid.xaml.cs">
-      <DependentUpon>MyPropertyGrid.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="MyTreeView.xaml.cs">
-      <DependentUpon>MyTreeView.xaml</DependentUpon>
     </Compile>
     <Compile Include="PropertiesControl.xaml.cs">
       <DependentUpon>PropertiesControl.xaml</DependentUpon>
@@ -121,7 +109,6 @@
     <Compile Include="SegmentListControl.xaml.cs">
       <DependentUpon>SegmentListControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WpfPropertyGrid.cs" />
     <Page Include="DisassemblyControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -153,14 +140,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="MyPropertyGrid.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="MyTreeView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="ProcedureListControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -214,6 +193,10 @@
     <ProjectReference Include="..\Util\Util-v2.0.csproj">
       <Project>{70014904-13e0-4afa-a6dd-0ec93100c3c7}</Project>
       <Name>Util-v2.0</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Util\Windows\Util.Windows.csproj">
+      <Project>{34ec1f7b-ceaa-4171-a49b-48f1fa4406fb}</Project>
+      <Name>Util.Windows</Name>
     </ProjectReference>
     <ProjectReference Include="..\X86Codec\X86Codec.csproj">
       <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>
