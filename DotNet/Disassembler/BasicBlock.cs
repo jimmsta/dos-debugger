@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Util.Data;
 
 namespace Disassembler2
 {
@@ -28,37 +29,41 @@ namespace Disassembler2
     public class BasicBlock
     {
         private ImageChunk image;
-        private int startIndex;
-        private int endIndex;
+        private Range<int> location;
 
         public ImageChunk Image { get { return image; } }
 
-        internal BasicBlock(ImageChunk image, int startIndex, int endIndex)
+        internal BasicBlock(ImageChunk image, Range<int> location)
         {
+            if (image == null)
+                throw new ArgumentNullException("image");
+            if (!image.Bounds.IsSupersetOf(location))
+                throw new ArgumentOutOfRangeException("range");
+
             this.image = image;
-            this.startIndex = startIndex;
-            this.endIndex = endIndex;
+            this.location = location;
         }
 
-        public int StartIndex
+        public Range<int> Location
         {
-            get { return this.startIndex; }
+            get { return location; }
         }
 
         /// <summary>
-        /// Splits the basic block into two at the given location.
+        /// Splits the basic block into two at the given position.
         /// </summary>
         /// <param name="location"></param>
         /// TODO: how does this sync with Procedure.BasicBlocks?
-        internal BasicBlock Split(int location)
+        internal BasicBlock Split(int position)
         {
-            if (location <= startIndex || location >= endIndex)
-                throw new ArgumentException("location must be within [start, end).");
-            if (!image[location].IsLeadByte)
-                throw new ArgumentException("location must be at piece boundary.");
+            if (position <= location.Begin || position >= location.End)
+                throw new ArgumentOutOfRangeException("position");
+            if (!image[position].IsLeadByte)
+                throw new ArgumentException("position must be a lead byte.");
 
             // Create a new block that covers [location, end).
-            BasicBlock newBlock = new BasicBlock(image, location, endIndex);
+            BasicBlock newBlock = new BasicBlock(
+                image, new Range<int>(position, location.End));
 
 #if false
             // Update the BasicBlock property of bytes in the second block.
@@ -69,7 +74,7 @@ namespace Disassembler2
 #endif
 
             // Update the end position of this block.
-            this.endIndex = location;
+            location = new Range<int>(location.Begin, position);
 
             return newBlock;
         }

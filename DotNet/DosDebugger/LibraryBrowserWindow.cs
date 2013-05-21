@@ -7,7 +7,8 @@ using System.Text;
 using System.Windows.Forms;
 using Disassembler;
 using Util.Forms;
-using Disassembler.Omf;
+using Disassembler2;
+using Disassembler2.Omf;
 using X86Codec;
 
 namespace DosDebugger
@@ -93,6 +94,7 @@ namespace DosDebugger
 
         private void UpdateImage(ObjectModule module)
         {
+#if false
             // For each segment, construct a list of LEDATA/LIDATA records.
             // These records fill data into the segment.
             // It is required that the data do not overlap, and do not
@@ -194,6 +196,7 @@ namespace DosDebugger
                 doc.Image = image;
                 this.ListingWindow.Document = doc;
             }
+#endif
         }
 
 #if false

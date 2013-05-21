@@ -5,7 +5,8 @@ using System.Text;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 using X86Codec;
-using Disassembler.Omf;
+using Disassembler2;
+using Disassembler2.Omf;
 
 namespace DosDebugger
 {

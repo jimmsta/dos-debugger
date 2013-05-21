@@ -13,7 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Disassembler;
-using Disassembler.Omf;
+using Disassembler2;
+using Disassembler2.Omf;
 using AvalonDock.Layout;
 
 namespace WpfDebugger

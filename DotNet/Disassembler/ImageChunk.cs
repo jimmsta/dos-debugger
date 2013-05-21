@@ -59,6 +59,11 @@ namespace Disassembler2
             get { return new ImageByte(this, index); }
         }
 
+        public Range<int> Bounds
+        {
+            get { return new Range<int>(0, image.Length); }
+        }
+
         public int Length
         {
             get { return image.Length; }
@@ -131,6 +136,75 @@ namespace Disassembler2
                 throw new BrokenFixupException(fixups[fixupIndex]);
             }
             return instruction;
+        }
+
+        /// <summary>
+        /// Returns true if all the bytes within the given range are of the
+        /// given type.
+        /// </summary>
+        public bool CheckByteType(int offset, int length, ByteType type)
+        {
+            for (int i = offset; i < offset + length; i++)
+            {
+                if (attrs[i].Type != type)
+                    return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Marks a continuous range of bytes as an atomic item of the given
+        /// type.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public void UpdateByteType(int offset, int length, ByteType type)
+        {
+            if (type != ByteType.Code &&
+                type != ByteType.Data &&
+                type != ByteType.Padding)
+                throw new ArgumentException("type is invalid.", "type");
+            if (offset < 0 || offset > image.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            if (length < 0 || length > image.Length - offset)
+                throw new ArgumentOutOfRangeException("length");
+            if (length == 0)
+                return;
+
+#if false
+            if (start.Segment != end.Segment)
+                throw new ArgumentException("start and end must be in the same segment.");
+#endif
+
+            if (!CheckByteType(offset,length,ByteType.Unknown))
+                throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
+
+            // Mark the byte range as 'type'.
+            for (int i = offset; i < offset + length; i++)
+            {
+                //attr[i].Address = start + (i - pos1);
+                attrs[i].Type = type;
+                attrs[i].IsLeadByte = false;
+            }
+            attrs[offset].IsLeadByte = true;
+
+#if false
+            // Update the segment bounds.
+            Segment segment = FindSegment(start.Segment);
+            if (segment == null)
+            {
+                segment = new Segment(start.Segment, start.LinearAddress, end.LinearAddress);
+                segments.Add(start.Segment, segment);
+            }
+            else
+            {
+                // TODO: modify this to use MultiRange.
+                segment.Extend(start.LinearAddress, end.LinearAddress);
+            }
+            return piece;
+#endif
         }
 
         public RangeDictionary<int, Procedure> Procedures

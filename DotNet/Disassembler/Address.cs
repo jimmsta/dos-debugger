@@ -45,55 +45,6 @@ namespace Disassembler2
     }
 
     /// <summary>
-    /// Represents a logical address in an assembly, expressed as referent +
-    /// displacement. The displacement may be positive, zero, or negative.
-    /// Multiple logical addresses may resolve to the same ResolvedAddress.
-    /// </summary>
-    public struct LogicalAddress
-    {
-        public IAddressable Referent { get; private set; }
-        public int Displacement { get; private set; }
-
-        public LogicalAddress(IAddressable referent, int offset)
-            : this()
-        {
-            if (referent == null)
-                throw new ArgumentNullException("referent");
-
-            this.Referent = referent;
-            this.Displacement = offset;
-        }
-
-        public ResolvedAddress Resolve()
-        {
-            ResolvedAddress address = Referent.Resolve();
-            return new ResolvedAddress(address.Image, address.Offset + this.Displacement);
-        }
-
-        public static readonly LogicalAddress Invalid = new LogicalAddress();
-
-        public static bool operator ==(LogicalAddress a, LogicalAddress b)
-        {
-            return (a.Referent == b.Referent) && (a.Displacement == b.Displacement);
-        }
-
-        public static bool operator !=(LogicalAddress a, LogicalAddress b)
-        {
-            return (a.Referent != b.Referent) || (a.Displacement != b.Displacement);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return (obj is LogicalAddress) && (this == (LogicalAddress)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-    }
-
-    /// <summary>
     /// Represents a unique address in an assembly, expressed as an offset
     /// within a specific image chunk. Note that a ResolvedAddress is not
     /// related to the physical address of an image when loaded into memory.
@@ -143,4 +94,92 @@ namespace Disassembler2
             return base.GetHashCode();
         }
     }
+
+    /// <summary>
+    /// Represents a logical address in an assembly, expressed as referent +
+    /// displacement. The displacement may be positive, zero, or negative.
+    /// Multiple logical addresses may resolve to the same ResolvedAddress.
+    /// </summary>
+    public struct LogicalAddress
+    {
+        public IAddressable Referent { get; private set; }
+        public int ReferentOffset { get; private set; }
+
+        public LogicalAddress(IAddressable referent, int offset)
+            : this()
+        {
+            if (referent == null)
+                throw new ArgumentNullException("referent");
+
+            this.Referent = referent;
+            this.ReferentOffset = offset;
+        }
+
+        public ResolvedAddress ResolvedAddress
+        {
+            get
+            {
+                ResolvedAddress address = Referent.Resolve();
+                return new ResolvedAddress(address.Image, address.Offset + this.ReferentOffset);
+            }
+        }
+
+        public LogicalAddress Increment(int increment)
+        {
+            return new LogicalAddress(this.Referent, this.ReferentOffset + increment);
+        }
+
+        // TBD: we need to fix this to take into account
+        // wrapping.
+        public LogicalAddress IncrementWithWrapping(int increment)
+        {
+            return new LogicalAddress(this.Referent, this.ReferentOffset + increment);
+        }
+
+        public ImageChunk Image
+        {
+            get { return ResolvedAddress.Image; }
+        }
+
+        public int ImageOffset
+        {
+            get { return ResolvedAddress.Offset; }
+        }
+
+        public ImageByte ImageByte
+        {
+            get { return this.Image[this.ImageOffset]; }
+        }
+
+        public static readonly LogicalAddress Invalid = new LogicalAddress();
+
+        public static bool operator ==(LogicalAddress a, LogicalAddress b)
+        {
+            return (a.Referent == b.Referent) && (a.ReferentOffset == b.ReferentOffset);
+        }
+
+        public static bool operator !=(LogicalAddress a, LogicalAddress b)
+        {
+            return (a.Referent != b.Referent) || (a.ReferentOffset != b.ReferentOffset);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is LogicalAddress) && (this == (LogicalAddress)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        public static int CompareByLexical(LogicalAddress a, LogicalAddress b)
+        {
+            int cmp = a.Referent.GetHashCode().CompareTo(b.Referent.GetHashCode());
+            if (cmp == 0)
+                cmp = a.ReferentOffset.CompareTo(b.ReferentOffset);
+            return cmp;
+        }
+    }
+
 }

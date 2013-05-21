@@ -15,7 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
-using Disassembler;
+using Disassembler2;
 using Disassembler2.Omf;
 using Util.Windows.Controls;
 
@@ -78,7 +78,8 @@ namespace WpfDebugger
         private void DisassembleSegment(LogicalSegment segment, int entryIndex)
         {
             ImageChunk image = segment.Image;
-            Disassembler16.Disassemble(image);
+            //Disassembler16New dasm=new Disassembler16New(
+            //Disassembler16New .Disassemble(image);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)

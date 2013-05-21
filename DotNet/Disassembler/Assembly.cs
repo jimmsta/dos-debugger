@@ -343,9 +343,9 @@ namespace Disassembler2
             if ((x.Type == XRefType.NearCall || x.Type == XRefType.FarCall) &&
                 (x.Source != LogicalAddress.Invalid && x.Target != LogicalAddress.Invalid))
             {
-                Procedure caller = x.Source.Resolve().ImageByte.Procedure;
+                Procedure caller = x.Source.ImageByte.Procedure;
                 //Procedure callee = Find(entryPoint: x.Target.LinearAddress);
-                Procedure callee = x.Target.Resolve().ImageByte.Procedure;
+                Procedure callee = x.Target.ImageByte.Procedure;
                 if (caller == null || callee == null)
                 {
                     throw new InvalidOperationException(
@@ -373,7 +373,7 @@ namespace Disassembler2
         public Procedure Find(LogicalAddress entryPoint)
         {
             Procedure proc;
-            if (procMap.TryGetValue(entryPoint.Resolve(), out proc))
+            if (procMap.TryGetValue(entryPoint.ResolvedAddress, out proc))
                 return proc;
             else
                 return null;
@@ -386,7 +386,7 @@ namespace Disassembler2
         /// <returns></returns>
         public Procedure Create(LogicalAddress entryPoint)
         {
-            ResolvedAddress address = entryPoint.Resolve();
+            ResolvedAddress address = entryPoint.ResolvedAddress;
             if (procMap.ContainsKey(address))
             {
                 throw new InvalidOperationException(

@@ -66,7 +66,7 @@ namespace Disassembler2
         /// CALL.</param>
         public void Analyze(LogicalAddress entryPoint, XRefType entryType)
         {
-            ResolvedAddress address = entryPoint.Resolve();
+            ResolvedAddress address = entryPoint.ResolvedAddress;
             if (!address.IsValid)
                 throw new ArgumentOutOfRangeException("entryPoint");
 
@@ -323,29 +323,27 @@ namespace Disassembler2
         // encounters an error on our way? maybe not.
         private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
-            ResolvedAddress pos = start.Target.Resolve();
+            LogicalAddress pos = start.Target;
+            ImageByte b = pos.ImageByte;
 
             // Check if we are running into the middle of code or data. This
             // can only happen when we process the first instruction in the
             // block.
-            if (pos.ImageByte.Type != ByteType.Unknown &&
-                !pos.ImageByte.IsLeadByte) // TODO: handle padding byte
+            if (b.Type != ByteType.Unknown && !b.IsLeadByte) // TODO: handle padding byte
             {
-                AddError(start.Target,
+                AddError(pos,
                     "XRef target is in the middle of code/data (referred from {0})",
                     start.Source);
                 return null;
             }
 
             // Check if this location is already analyzed as code.
-            if (pos.ImageByte.Type == ByteType.Code)
+            if (b.Type == ByteType.Code)
             {
-                ImageByte b = pos.ImageByte;
-
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
                 // Otherwise, split the basic block into two.
-                if (b.BasicBlock.StartIndex == pos.Offset)
+                if (b.BasicBlock.Location.Begin == pos.ImageOffset)
                 {
                     return null;
                 }
@@ -363,7 +361,7 @@ namespace Disassembler2
                         return null;
                     }
 #endif
-                    BasicBlock newBlock = b.BasicBlock.Split(pos.Offset);
+                    BasicBlock newBlock = b.BasicBlock.Split(pos.ImageOffset);
                     return null; // newBlock;
                 }
             }
@@ -373,11 +371,11 @@ namespace Disassembler2
             while (true)
             {
                 // Decode an instruction at this location.
-                Pointer insnPos = pos;
+                LogicalAddress insnPos = pos;
                 Instruction insn;
                 try
                 {
-                    insn = pos.Image.DecodeInstruction(pos.Offset);
+                    insn = pos.Image.DecodeInstruction(pos.ImageOffset);
                 }
                 catch (Exception ex)
                 {
@@ -386,7 +384,7 @@ namespace Disassembler2
                 }
 
                 // Create a code piece for this instruction.
-                if (!image.CheckByteType(pos, pos + insn.EncodedLength, ByteType.Unknown))
+                if (!pos.Image.CheckByteType(pos.ImageOffset, insn.EncodedLength, ByteType.Unknown))
                 {
                     AddError(pos, 
                         "Ran into the middle of code when processing block {0} referred from {1}",
@@ -398,12 +396,14 @@ namespace Disassembler2
                 // if pos.off + count > 0xFFFF. This is probably not intended.
                 try
                 {
-                    Piece piece = image.CreatePiece(pos, pos + insn.EncodedLength, ByteType.Code);
-                    pos += insn.EncodedLength;
+                    pos.Image.UpdateByteType(
+                        pos.ImageOffset, insn.EncodedLength, ByteType.Code);
+                    pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
                 }
-                catch (AddressWrappedException)
+                //catch (AddressWrappedException)
+                catch (Exception)
                 {
-                    AddError(pos, ErrorCategory.Error,
+                    AddError(pos,
                         "CS:IP wrapped when processing block {1} referred from {2}",
                         start.Target, start.Source);
                     break;
@@ -455,10 +455,14 @@ namespace Disassembler2
             }
 
             // Create a basic block unless we failed on the first instruction.
-            if (pos.Offset > start.Target.Resolve().Offset)
-                return image.CreateBasicBlock(start.Target.LinearAddress, pos.LinearAddress);
-            else
-                return null;
+            if (pos.ReferentOffset > start.Target.ReferentOffset)
+            {
+                Range<int> blockLocation = new Range<int>(
+                   start.Target.ImageOffset, pos.ImageOffset);
+                BasicBlock block = new BasicBlock(pos.Image, blockLocation);
+                pos.Image.BasicBlocks.Add(blockLocation, block);
+            }
+            return null;
         }
 
         /// <summary>
@@ -546,12 +550,23 @@ namespace Disassembler2
 
             if (instruction.Operands[0] is PointerOperand) // far jump/call to absolute address
             {
+                // The story is very different when we take into account
+                // fix-up information. If the target is an absolute address,
+                // we indeed cannot process further.
                 PointerOperand opr = (PointerOperand)instruction.Operands[0];
+#if false
                 return new XRef(
                     type: bcjType,
                     source: start,
                     target: new Pointer(opr.Segment.Value, (UInt16)opr.Offset.Value)
                 );
+#else
+                return new XRef(
+                    type: bcjType,
+                    source: start,
+                    target: LogicalAddress.Invalid
+                );
+#endif
             }
 
             if (instruction.Operands[0] is MemoryOperand) // indirect jump/call
@@ -579,12 +594,20 @@ namespace Disassembler2
                     opr.Base != Register.None &&
                     opr.Index == Register.None)
                 {
+#if false
                     return new XRef(
                         type: XRefType.NearIndexedJump,
                         source: start,
                         target: Pointer.Invalid,
                         dataLocation: new Pointer(start.Segment, (UInt16)opr.Displacement.Value)
                     );
+#else
+                    return new XRef(
+                        type: XRefType.NearJump,
+                        source: start,
+                        target: LogicalAddress.Invalid
+                        );
+#endif
                 }
             }
 
@@ -595,7 +618,7 @@ namespace Disassembler2
             return new XRef(
                 type: bcjType,
                 source: start,
-                target: Pointer.Invalid
+                target: LogicalAddress.Invalid
             );
         }
 
@@ -639,7 +662,7 @@ namespace Disassembler2
 
         public static int CompareByLocation(Error x, Error y)
         {
-            return x.Location.LinearAddress.CompareTo(y.Location.LinearAddress);
+            return LogicalAddress.CompareByLexical(x.Location, y.Location);
         }
     }
 
