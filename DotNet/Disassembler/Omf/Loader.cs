@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 
-namespace Disassembler.Omf
+namespace Disassembler2.Omf
 {
     public static class OmfLoader
     {

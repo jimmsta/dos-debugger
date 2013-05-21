@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Disassembler;
 using System.IO;
 
-namespace Disassembler.Omf
+namespace Disassembler2.Omf
 {
-    public class SEGDEFRecord : Record
+    internal class SEGDEFRecord : Record
     {
         public LogicalSegment Segment { get; private set; }
 
@@ -15,6 +12,7 @@ namespace Disassembler.Omf
         {
             // Read the record.
             SegmentDefinition def = new SegmentDefinition();
+            def.IsSEGDEF32 = (reader.RecordNumber == Omf.RecordNumber.SEGDEF32);
             def.ACBP = reader.ReadByte();
             if (def.Alignment == Alignment.None) // absolute segment
             {
@@ -35,23 +33,15 @@ namespace Disassembler.Omf
             segment.Combination = def.Combination;
 
             if (def.Alignment == Alignment.None) // absolute segment
-                segment.StartAddress = new Pointer(def.Frame, 0); // ignore Offset
-            else
-                segment.StartAddress = Pointer.Invalid;
-
-            long length = def.Length;
-            if (def.IsBig)
             {
-                if (reader.RecordNumber == Omf.RecordNumber.SEGDEF32)
-                    length = 0x100000000L;
-                else
-                    length = 0x10000;
+                segment.AbsoluteFrame = def.Frame; // ignore Offset
             }
+
+            long length = def.RealLength;
             if (length > Int32.MaxValue)
             {
                 throw new InvalidDataException("Segment larger than 2GB is not supported.");
             }
-
             segment.Image = new ImageChunk((int)length);
 
             if (def.SegmentNameIndex == 0 ||
@@ -75,6 +65,7 @@ namespace Disassembler.Omf
 
     internal class SegmentDefinition
     {
+        public bool IsSEGDEF32 { get; set; }
         public byte ACBP { get; set; }
         public UInt16 Frame { get; set; }
         public byte Offset { get; set; }
@@ -129,6 +120,24 @@ namespace Disassembler.Omf
         public bool IsUse32
         {
             get { return (ACBP & 0x01) != 0; }
+        }
+
+        public long RealLength
+        {
+            get
+            {
+                if (IsBig)
+                {
+                    if (IsSEGDEF32)
+                        return 0x100000000L;
+                    else
+                        return 0x10000;
+                }
+                else
+                {
+                    return Length;
+                }
+            }
         }
     }
 }

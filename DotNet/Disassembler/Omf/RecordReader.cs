@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 
-namespace Disassembler.Omf
+namespace Disassembler2.Omf
 {
     /// <summary>
     /// Provides methods to read the fields of an OMF record.

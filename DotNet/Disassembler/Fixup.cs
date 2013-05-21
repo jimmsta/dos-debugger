@@ -4,7 +4,7 @@ using System.Text;
 using System.ComponentModel;
 using X86Codec;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Contains information about a fix-up to be applied to a given range of

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler
+namespace Disassembler2
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SegmentGroup : IAddressable
@@ -29,6 +29,11 @@ namespace Disassembler
         string IAddressable.Label
         {
             get { return Name; }
+        }
+
+        public ResolvedAddress Resolve()
+        {
+            throw new NotSupportedException();
         }
     }
 }

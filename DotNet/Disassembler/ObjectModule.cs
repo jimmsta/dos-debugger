@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Represents an object module, which contains the binary image as well

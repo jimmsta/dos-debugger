@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.ComponentModel;
 using System.IO;
 
-namespace Disassembler.Omf
+namespace Disassembler2.Omf
 {
     /// <summary>
     /// Contains information that allows the linker to resolve (fix up) and
@@ -13,22 +12,22 @@ namespace Disassembler.Omf
     /// address to which the fixup refers, and the FRAME relative to which the
     /// address computation is performed.
     /// </summary>
-    public class FixupRecord : Record
+    class FixupRecord : Record
     {
-        internal ThreadDefinition[] Threads { get; private set; }
+        internal FixupThreadDefinition[] Threads { get; private set; }
         internal FixupDefinition[] Fixups { get; private set; }
 
         internal FixupRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<ThreadDefinition> threads = new List<ThreadDefinition>();
+            List<FixupThreadDefinition> threads = new List<FixupThreadDefinition>();
             List<FixupDefinition> fixups = new List<FixupDefinition>();
             while (!reader.IsEOF)
             {
                 byte b = reader.PeekByte();
                 if ((b & 0x80) == 0)
                 {
-                    ThreadDefinition thread = ParseThreadSubrecord(reader);
+                    FixupThreadDefinition thread = ParseThreadSubrecord(reader);
                     threads.Add(thread);
                     if (thread.Kind == FixupThreadKind.Target)
                         context.TargetThreads[thread.ThreadNumber] = thread;
@@ -63,9 +62,9 @@ namespace Disassembler.Omf
             this.Fixups = fixups.ToArray();
         }
 
-        private ThreadDefinition ParseThreadSubrecord(RecordReader reader)
+        private FixupThreadDefinition ParseThreadSubrecord(RecordReader reader)
         {
-            ThreadDefinition thread = new ThreadDefinition();
+            FixupThreadDefinition thread = new FixupThreadDefinition();
 
             byte b = reader.ReadByte();
             thread.Kind = ((b & 0x40) == 0) ? FixupThreadKind.Target : FixupThreadKind.Frame;
@@ -96,7 +95,7 @@ namespace Disassembler.Omf
             if (useFrameThread)
             {
                 int frameNumber = (b >> 4) & 0x3;
-                ThreadDefinition thread = context.FrameThreads[frameNumber];
+                FixupThreadDefinition thread = context.FrameThreads[frameNumber];
                 if (!thread.IsDefined)
                     throw new InvalidDataException("Frame thread " + frameNumber + " is not defined.");
 
@@ -121,7 +120,7 @@ namespace Disassembler.Omf
             {
                 bool hasTargetDisplacement = (b & 0x04) != 0;
                 int targetNumber = b & 3;
-                ThreadDefinition thread = context.TargetThreads[targetNumber];
+                FixupThreadDefinition thread = context.TargetThreads[targetNumber];
                 if (!thread.IsDefined)
                     throw new InvalidDataException("Target thread " + targetNumber + " is not defined.");
 
@@ -173,9 +172,7 @@ namespace Disassembler.Omf
                 default:
                     throw new InvalidDataException("The fixup location is not supported.");
             }
-            f.Mode = (fixup.Mode == FixupMode.SelfRelative) ?
-                Disassembler.FixupMode.SelfRelative :
-                Disassembler.FixupMode.SegmentRelative;
+            f.Mode = fixup.Mode;
 
             IAddressable referent;
             switch (fixup.Target.Method)
@@ -220,7 +217,7 @@ namespace Disassembler.Omf
     /// previous definition.
     /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    internal struct ThreadDefinition
+    struct FixupThreadDefinition
     {
         public bool IsDefined { get; internal set; } // whether this entry is defined
         public byte ThreadNumber { get; internal set; } // 0 - 3
@@ -230,14 +227,14 @@ namespace Disassembler.Omf
         public UInt16 IndexOrFrame { get; internal set; }
     }
 
-    public enum FixupThreadKind : byte
+    enum FixupThreadKind : byte
     {
         Target = 0,
         Frame = 1
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    internal class FixupDefinition
+    class FixupDefinition
     {
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
         public FixupLocation Location { get; internal set; } // indicates what to fix up
@@ -278,16 +275,10 @@ namespace Disassembler.Omf
         }
     }
 
-    public enum FixupMode : byte
-    {
-        SelfRelative = 0,
-        SegmentRelative = 1
-    }
-
     /// <summary>
     /// Specifies the type of data to fix up in that location.
     /// </summary>
-    public enum FixupLocation : byte
+    enum FixupLocation : byte
     {
         /// <summary>
         /// 8-bit displacement or low byte of 16-bit offset.
@@ -325,7 +316,7 @@ namespace Disassembler.Omf
         LoaderResolvedOffset32 = 13,
     }
 
-    public struct FixupTarget
+    struct FixupTarget
     {
         public FixupTargetMethod Method { get; internal set; }
 
@@ -364,7 +355,7 @@ namespace Disassembler.Omf
     /// <summary>
     /// Specifies how to determine the TARGET of a fixup.
     /// </summary>
-    public enum FixupTargetMethod : byte
+    enum FixupTargetMethod : byte
     {
         /// <summary>
         /// T0: INDEX(SEGDEF),DISP -- The TARGET is the DISP'th byte in the

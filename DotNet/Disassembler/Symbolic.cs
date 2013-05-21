@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using X86Codec;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Represents a target (typically a jump target) that is a symbol that

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Disassembler.Omf
+namespace Disassembler2.Omf
 {
     /// <summary>
     /// Contains context information to assist reading and writing records.
@@ -12,10 +12,10 @@ namespace Disassembler.Omf
         public readonly List<string> Names = new List<string>();
 
         // FRAME threads.
-        public readonly ThreadDefinition[] FrameThreads = new ThreadDefinition[4];
+        public readonly FixupThreadDefinition[] FrameThreads = new FixupThreadDefinition[4];
 
         // TARGET threads.
-        public readonly ThreadDefinition[] TargetThreads = new ThreadDefinition[4];
+        public readonly FixupThreadDefinition[] TargetThreads = new FixupThreadDefinition[4];
 
         // Contains the last record.
         public Record LastRecord = null;

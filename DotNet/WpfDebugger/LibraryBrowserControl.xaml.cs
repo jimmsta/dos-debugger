@@ -16,7 +16,7 @@ using System.Windows.Shapes;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using Disassembler;
-using Disassembler.Omf;
+using Disassembler2.Omf;
 using Util.Windows.Controls;
 
 namespace WpfDebugger
@@ -65,8 +65,20 @@ namespace WpfDebugger
             }
             else if (sender is LibraryBrowserViewModel.SymbolItem)
             {
-                MessageBox.Show("Show info about " + sender.ToString());
+                //MessageBox.Show("Show info about " + sender.ToString());
+                var x = (LibraryBrowserViewModel.SymbolItem)sender;
+                if (x.Symbol.BaseSegment != null &&
+                    x.Symbol.BaseSegment.Class.EndsWith("CODE"))
+                {
+                    DisassembleSegment(x.Symbol.BaseSegment, (int)x.Symbol.Offset);
+                }
             }
+        }
+
+        private void DisassembleSegment(LogicalSegment segment, int entryIndex)
+        {
+            ImageChunk image = segment.Image;
+            Disassembler16.Disassemble(image);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using Disassembler.Omf;
-using X86Codec;
 using System.Collections.ObjectModel;
+using System.Text;
+using Util.Data;
+using X86Codec;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Contains information about a contiguous chunk of bytes in a binary
@@ -17,6 +17,8 @@ namespace Disassembler
         byte[] image;
         ByteAttribute[] attrs;
         FixupCollection fixups;
+        RangeDictionary<int, Procedure> procedures;
+        RangeDictionary<int, BasicBlock> basicBlocks;
 
         public ImageChunk(int length)
             : this(new byte[length])
@@ -35,6 +37,8 @@ namespace Disassembler
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
             this.fixups = new FixupCollection();
+            this.procedures = new RangeDictionary<int, Procedure>(0, image.Length);
+            this.basicBlocks = new RangeDictionary<int, BasicBlock>(0, image.Length);
         }
 
         /// <summary>
@@ -43,6 +47,16 @@ namespace Disassembler
         public byte[] Data
         {
             get { return image; }
+        }
+
+        public ByteAttribute[] Attributes
+        {
+            get { return attrs; }
+        }
+
+        public ImageByte this[int index]
+        {
+            get { return new ImageByte(this, index); }
         }
 
         public int Length
@@ -73,7 +87,9 @@ namespace Disassembler
             Instruction instruction = X86Codec.Decoder.Decode(
                 image, offset, CpuMode.RealAddressMode);
 
-            // Find the first fixup that covers the instruction.
+            // Find the first fixup that covers the instruction. If no
+            // fix-up covers the instruction, find the closest fix-up
+            // that comes after.
             int fixupIndex = fixups.BinaryLocate(offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
@@ -91,17 +107,16 @@ namespace Disassembler
                 if (operand is RelativeOperand)
                 {
                     RelativeOperand opr = (RelativeOperand)operand;
-                    int pos = offset + opr.Offset.Location.StartOffset;
-                    int pos2 = pos + opr.Offset.Location.Length;
+                    int start = offset + opr.Offset.Location.StartOffset;
+                    int end = start + opr.Offset.Location.Length;
 
-                    if (fixup.StartIndex >= pos2)
+                    if (fixup.StartIndex >= end)
                         continue;
 
-                    if (fixup.StartIndex != pos || fixup.EndIndex != pos2)
+                    if (fixup.StartIndex != start || fixup.EndIndex != end)
                         throw new BrokenFixupException(fixup);
 
-                    //var target = new SymbolicTarget(fixup, module);
-                    //instruction.Operands[i] = new SymbolicRelativeOperand(target);
+                    instruction.Operands[i] = new SymbolicRelativeOperand(fixup.Target);
                     ++fixupIndex;
 
                     //instruction.Operands[i] = new SourceAwareRelativeOperand(
@@ -116,6 +131,16 @@ namespace Disassembler
                 throw new BrokenFixupException(fixups[fixupIndex]);
             }
             return instruction;
+        }
+
+        public RangeDictionary<int, Procedure> Procedures
+        {
+            get { return this.procedures; }
+        }
+
+        public RangeDictionary<int, BasicBlock> BasicBlocks
+        {
+            get { return this.basicBlocks; }
         }
 
         /// <summary>
@@ -139,7 +164,7 @@ namespace Disassembler
         /// F (Fix-up):   0 = no fix-up info
         ///               1 = has fix-up info
         /// </remarks>
-        struct ByteAttribute
+        public struct ByteAttribute
         {
             byte attr;
 
@@ -305,6 +330,48 @@ namespace Disassembler
         }
     }
 
+    /// <summary>
+    /// Provides methods to retrieve the properties of a byte in an image.
+    /// This is a wrapper class that is generated on the fly.
+    /// </summary>
+    public class ImageByte
+    {
+        ImageChunk image;
+        int index;
+
+        public ImageByte(ImageChunk image, int index)
+        {
+            this.image = image;
+            this.index = index;
+        }
+
+        public byte Value
+        {
+            get { return image.Data[index]; }
+        }
+
+        public ByteType Type
+        {
+            get { return image.Attributes[index].Type; }
+        }
+
+        public bool IsLeadByte
+        {
+            get { return image.Attributes[index].IsLeadByte; }
+        }
+
+        public Procedure Procedure
+        {
+            get { return image.Procedures.GetValueOrDefault(index); }
+        }
+
+        public BasicBlock BasicBlock
+        {
+            get { return image.BasicBlocks.GetValueOrDefault(index); }
+        }
+    }
+
+
 #if false
     
             // Create a BinaryImage with the code.
@@ -376,4 +443,32 @@ namespace Disassembler
                 }
 #endif
 #endif
+
+
+    /// <summary>
+    /// Defines the type of a byte in an executable image.
+    /// </summary>
+    public enum ByteType
+    {
+        /// <summary>
+        /// The byte is not analyzed and its type is unknown.
+        /// </summary>
+        Unknown = 0,
+
+        /// <summary>
+        /// The byte is a padding byte (usually 0x90, NOP) used to align the
+        /// next instruction or data item on a word or dword boundary.
+        /// </summary>
+        Padding = 1,
+
+        /// <summary>
+        /// The byte is part of an instruction.
+        /// </summary>
+        Code = 2,
+
+        /// <summary>
+        /// The byte is part of a data item.
+        /// </summary>
+        Data = 3,
+    }
 }

@@ -71,7 +71,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Address.cs" />
+    <Compile Include="Assembly.cs" />
+    <Compile Include="BasicBlock.cs" />
     <Compile Include="ByteBlock.cs" />
+    <Compile Include="Disassembler2.cs" />
     <Compile Include="ExpandableCollectionConverter.cs" />
     <Compile Include="Fixup.cs" />
     <Compile Include="FunctionSignature.cs" />
@@ -79,6 +83,7 @@
     <Compile Include="BinaryImage.cs" />
     <Compile Include="IAddressable.cs" />
     <Compile Include="ImageChunk.cs" />
+    <Compile Include="LogicalAddress.cs" />
     <Compile Include="LogicalSegment.cs" />
     <Compile Include="MemoryModel.cs" />
     <Compile Include="MZLoader.cs" />
@@ -96,12 +101,12 @@
     <Compile Include="Pointer.cs" />
     <Compile Include="Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Range.cs" />
     <Compile Include="Segment.cs" />
     <Compile Include="SegmentGroup.cs" />
     <Compile Include="Symbol.cs" />
     <Compile Include="Symbolic.cs" />
     <Compile Include="XRef.cs" />
+    <Compile Include="LogicalXRef.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Util\Util-v2.0.csproj">

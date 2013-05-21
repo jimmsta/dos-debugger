@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Represents a symbol with name and optionally type information.
@@ -59,6 +59,11 @@ namespace Disassembler
         {
             get { throw new NotImplementedException(); }
         }
+
+        public ResolvedAddress Resolve()
+        {
+            throw new NotSupportedException();
+        }
     }
 
     public class CommunalNameDefinition : ExternalSymbol
@@ -103,8 +108,8 @@ namespace Disassembler
         public UInt16 BaseFrame { get; internal set; }
 
         /// <summary>
-        /// Gets the offset of the symbol relative to the start of the LSEG
-        /// (logical segment) in which it is defined.
+        /// Gets the offset of the symbol relative to the start of the logical
+        /// segment in which it is defined.
         /// </summary>
         [Browsable(true)]
         public UInt32 Offset { get; internal set; }

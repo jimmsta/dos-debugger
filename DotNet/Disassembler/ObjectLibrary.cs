@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler
+namespace Disassembler2
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ObjectLibrary

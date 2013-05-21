@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
-using Disassembler.Omf;
 
-namespace Disassembler
+namespace Disassembler2
 {
     /// <summary>
     /// Represents a logical segment of code or data, such as one defined in
@@ -56,12 +55,15 @@ namespace Disassembler
         [Browsable(true)]
         public SegmentCombination Combination { get; internal set; }
 
+#if false
         /// <summary>
         /// Gets the start address of an absolute segment. This value is only
         /// relevant if Alignment is Absolute.
         /// </summary>
         [Browsable(true)]
         public Pointer StartAddress { get; internal set; }
+#endif
+        public UInt16 AbsoluteFrame { get; internal set; }
 
         /// <summary>
         /// Gets the length (in bytes) of the logical segment. This length
@@ -112,6 +114,11 @@ namespace Disassembler
         string IAddressable.Label
         {
             get { throw new NotImplementedException(); }
+        }
+
+        public ResolvedAddress Resolve()
+        {
+            return new ResolvedAddress(Image, 0);
         }
     }
 
