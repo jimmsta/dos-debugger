@@ -62,9 +62,9 @@ namespace Disassembler
     public enum SymbolicTargetType
     {
         None,
-        ExternalName,
         Segment,
-        Group
+        Group,
+        ExternalName, // may rename to Symbol
     }
 
     /// <summary>

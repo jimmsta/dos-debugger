@@ -185,13 +185,16 @@ namespace Disassembler.Omf
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public struct FixupDefinition
+    public class FixupDefinition
     {
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
         public FixupLocation Location { get; internal set; } // indicates what to fix up
         public FixupMode Mode { get; internal set; }
         public FixupTarget Target { get; internal set; }
         public FixupFrame Frame { get; internal set; }
+
+        public int StartIndex { get { return DataOffset; } }
+        public int EndIndex { get { return StartIndex + Length; } }
 
         /// <summary>
         /// Gets the number of bytes to fix up. This is inferred from the

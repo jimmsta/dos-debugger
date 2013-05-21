@@ -528,23 +528,23 @@ namespace Disassembler
         /// <summary>
         /// The byte is not analyzed and its type is unknown.
         /// </summary>
-        Unknown,
+        Unknown = 0,
 
         /// <summary>
         /// The byte is a padding byte (usually 0x90, NOP) used to align the
         /// next instruction or data item on a word or dword boundary.
         /// </summary>
-        Padding,
+        Padding = 1,
 
         /// <summary>
         /// The byte is part of an instruction.
         /// </summary>
-        Code,
+        Code = 2,
 
         /// <summary>
         /// The byte is part of a data item.
         /// </summary>
-        Data,
+        Data = 3,
     }
 
     /// <summary>
