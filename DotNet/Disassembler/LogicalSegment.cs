@@ -69,11 +69,17 @@ namespace Disassembler
         /// their size should be added to this length.
         /// </summary>
         [Browsable(true)]
-        public long Length { get; internal set; }
+        public long Length
+        {
+            get { return Image.Length; }
+        }
 
+#if false
         [Browsable(false)]
         public bool IsUse32 { get; internal set; }
+#endif
 
+#if false
         /// <summary>
         /// Gets the bytes in this logical segment.
         /// </summary>
@@ -90,6 +96,9 @@ namespace Disassembler
         {
             get { return fixups.ToArray(); }
         }
+#endif
+
+        public ImageChunk Image { get; internal set; }
 
         public override string ToString()
         {

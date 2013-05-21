@@ -19,18 +19,25 @@ namespace Disassembler
         string Label { get; }
     }
 
-#if false
     public struct PhysicalAddress : IAddressable
     {
-        ushort Segment;
-        ushort Offset;
+        public UInt16 Frame { get; private set; }
+        public UInt16 Offset { get; private set; }
+
+        public PhysicalAddress(UInt16 frame, UInt16 offset)
+            : this()
+        {
+            this.Frame = frame;
+            this.Offset = offset;
+        }
 
         string IAddressable.Label
         {
-            get { return string.Format("X4:X4", Segment, Offset); }
+            get { return string.Format("X4:X4", Frame, Offset); }
         }
     }
 
+#if false
     public struct LogicalAddress : IAddressable
     {
         IAddressable Base;

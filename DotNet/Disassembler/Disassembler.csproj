@@ -82,12 +82,17 @@
     <Compile Include="LogicalSegment.cs" />
     <Compile Include="MemoryModel.cs" />
     <Compile Include="MZLoader.cs" />
+    <Compile Include="ObjectLibrary.cs" />
+    <Compile Include="ObjectModule.cs" />
     <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\FixupRecord.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Omf\Loader.cs" />
+    <Compile Include="Omf\RecordContext.cs" />
+    <Compile Include="Omf\RecordReader.cs" />
     <Compile Include="Omf\Records.cs" />
+    <Compile Include="Omf\SEGDEFRecord.cs" />
     <Compile Include="Pointer.cs" />
     <Compile Include="Procedure.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -113,7 +113,7 @@ namespace DosDebugger
                 return;
 
             // Create a BinaryImage with the code.
-            BinaryImage image = new BinaryImage(codeSegment.Data, new Pointer(0, 0));
+            BinaryImage image = new BinaryImage(codeSegment.Image.Data, new Pointer(0, 0));
 
             // Disassemble the instructions literally. Note that this should
             // be improved, but we don't do that yet.
@@ -124,6 +124,7 @@ namespace DosDebugger
 
                 // An operand may have zero or one component that may be
                 // fixed up. Check this.
+#if false
                 for (int k = 0; k < instruction.Operands.Length; k++)
                 {
                     var operand = instruction.Operands[k];
@@ -145,6 +146,7 @@ namespace DosDebugger
                         }
                     }
                 }
+#endif
 
                 image.CreatePiece(addr, addr + instruction.EncodedLength, ByteType.Code);
                 image[addr].Instruction = instruction;
@@ -194,6 +196,7 @@ namespace DosDebugger
             }
         }
 
+#if false
         private static string FormatSymbolicOperand(
             X86Codec.Instruction instruction,
             X86Codec.Operand operand,
@@ -215,5 +218,6 @@ namespace DosDebugger
             }
             return null;
         }
+#endif
     }
 }

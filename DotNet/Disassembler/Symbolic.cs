@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
-using Disassembler.Omf;
 
 namespace Disassembler
 {
@@ -24,47 +23,47 @@ namespace Disassembler
     /// </remarks>
     public class SymbolicTarget
     {
-        public SymbolicTargetType TargetType { get; set; }
-        public string TargetName { get; set; }
-        public UInt16 Displacement { get; set; }
+        /// <summary>
+        /// Gets or sets the referent of the target. The target is specified
+        /// by referent + displacement.
+        /// </summary>
+        public IAddressable Referent { get; set; }
 
-        public SymbolicTarget(FixupDefinition fixup, ObjectModule module)
-        {
-            if (module == null)
-                throw new ArgumentNullException("module");
-
-            switch (fixup.Target.Method)
-            {
-                case FixupTargetMethod.ExternalPlusDisplacement:
-                case FixupTargetMethod.ExternalWithoutDisplacement:
-                    CreateFromExternal(fixup, module);
-                    break;
-            }
-        }
-
-        private void CreateFromExternal(FixupDefinition fixup, ObjectModule module)
-        {
-            var extIndex = fixup.Target.IndexOrFrame;
-            var extName = module.ExternalNames[extIndex - 1];
-            var disp = fixup.Target.Displacement;
-
-            this.TargetType = SymbolicTargetType.ExternalName;
-            this.TargetName = extName.Name;
-            this.Displacement = (UInt16)disp;
-        }
+        /// <summary>
+        /// Gets or sets the displacement of the target relative to the
+        /// referent.
+        /// </summary>
+        public UInt32 Displacement { get; set; }
 
         public override string ToString()
         {
-            return TargetName;
+            return string.Format("{0}+{1}", Referent.Label, Displacement);
         }
-    }
 
-    public enum SymbolicTargetType
-    {
-        None,
-        Segment,
-        Group,
-        ExternalName, // may rename to Symbol
+#if false
+        public override string ToString()
+        {
+            switch (Method)
+            {
+                case FixupTargetMethod.Absolute:
+                    return string.Format("{0:X4}:{1:X4}", IndexOrFrame, Displacement);
+                case FixupTargetMethod.SegmentPlusDisplacement:
+                    return string.Format("SEG({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetMethod.GroupPlusDisplacement:
+                    return string.Format("GRP({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetMethod.ExternalPlusDisplacement:
+                    return string.Format("EXT({0})+{1:X}H", IndexOrFrame, Displacement);
+                case FixupTargetMethod.SegmentWithoutDisplacement:
+                    return string.Format("SEG({0})", IndexOrFrame);
+                case FixupTargetMethod.GroupWithoutDisplacement:
+                    return string.Format("GRP({0})", IndexOrFrame);
+                case FixupTargetMethod.ExternalWithoutDisplacement:
+                    return string.Format("EXT({0})", IndexOrFrame);
+                default:
+                    return "(invalid)";
+            }
+        }
+#endif
     }
 
     /// <summary>
@@ -86,7 +85,7 @@ namespace Disassembler
             // We should take an argument to specify whether to return
             // html.
 #if true
-            return string.Format("<a href=\"somewhere\">{0}</a>", Target.TargetName);
+            return string.Format("<a href=\"somewhere\">{0}</a>", Target.ToString());
 #else
             return Target.TargetName;
 #endif

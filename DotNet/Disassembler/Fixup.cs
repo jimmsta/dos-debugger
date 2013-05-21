@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
+using X86Codec;
 
 namespace Disassembler
 {
@@ -12,30 +13,39 @@ namespace Disassembler
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class Fixup
     {
-        private int startIndex;
+        /// <summary>
+        /// Gets or sets the start index to apply the fix-up, relative to the
+        /// beginning of an image.
+        /// </summary>
+        public int StartIndex { get; internal set; }
 
-        public Fixup(int startIndex)
+        public int EndIndex
         {
-            this.startIndex = startIndex;
+            get { return StartIndex + Length; }
         }
 
+#if false
         /// <summary>
-        /// Gets or sets the location to fix up.
+        /// Gets the location to fix up.
         /// </summary>
         public Range<int> Location
         {
-            get
-            {
-                return new Range<int>(
-                    startIndex, 
-                    startIndex + GetLengthFromLocationType(LocationType));
-            }
+            get { return location; }
         }
+#endif
 
         /// <summary>
         /// Gets or sets the type of data to fix in that location.
         /// </summary>
         public FixupLocationType LocationType { get; internal set; }
+
+        /// <summary>
+        /// Gets the number of bytes to fix.
+        /// </summary>
+        public int Length
+        {
+            get { return GetLengthFromLocationType(LocationType); }
+        }
 
         /// <summary>
         /// Gets or sets the fix-up mode.
@@ -45,7 +55,7 @@ namespace Disassembler
         /// <summary>
         /// Gets or sets the fix-up target.
         /// </summary>
-        public FixupTarget Target { get; internal set; }
+        public SymbolicTarget Target { get; internal set; }
 
         /// <summary>
         /// Gets or sets the target frame relative to which to apply the
@@ -101,46 +111,6 @@ namespace Disassembler
 
         /// <summary>32-bit pointer (16-bit base:16-bit offset).</summary>
         Pointer,
-    }
-
-    public struct FixupTarget
-    {
-        /// <summary>
-        /// Gets or sets the referent of the target. The target is specified
-        /// by referent + displacement.
-        /// </summary>
-        public IAddressable Referent { get; set; }
-
-        /// <summary>
-        /// Gets or sets the displacement of the target relative to the
-        /// referent.
-        /// </summary>
-        public UInt32 Displacement { get; internal set; }
-
-#if false
-        public override string ToString()
-        {
-            switch (Method)
-            {
-                case FixupTargetMethod.Absolute:
-                    return string.Format("{0:X4}:{1:X4}", IndexOrFrame, Displacement);
-                case FixupTargetMethod.SegmentPlusDisplacement:
-                    return string.Format("SEG({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetMethod.GroupPlusDisplacement:
-                    return string.Format("GRP({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetMethod.ExternalPlusDisplacement:
-                    return string.Format("EXT({0})+{1:X}H", IndexOrFrame, Displacement);
-                case FixupTargetMethod.SegmentWithoutDisplacement:
-                    return string.Format("SEG({0})", IndexOrFrame);
-                case FixupTargetMethod.GroupWithoutDisplacement:
-                    return string.Format("GRP({0})", IndexOrFrame);
-                case FixupTargetMethod.ExternalWithoutDisplacement:
-                    return string.Format("EXT({0})", IndexOrFrame);
-                default:
-                    return "(invalid)";
-            }
-        }
-#endif
     }
 
     public struct FixupFrame
@@ -220,5 +190,15 @@ namespace Disassembler
         /// external index.
         /// </summary>
         UseTarget = 5,
+    }
+
+    public class BrokenFixupException : InvalidInstructionException
+    {
+        public Fixup Fixup { get; private set; }
+
+        public BrokenFixupException(Fixup fixup)
+        {
+            this.Fixup = fixup;
+        }
     }
 }

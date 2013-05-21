@@ -134,179 +134,6 @@ namespace Disassembler.Omf
         LibraryEnd = 0xF1,
     }
 
-    /// <summary>
-    /// Provides methods to read the fields of an OMF record.
-    /// </summary>
-    internal class RecordReader
-    {
-        public RecordNumber RecordNumber { get; private set; }
-        public byte[] Data { get; private set; }
-        public byte Checksum { get; private set; }
-        public int Position { get; private set; }
-
-        private int index; // currentIndex
-
-        public RecordReader(BinaryReader reader)
-        {
-            this.Position = (int)reader.BaseStream.Position;
-            this.RecordNumber = (RecordNumber)reader.ReadByte();
-
-            int recordLength = reader.ReadUInt16();
-            if (recordLength == 0)
-                throw new InvalidDataException("RecordLength must be greater than zero.");
-
-            this.Data = reader.ReadBytes(recordLength - 1);
-            if (Data.Length != recordLength - 1)
-                throw new EndOfStreamException("Cannot read enough bytes.");
-
-            this.Checksum = reader.ReadByte();
-        }
-
-        public bool IsEOF
-        {
-            get { return index == Data.Length; }
-        }
-
-        public byte PeekByte()
-        {
-            if (index >= Data.Length)
-                throw new InvalidDataException();
-            return Data[index];
-        }
-
-        public byte ReadByte()
-        {
-            if (index >= Data.Length)
-                throw new InvalidDataException();
-            return Data[index++];
-        }
-
-        public byte[] ReadToEnd()
-        {
-            byte[] remaining = new byte[Data.Length - index];
-            Array.Copy(Data, index, remaining, 0, remaining.Length);
-            index = Data.Length;
-            return remaining;
-        }
-
-        public string ReadToEndAsString()
-        {
-            string s = Encoding.ASCII.GetString(Data, index, Data.Length - index);
-            index = Data.Length;
-            return s;
-        }
-
-        public UInt16 ReadUInt16()
-        {
-            if (index + 2 > Data.Length)
-                throw new InvalidDataException();
-            byte b1 = Data[index++];
-            byte b2 = Data[index++];
-            return (UInt16)(b1 | (b2 << 8));
-        }
-
-        public UInt16 ReadUInt24()
-        {
-            if (index + 3 > Data.Length)
-                throw new InvalidDataException();
-            byte b1 = Data[index++];
-            byte b2 = Data[index++];
-            byte b3 = Data[index++];
-            return (UInt16)(b1 | (b2 << 8) | (b3 << 16));
-        }
-
-        public UInt32 ReadUInt32()
-        {
-            if (index + 4 > Data.Length)
-                throw new InvalidDataException();
-            byte b1 = Data[index++];
-            byte b2 = Data[index++];
-            byte b3 = Data[index++];
-            byte b4 = Data[index++];
-            return (UInt32)(b1 | (b2 << 8) | (b3 << 16) | (b4 << 24));
-        }
-
-        /// <summary>
-        /// Reads UInt16 if the record number is even, or UInt32 if the
-        /// record number is odd.
-        /// </summary>
-        /// <returns></returns>
-        public UInt32 ReadUInt16Or32()
-        {
-            if (((int)RecordNumber & 1) == 0)
-                return ReadUInt16();
-            else
-                return ReadUInt32();
-        }
-
-        /// <summary>
-        /// Reads a string encoded as an 8-bit unsigned 'count' followed by
-        /// 'count' bytes of string data.
-        /// </summary>
-        public string ReadPrefixedString()
-        {
-            if (index >= Data.Length)
-                throw new InvalidDataException();
-
-            byte len = Data[index++];
-            if (len == 0)
-                return "";
-
-            if (index + len > Data.Length)
-                throw new InvalidDataException();
-
-            string s = Encoding.ASCII.GetString(Data, index, len);
-            index += len;
-            return s;
-        }
-
-        /// <summary>
-        /// Reads an index in the range [0, 0x7FFF], encoded by 1 or 2 bytes.
-        /// </summary>
-        public UInt16 ReadIndex()
-        {
-            if (index >= Data.Length)
-                throw new InvalidDataException();
-
-            byte b1 = Data[index++];
-            if ((b1 & 0x80) == 0)
-            {
-                return b1;
-            }
-            else
-            {
-                if (index >= Data.Length)
-                    throw new InvalidDataException();
-
-                byte b2 = Data[index++];
-                return (UInt16)(((b1 & 0x7F) << 8) | b2);
-            }
-        }
-    }
-
-    internal class RecordContext
-    {
-        public readonly List<string> Names = new List<string>();
-
-        // FRAME threads.
-        public readonly ThreadDefinition[] FrameThreads = new ThreadDefinition[4];
-
-        // TARGET threads.
-        public readonly ThreadDefinition[] TargetThreads = new ThreadDefinition[4];
-
-        // Contains the last record.
-        public Record LastRecord = null;
-
-        public ObjectModule Module { get; private set; }
-
-        internal RecordContext(ObjectModule module)
-        {
-            if (module == null)
-                throw new ArgumentNullException("module");
-            this.Module = module;
-        }
-    }
-
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public abstract class Record
     {
@@ -362,7 +189,7 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.COMDAT:
                 case RecordNumber.COMDAT32:
-                    r = new InitializedCommunalDataRecord(reader, context);
+                    r = new COMDATRecord(reader, context);
                     break;
                 case RecordNumber.COMDEF:
                     r = new CommunalNamesDefinitionRecord(reader, context);
@@ -382,7 +209,7 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.LEDATA:
                 case RecordNumber.LEDATA32:
-                    r = new LogicalEnumeratedDataRecord(reader, context);
+                    r = new LEDATARecord(reader, context);
                     break;
                 case RecordNumber.LEXTDEF:
                 case RecordNumber.LEXTDEF32:
@@ -411,7 +238,7 @@ namespace Disassembler.Omf
                     break;
                 case RecordNumber.SEGDEF:
                 case RecordNumber.SEGDEF32:
-                    r = new SegmentDefinitionRecord(reader, context);
+                    r = new SEGDEFRecord(reader, context);
                     break;
                 case RecordNumber.THEADR:
                     r = new TranslatorHeaderRecord(reader, context);
@@ -753,94 +580,6 @@ namespace Disassembler.Omf
         }
     }
 
-    public class SegmentDefinitionRecord : Record
-    {
-        public LogicalSegment Definition { get; private set; }
-
-        internal SegmentDefinitionRecord(RecordReader reader, RecordContext context)
-            : base(reader, context)
-        {
-            LogicalSegment def = new LogicalSegment();
-
-            byte acbp = reader.ReadByte();
-
-            int alignment = acbp >> 5;
-            switch (alignment)
-            {
-                case 0: def.Alignment = Alignment.None; break;
-                case 1: def.Alignment = Alignment.Byte; break;
-                case 2: def.Alignment = Alignment.Word; break;
-                case 3: def.Alignment = Alignment.Paragraph; break;
-                case 4: def.Alignment = Alignment.Page; break;
-                case 5: def.Alignment = Alignment.DWord; break;
-                case 6:
-                case 7:
-                    throw new InvalidDataException("Unsupported segment alignment: " + alignment);
-            }
-
-            int combination = (acbp >> 2) & 7;
-            switch (combination)
-            {
-                case 0: def.Combination = SegmentCombination.Private; break;
-                case 2:
-                case 4:
-                case 7: def.Combination = SegmentCombination.Public; break;
-                case 5: def.Combination = SegmentCombination.Stack; break;
-                case 6: def.Combination = SegmentCombination.Common; break;
-                case 1:
-                case 3:
-                    throw new InvalidDataException("Unsupported segment combination: " + combination);
-            }
-
-            bool isBig = (acbp & 0x02) != 0;
-            def.IsUse32 = (acbp & 0x01) != 0;
-
-            if (def.Alignment == Alignment.None) // absolute segment
-            {
-                UInt16 frame = reader.ReadUInt16();
-                reader.ReadByte(); // Offset is ignored by MS LINK
-                def.StartAddress = new Pointer(frame, 0);
-            }
-            else
-            {
-                def.StartAddress = Pointer.Invalid;
-            }
-
-            long length = reader.ReadUInt16Or32();
-            if (isBig)
-            {
-                if (reader.RecordNumber == Omf.RecordNumber.SEGDEF32)
-                    length = 0x100000000L;
-                else
-                    length = 0x10000;
-            }
-            def.Length = length;
-            def.Data = new byte[length];
-            def.DataFixups = new ushort[length];
-
-            int segmentNameIndex = reader.ReadIndex();
-            if (segmentNameIndex > context.Names.Count)
-                throw new InvalidDataException("SegmentNameIndex out of range.");
-            if (segmentNameIndex > 0)
-                def.Name = context.Names[segmentNameIndex - 1];
-
-            int classNameIndex = reader.ReadIndex();
-            if (classNameIndex > context.Names.Count)
-                throw new InvalidDataException("ClassNameIndex out of range.");
-            if (classNameIndex > 0)
-                def.Class = context.Names[classNameIndex - 1];
-
-            int overlayNameIndex = reader.ReadIndex();
-            if (overlayNameIndex > context.Names.Count)
-                throw new InvalidDataException("OverlayNameIndex is out of range.");
-            if (overlayNameIndex > 0)
-                def.OverlayName = context.Names[overlayNameIndex - 1];
-
-            this.Definition = def;
-            context.Module.Segments.Add(def);
-        }
-    }
-
     public class GroupDefinitionRecord : Record
     {
         public SegmentGroup Definition { get; private set; }
@@ -879,13 +618,13 @@ namespace Disassembler.Omf
     /// Contains contiguous binary data to be copied into the program's
     /// executable binary image.
     /// </summary>
-    public class LogicalEnumeratedDataRecord : Record
+    public class LEDATARecord : Record
     {
         public LogicalSegment Segment { get; private set; }
         public UInt32 DataOffset { get; private set; }
         public byte[] Data { get; private set; }
 
-        internal LogicalEnumeratedDataRecord(RecordReader reader, RecordContext context)
+        internal LEDATARecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             UInt16 segmentIndex = reader.ReadIndex();
@@ -903,7 +642,7 @@ namespace Disassembler.Omf
             if (Data.Length + DataOffset > Segment.Length)
                 throw new InvalidDataException("The LEDATA overflows the segment.");
 
-            Array.Copy(Data, 0, Segment.Data, DataOffset, Data.Length);
+            Array.Copy(Data, 0, Segment.Image.Data, DataOffset, Data.Length);
         }
     }
 
@@ -931,9 +670,9 @@ namespace Disassembler.Omf
         }
     }
 
-    public class InitializedCommunalDataRecord : Record
+    public class COMDATRecord : Record
     {
-        internal InitializedCommunalDataRecord(
+        internal COMDATRecord(
             RecordReader reader, RecordContext context)
             : base(reader, context)
         {

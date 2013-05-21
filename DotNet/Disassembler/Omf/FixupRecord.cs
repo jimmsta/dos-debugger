@@ -15,8 +15,8 @@ namespace Disassembler.Omf
     /// </summary>
     public class FixupRecord : Record
     {
-        public ThreadDefinition[] Threads { get; private set; }
-        public FixupDefinition[] Fixups { get; private set; }
+        internal ThreadDefinition[] Threads { get; private set; }
+        internal FixupDefinition[] Fixups { get; private set; }
 
         internal FixupRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
@@ -38,28 +38,23 @@ namespace Disassembler.Omf
                 else
                 {
                     FixupDefinition fixup = ParseFixupSubrecord(reader, context);
-                    //if (fixup.Target.Method== FixupTargetSpecFormat.SegmentPlusDisplacement
                     fixups.Add(fixup);
 
-                    if (context.LastRecord is LogicalEnumeratedDataRecord)
+                    if (context.LastRecord is LEDATARecord)
                     {
-                        var r = (LogicalEnumeratedDataRecord)context.LastRecord;
-                        FixupDefinition f = fixup;
-                        f.DataOffset += (ushort)r.DataOffset;
-                        r.Segment.fixups.Add(f);
-                        UInt16 fixupIndex = (UInt16)r.Segment.fixups.Count;
-                        for (int i = 0; i < f.Length; i++)
-                            r.Segment.DataFixups[f.DataOffset + i] = fixupIndex;
+                        var r = (LEDATARecord)context.LastRecord;
+                        Fixup f = ConvertFixupDefinition(fixup, r, context);
+                        r.Segment.Image.Fixups.Add(f);
                     }
                     else if (context.LastRecord is LogicalIteratedDataRecord)
                     {
                     }
-                    else if (context.LastRecord is InitializedCommunalDataRecord)
+                    else if (context.LastRecord is COMDATRecord)
                     {
                     }
                     else
                     {
-                        throw new InvalidDataException("FIXUPP record must follow LEDATA or LIDATA record.");
+                        throw new InvalidDataException("FIXUPP record must follow LEDATA, LIDATA, or COMDAT record.");
                     }
                 }
             }
@@ -154,6 +149,63 @@ namespace Disassembler.Omf
             }
             return fixup;
         }
+
+        private Fixup ConvertFixupDefinition(
+            FixupDefinition fixup, LEDATARecord r, RecordContext context)
+        {
+            Fixup f = new Fixup();
+            f.StartIndex = fixup.DataOffset + (int)r.DataOffset;
+            switch (fixup.Location)
+            {
+                case FixupLocation.LowByte:
+                    f.LocationType = FixupLocationType.LowByte;
+                    break;
+                case FixupLocation.Offset:
+                case FixupLocation.LoaderResolvedOffset:
+                    f.LocationType = FixupLocationType.Offset;
+                    break;
+                case FixupLocation.Base:
+                    f.LocationType = FixupLocationType.Base;
+                    break;
+                case FixupLocation.Pointer:
+                    f.LocationType = FixupLocationType.Pointer;
+                    break;
+                default:
+                    throw new InvalidDataException("The fixup location is not supported.");
+            }
+            f.Mode = (fixup.Mode == FixupMode.SelfRelative) ?
+                Disassembler.FixupMode.SelfRelative :
+                Disassembler.FixupMode.SegmentRelative;
+
+            IAddressable referent;
+            switch (fixup.Target.Method)
+            {
+                case FixupTargetMethod.SegmentPlusDisplacement:
+                case FixupTargetMethod.SegmentWithoutDisplacement:
+                    referent = context.Module.Segments[fixup.Target.IndexOrFrame - 1];
+                    break;
+                case FixupTargetMethod.GroupPlusDisplacement:
+                case FixupTargetMethod.GroupWithoutDisplacement:
+                    referent = context.Module.Groups[fixup.Target.IndexOrFrame - 1];
+                    break;
+                case FixupTargetMethod.ExternalPlusDisplacement:
+                case FixupTargetMethod.ExternalWithoutDisplacement:
+                    referent = context.Module.ExternalNames[fixup.Target.IndexOrFrame - 1];
+                    break;
+                case FixupTargetMethod.Absolute:
+                    referent = new PhysicalAddress(fixup.Target.IndexOrFrame, 0);
+                    break;
+                default:
+                    throw new InvalidDataException("Unsupported fixup method.");
+            }
+            f.Target = new SymbolicTarget
+            {
+                Referent = referent,
+                Displacement = fixup.Target.Displacement
+            };
+            //f.Frame = null;
+            return f;
+        }
     }
 
     /// <summary>
@@ -168,7 +220,7 @@ namespace Disassembler.Omf
     /// previous definition.
     /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public struct ThreadDefinition
+    internal struct ThreadDefinition
     {
         public bool IsDefined { get; internal set; } // whether this entry is defined
         public byte ThreadNumber { get; internal set; } // 0 - 3
@@ -185,7 +237,7 @@ namespace Disassembler.Omf
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class FixupDefinition
+    internal class FixupDefinition
     {
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
         public FixupLocation Location { get; internal set; } // indicates what to fix up

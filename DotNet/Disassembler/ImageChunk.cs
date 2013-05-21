@@ -18,18 +18,31 @@ namespace Disassembler
         ByteAttribute[] attrs;
         FixupCollection fixups;
 
+        public ImageChunk(int length)
+            : this(new byte[length])
+        {
+        }
+
         /// <summary>
         /// Creates an image chunk with the supplied binary data.
         /// </summary>
         /// <param name="image"></param>
-        public ImageChunk(byte[] image, ICollection<FixupDefinition> fixups)
+        public ImageChunk(byte[] image)
         {
             if (image == null)
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException("image");
 
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
-            this.fixups = new FixupCollection(fixups);
+            this.fixups = new FixupCollection();
+        }
+
+        /// <summary>
+        /// Gets the binary image data.
+        /// </summary>
+        public byte[] Data
+        {
+            get { return image; }
         }
 
         public int Length
@@ -61,7 +74,7 @@ namespace Disassembler
                 image, offset, CpuMode.RealAddressMode);
 
             // Find the first fixup that covers the instruction.
-            int fixupIndex = fixups.BinarySearch(offset);
+            int fixupIndex = fixups.BinaryLocate(offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
 
@@ -70,7 +83,7 @@ namespace Disassembler
                 if (fixupIndex >= fixups.Count) // no more fixups
                     break;
 
-                FixupDefinition fixup = fixups[fixupIndex];
+                Fixup fixup = fixups[fixupIndex];
                 if (fixup.StartIndex >= offset + instruction.EncodedLength) // past end
                     break;
 
@@ -164,22 +177,28 @@ namespace Disassembler
         /// <summary>
         /// Provides methods to access the fixups defined on this image chunk.
         /// </summary>
-        public class FixupCollection : ReadOnlyCollection<FixupDefinition>
+        public class FixupCollection : IList<Fixup>
         {
-            List<FixupDefinition> items;
+            List<Fixup> fixups;
+            bool done;
 
-            public FixupCollection(ICollection<FixupDefinition> fixups)
-                :base(new List<FixupDefinition>(fixups.Count))
+            public FixupCollection()
             {
-                items = (List<FixupDefinition>)base.Items;
-                items.AddRange(fixups);
-                items.Sort((x, y) => x.DataOffset.CompareTo(y.DataOffset));
+                this.fixups = new List<Fixup>();
+                this.done = false;
+            }
 
-                for (int i = 1; i < items.Count; i++)
+            public void Seal()
+            {
+                if (!done)
                 {
-                    if (items[i - 1].DataOffset + items[i - 1].Length
-                        > items[i].DataOffset)
-                        throw new ArgumentException("Overlapping fixups detected.", "fixups");
+                    fixups.Sort((x, y) => x.StartIndex.CompareTo(y.StartIndex));
+                    for (int i = 1; i < fixups.Count; i++)
+                    {
+                        if (fixups[i - 1].EndIndex > fixups[i].StartIndex)
+                            throw new InvalidOperationException("Some fixups overlap.");
+                    }
+                    done = true;
                 }
             }
 
@@ -190,22 +209,99 @@ namespace Disassembler
             /// </summary>
             /// <param name="offset"></param>
             /// <returns></returns>
-            public int BinarySearch(int offset)
+            public int BinaryLocate(int offset)
             {
                 //fixups.BinarySearch(
                 //return fixups[offset];
                 throw new NotImplementedException();
             }
-        }
-    }
 
-    public class BrokenFixupException : InvalidInstructionException
-    {
-        public FixupDefinition Fixup { get; private set; }
+            public int IndexOf(Fixup item)
+            {
+                throw new NotSupportedException();
+            }
 
-        public BrokenFixupException(FixupDefinition fixup)
-        {
-            this.Fixup = fixup;
+            public void Insert(int index, Fixup item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotSupportedException();
+            }
+
+            public Fixup this[int index]
+            {
+                get
+                {
+                    if (!done)
+                        throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
+                    return fixups[index];
+                }
+                set { throw new NotSupportedException(); }
+            }
+
+            public void Add(Fixup item)
+            {
+                if (item == null)
+                    throw new ArgumentNullException("item");
+                fixups.Add(item);
+            }
+
+            public void Clear()
+            {
+                throw new NotSupportedException();
+            }
+
+            public bool Contains(Fixup item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public void CopyTo(Fixup[] array, int arrayIndex)
+            {
+                if (!done)
+                {
+                    throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
+                }
+                fixups.CopyTo(array, arrayIndex);
+            }
+
+            public int Count
+            {
+                get { return fixups.Count; }
+            }
+
+            public bool IsReadOnly
+            {
+                get
+                {
+                    if (done)
+                        return true;
+                    else
+                        return false;
+                }
+            }
+
+            public bool Remove(Fixup item)
+            {
+                throw new NotSupportedException();
+            }
+
+            public IEnumerator<Fixup> GetEnumerator()
+            {
+                if (!done)
+                {
+                    throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
+                }   
+                return fixups.GetEnumerator();
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
         }
     }
 
