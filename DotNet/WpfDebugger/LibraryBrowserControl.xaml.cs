@@ -137,7 +137,7 @@ namespace WpfDebugger
                 this.Library = library;
                 this.Modules = 
                     new ObservableCollection<ModuleItem>(
-                        from module in library.Modules
+                        from ObjectModule module in library.Modules
                         orderby module.ObjectName
                         select new ModuleItem(module));
             }

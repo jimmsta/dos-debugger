@@ -40,10 +40,10 @@ namespace Disassembler2.Omf
 
         public static ObjectLibrary LoadLibrary(BinaryReader reader)
         {
-            List<ObjectModule> modules = new List<ObjectModule>();
+            ObjectLibrary library = new ObjectLibrary();
 
-            Omf.LibraryHeaderRecord r = (Omf.LibraryHeaderRecord)
-                Omf.Record.ReadRecord(reader, null, Omf.RecordNumber.LibraryHeader);
+            LibraryHeaderRecord r = (LibraryHeaderRecord)
+                Record.ReadRecord(reader, null, RecordNumber.LibraryHeader);
             int pageSize = r.PageSize;
 
             while (true)
@@ -53,7 +53,7 @@ namespace Disassembler2.Omf
                 {
                     break;
                 }
-                modules.Add(module);
+                library.Modules.Add(module);
 
                 // Since a LIB file consists of multiple object modules
                 // aligned on page boundary, we need to consume the padding
@@ -66,7 +66,7 @@ namespace Disassembler2.Omf
             }
 
             // The dictionary follows, but we ignore it.
-            return new ObjectLibrary { Modules = modules.ToArray() };
+            return library;
         }
 
         public static ObjectLibrary LoadLibrary(string fileName)

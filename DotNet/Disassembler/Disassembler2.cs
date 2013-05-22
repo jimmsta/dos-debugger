@@ -455,7 +455,7 @@ namespace Disassembler2
             }
 
             // Create a basic block unless we failed on the first instruction.
-            if (pos.ReferentOffset > start.Target.ReferentOffset)
+            if (pos.Displacement > start.Target.Displacement)
             {
                 Range<int> blockLocation = new Range<int>(
                    start.Target.ImageOffset, pos.ImageOffset);

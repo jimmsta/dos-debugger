@@ -33,8 +33,44 @@ namespace Disassembler2
     /// </remarks>
     public class Assembly
     {
-        public ProcedureCollection Procedures;
-        public XRefCollection CrossReferences;
+        private readonly XRefCollection crossReferences;
+        private readonly ProcedureCollection procedures;
+        private readonly ModuleCollection modules;
+
+        public Assembly()
+        {
+            this.crossReferences = new XRefCollection();
+            this.procedures = new ProcedureCollection(this);
+            this.modules = new ModuleCollection();
+        }
+
+        public XRefCollection CrossReferences
+        {
+            get { return crossReferences; }
+        }
+
+        public ProcedureCollection Procedures
+        {
+            get { return procedures; }
+        }
+
+        public ModuleCollection Modules
+        {
+            get { return modules; }
+        }
+    }
+
+    /// <summary>
+    /// Represents a module in an assembly. For an executable, there is only
+    /// one module which is the LoadModule, so this is not very interesting;
+    /// for a library, it contains multiple ObjectModules.
+    /// </summary>
+    public abstract class Module
+    {
+    }
+
+    public class ModuleCollection : List<Module>
+    {
     }
 
     /// <summary>

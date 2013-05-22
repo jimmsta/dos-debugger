@@ -44,7 +44,7 @@ namespace DosDebugger
             tvLibrary.Nodes.Clear();
             TreeNode root = tvLibrary.Nodes.Add("Library");
             root.Tag = library;
-            foreach (var module in library.Modules)
+            foreach (ObjectModule module in library.Modules)
             {
                 TreeNode nodeModule = root.Nodes.Add(module.ObjectName);
                 nodeModule.Tag = module;

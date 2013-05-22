@@ -76,14 +76,13 @@
     <Compile Include="BasicBlock.cs" />
     <Compile Include="ByteBlock.cs" />
     <Compile Include="Disassembler2.cs" />
+    <Compile Include="Executable.cs" />
     <Compile Include="ExpandableCollectionConverter.cs" />
     <Compile Include="Fixup.cs" />
     <Compile Include="FunctionSignature.cs" />
     <Compile Include="Disassembler.cs" />
     <Compile Include="BinaryImage.cs" />
-    <Compile Include="IAddressable.cs" />
     <Compile Include="ImageChunk.cs" />
-    <Compile Include="LogicalAddress.cs" />
     <Compile Include="LogicalSegment.cs" />
     <Compile Include="MemoryModel.cs" />
     <Compile Include="MZLoader.cs" />

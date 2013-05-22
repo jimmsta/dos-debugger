@@ -53,7 +53,7 @@ namespace Disassembler2
     /// One of these records must be defined so that a FIXUPP record can
     /// refer to the symbol's address.
     /// </summary>
-    public class ExternalSymbol : Symbol, IAddressable
+    public class ExternalSymbol : Symbol, IAddressReferent
     {
         public string Label
         {

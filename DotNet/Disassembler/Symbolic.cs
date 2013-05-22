@@ -27,7 +27,7 @@ namespace Disassembler2
         /// Gets or sets the referent of the target. The target is specified
         /// by referent + displacement.
         /// </summary>
-        public IAddressable Referent { get; set; }
+        public IAddressReferent Referent { get; set; }
 
         /// <summary>
         /// Gets or sets the displacement of the target relative to the

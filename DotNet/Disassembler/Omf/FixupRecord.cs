@@ -174,7 +174,7 @@ namespace Disassembler2.Omf
             }
             f.Mode = fixup.Mode;
 
-            IAddressable referent;
+            IAddressReferent referent;
             switch (fixup.Target.Method)
             {
                 case FixupTargetMethod.SegmentPlusDisplacement:

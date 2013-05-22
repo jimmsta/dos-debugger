@@ -5,43 +5,165 @@ using System.Text;
 namespace Disassembler2
 {
     /// <summary>
-    /// Represents a logical object that can be used as an address reference.
-    /// The address does not have to be physical. For example, a logical
-    /// segment is addressible, but an immediate or EAX register is not.
+    /// Represents a logical object that can be used as an address referent
+    /// relative to which logical addresses can be defined.
     /// </summary>
-    public interface IAddressable // may rename to IAddressReferent
+    public interface IAddressReferent
     {
         /// <summary>
-        /// Gets a string representation of the object's address. This address
-        /// is not necessarily physical; for example, it can be something like
-        /// "fopen._TEXT" or "_strcpy".
+        /// Gets a string representation of the address referent. This label
+        /// is not necessarily physical or unique; for example, it could be
+        /// something like "fopen._TEXT" or "_strcpy".
         /// </summary>
         string Label { get; }
 
+        /// <summary>
+        /// Resolves the data address of the referent.
+        /// </summary>
+        /// <returns>
+        /// The resolved address of the referent, or ResolvedAddress.Invalid
+        /// if this referent cannot be resolved.
+        /// </returns>
         ResolvedAddress Resolve();
     }
 
-    public struct PhysicalAddress : IAddressable
+    /// <summary>
+    /// Represents a logical address in an assembly, expressed as an address
+    /// referent plus a 16-bit displacement. A logical address must be within
+    /// the same frame as the address referent.
+    /// </summary>
+    /// <remarks>
+    /// Multiple logical addresses may resolve to the same ResolvedAddress.
+    /// </remarks>
+    public struct LogicalAddress
     {
-        public UInt16 Frame { get; private set; }
-        public UInt16 Offset { get; private set; }
+        private readonly IAddressReferent referent;
+        private readonly UInt16 displacement;
 
-        public PhysicalAddress(UInt16 frame, UInt16 offset)
+        /// <summary>
+        /// Creates a logical address with the given address referent and
+        /// displacement.
+        /// </summary>
+        /// <param name="referent"></param>
+        /// <param name="offset"></param>
+        public LogicalAddress(IAddressReferent referent, UInt16 displacement)
             : this()
         {
-            this.Frame = frame;
-            this.Offset = offset;
+            if (referent == null)
+                throw new ArgumentNullException("referent");
+
+            this.referent = referent;
+            this.displacement = displacement;
         }
 
-        string IAddressable.Label
+        /// <summary>
+        /// Gets the referent of this logical address.
+        /// </summary>
+        public IAddressReferent Referent
         {
-            get { return string.Format("X4:X4", Frame, Offset); }
+            get { return referent; }
         }
 
-        public ResolvedAddress Resolve()
+        /// <summary>
+        /// Gets the displacement relative to the referent.
+        /// </summary>
+        public UInt16 Displacement
         {
-            throw new NotSupportedException();
+            get { return displacement; }
         }
+
+        public ResolvedAddress ResolvedAddress
+        {
+            get
+            {
+                ResolvedAddress address = Referent.Resolve();
+                return new ResolvedAddress(address.Image, address.Offset + this.Displacement);
+            }
+        }
+
+        /// <summary>
+        /// Increments the logical address by the given amount, or throws an
+        /// exception if address wrapping would occur.
+        /// </summary>
+        /// <param name="increment">The amount to increment.</param>
+        /// <returns>The incremented logical address.</returns>
+        /// <exception cref="AddressWrappedException">If adding the increment
+        /// would wrap the displacement around 0xFFFF or 0.</exception>
+        public LogicalAddress Increment(int increment)
+        {
+            if (increment > 0xFFFF - (int)displacement ||
+                increment < -(int)displacement)
+            {
+                throw new AddressWrappedException();
+            }
+            return this.IncrementWithWrapping(increment);
+        }
+
+        /// <summary>
+        /// Increments the logical address by the given amount, allowing
+        /// address wrapping to occur.
+        /// </summary>
+        /// <param name="increment">The amount to increment.</param>
+        /// <returns>
+        /// The incremented (and possibly wrapped) logical address.
+        /// </returns>
+        public LogicalAddress IncrementWithWrapping(int increment)
+        {
+            return new LogicalAddress(referent, (UInt16)(displacement + increment));
+        }
+
+        public ImageChunk Image
+        {
+            get { return ResolvedAddress.Image; }
+        }
+
+        public int ImageOffset
+        {
+            get { return ResolvedAddress.Offset; }
+        }
+
+        public ImageByte ImageByte
+        {
+            get { return this.Image[this.ImageOffset]; }
+        }
+
+        
+        public static bool operator ==(LogicalAddress a, LogicalAddress b)
+        {
+            return (a.Referent == b.Referent) && (a.Displacement == b.Displacement);
+        }
+
+        public static bool operator !=(LogicalAddress a, LogicalAddress b)
+        {
+            return (a.Referent != b.Referent) || (a.Displacement != b.Displacement);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is LogicalAddress) && (this == (LogicalAddress)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        /// <summary>
+        /// Represents an invalid (null) logical address.
+        /// </summary>
+        public static readonly LogicalAddress Invalid = new LogicalAddress();
+
+        public static int CompareByLexical(LogicalAddress a, LogicalAddress b)
+        {
+            int cmp = a.Referent.GetHashCode().CompareTo(b.Referent.GetHashCode());
+            if (cmp == 0)
+                cmp = a.Displacement.CompareTo(b.Displacement);
+            return cmp;
+        }
+    }
+
+    public class AddressWrappedException : Exception
+    {
     }
 
     /// <summary>
@@ -51,17 +173,32 @@ namespace Disassembler2
     /// </summary>
     public struct ResolvedAddress
     {
-        public ImageChunk Image { get; private set; }
-        public int Offset { get; private set; }
+        private readonly ImageChunk image;
+        private readonly int offset;
 
         public ResolvedAddress(ImageChunk image, int offset)
-            : this()
         {
             if (image == null)
                 throw new ArgumentNullException("image");
+            
+            this.image = image;
+            this.offset = offset;
+        }
 
-            this.Image = image;
-            this.Offset = offset;
+        /// <summary>
+        /// Gets the image that contains this resolved address.
+        /// </summary>
+        public ImageChunk Image
+        {
+            get { return image; }
+        }
+
+        /// <summary>
+        /// Gets the offset of this address within the image.
+        /// </summary>
+        public int Offset
+        {
+            get { return offset; }
         }
 
         public bool IsValid
@@ -93,93 +230,33 @@ namespace Disassembler2
         {
             return base.GetHashCode();
         }
+
+        /// <summary>
+        /// Represents an invalid (null) resolved address.
+        /// </summary>
+        public static readonly ResolvedAddress Invalid = new ResolvedAddress();
     }
 
-    /// <summary>
-    /// Represents a logical address in an assembly, expressed as referent +
-    /// displacement. The displacement may be positive, zero, or negative.
-    /// Multiple logical addresses may resolve to the same ResolvedAddress.
-    /// </summary>
-    public struct LogicalAddress
+    public struct PhysicalAddress : IAddressReferent
     {
-        public IAddressable Referent { get; private set; }
-        public int ReferentOffset { get; private set; }
+        public UInt16 Frame { get; private set; }
+        public UInt16 Offset { get; private set; }
 
-        public LogicalAddress(IAddressable referent, int offset)
+        public PhysicalAddress(UInt16 frame, UInt16 offset)
             : this()
         {
-            if (referent == null)
-                throw new ArgumentNullException("referent");
-
-            this.Referent = referent;
-            this.ReferentOffset = offset;
+            this.Frame = frame;
+            this.Offset = offset;
         }
 
-        public ResolvedAddress ResolvedAddress
+        string IAddressReferent.Label
         {
-            get
-            {
-                ResolvedAddress address = Referent.Resolve();
-                return new ResolvedAddress(address.Image, address.Offset + this.ReferentOffset);
-            }
+            get { return string.Format("X4:X4", Frame, Offset); }
         }
 
-        public LogicalAddress Increment(int increment)
+        public ResolvedAddress Resolve()
         {
-            return new LogicalAddress(this.Referent, this.ReferentOffset + increment);
-        }
-
-        // TBD: we need to fix this to take into account
-        // wrapping.
-        public LogicalAddress IncrementWithWrapping(int increment)
-        {
-            return new LogicalAddress(this.Referent, this.ReferentOffset + increment);
-        }
-
-        public ImageChunk Image
-        {
-            get { return ResolvedAddress.Image; }
-        }
-
-        public int ImageOffset
-        {
-            get { return ResolvedAddress.Offset; }
-        }
-
-        public ImageByte ImageByte
-        {
-            get { return this.Image[this.ImageOffset]; }
-        }
-
-        public static readonly LogicalAddress Invalid = new LogicalAddress();
-
-        public static bool operator ==(LogicalAddress a, LogicalAddress b)
-        {
-            return (a.Referent == b.Referent) && (a.ReferentOffset == b.ReferentOffset);
-        }
-
-        public static bool operator !=(LogicalAddress a, LogicalAddress b)
-        {
-            return (a.Referent != b.Referent) || (a.ReferentOffset != b.ReferentOffset);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return (obj is LogicalAddress) && (this == (LogicalAddress)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-
-        public static int CompareByLexical(LogicalAddress a, LogicalAddress b)
-        {
-            int cmp = a.Referent.GetHashCode().CompareTo(b.Referent.GetHashCode());
-            if (cmp == 0)
-                cmp = a.ReferentOffset.CompareTo(b.ReferentOffset);
-            return cmp;
+            throw new NotSupportedException();
         }
     }
-
 }

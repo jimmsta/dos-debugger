@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace Disassembler2
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class SegmentGroup : IAddressable
+    public class SegmentGroup : IAddressReferent
     {
         /// <summary>
         /// Gets the name of the group. Groups from different object modules
@@ -26,7 +26,7 @@ namespace Disassembler2
             return Name;
         }
 
-        string IAddressable.Label
+        string IAddressReferent.Label
         {
             get { return Name; }
         }

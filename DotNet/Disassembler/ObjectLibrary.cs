@@ -6,8 +6,20 @@ using System.ComponentModel;
 namespace Disassembler2
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class ObjectLibrary
+    public class ObjectLibrary : Assembly
     {
+#if false
+        public ObjectLibrary(IEnumerable<ObjectModule> modules)
+        {
+            if (modules == null)
+                throw new ArgumentNullException("modules");
+
+            foreach (ObjectModule module in modules)
+                base.Modules.Add(module);
+        }
+#endif
+
+#if false
         /// <summary>
         /// Gets a list of object modules in this library.
         /// </summary>
@@ -17,13 +29,6 @@ namespace Disassembler2
         //[TypeConverter(typeof(ExpandableCollectionConverter))]
         [Browsable(true)]
         public ObjectModule[] Modules { get; internal set; }
-
-#if false
-        [Browsable(true)]
-        public ListWrapper ModuleList
-        {
-            get { return new ListWrapper { Collection = Modules }; }
-        }
 #endif
 
         public Dictionary<string, List<ObjectModule>> DuplicateSymbols
@@ -36,7 +41,7 @@ namespace Disassembler2
         {
             // First, we need to build a map of each public name.
             var nameDefs = new Dictionary<string, ObjectModule>();
-            foreach (var module in Modules)
+            foreach (ObjectModule module in Modules)
             {
                 foreach (var name in module.DefinedNames)
                 {
@@ -52,7 +57,7 @@ namespace Disassembler2
             // ...
 
             // Next, we create an edge for each external symbol reference.
-            foreach (var module in Modules)
+            foreach (ObjectModule module in Modules)
             {
                 foreach (var name in module.ExternalNames)
                 {

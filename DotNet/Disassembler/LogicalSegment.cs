@@ -17,7 +17,7 @@ namespace Disassembler2
     /// Examples: fopen._TEXT, crt0._DATA, etc.
     /// </example>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class LogicalSegment : IAddressable
+    public class LogicalSegment : IAddressReferent
     {
         /// <summary>
         /// Gets the segment's name, such as "_TEXT". A segment's name
@@ -111,7 +111,7 @@ namespace Disassembler2
         /// Gets a label that identifies the logical segment, such as
         /// "fopen._TEXT" or "crt0._DATA".
         /// </summary>
-        string IAddressable.Label
+        string IAddressReferent.Label
         {
             get { throw new NotImplementedException(); }
         }

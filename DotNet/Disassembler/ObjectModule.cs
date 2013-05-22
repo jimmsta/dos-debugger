@@ -12,7 +12,7 @@ namespace Disassembler2
     /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Browsable(true)]
-    public class ObjectModule
+    public class ObjectModule : Module
     {
         readonly List<LogicalSegment> segments = new List<LogicalSegment>();
         readonly List<SegmentGroup> groups = new List<SegmentGroup>();
