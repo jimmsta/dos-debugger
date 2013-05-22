@@ -121,7 +121,7 @@ namespace WpfDebugger
                 symbol.BaseSegment, (UInt16)symbol.Offset);
 
             Disassembler16New dasm = new Disassembler16New(library);
-            dasm.Analyze(entryPoint, Disassembler2.XRefType.None);
+            dasm.Analyze(entryPoint);
 
             this.disassemblyList.SetView(symbol.BaseSegment);
 

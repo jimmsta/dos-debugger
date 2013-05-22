@@ -11,20 +11,7 @@ namespace Disassembler2
     /// </summary>
     public class Disassembler16New
     {
-        private Assembly program;
-
-#if false
-        /// <summary>
-        /// Maintains a queue of pending code entry points to analyze. At the
-        /// beginning, there is only one entry point, which is the program
-        /// entry point specified by the user. As we encounter branch 
-        /// instructions (JMP, CALL, or Jcc) on the way, we push the target 
-        /// addresses to the queue of entry points, so that they can be 
-        /// analyzed later.
-        /// </summary>
-        //private List<XRef> globalXRefs;
-        //private XRefCollection xrefCollection ;
-#endif
+        readonly Assembly program;
 
         public Disassembler16New(Assembly program)
         {
@@ -35,27 +22,6 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Gets the assembly being disassembled.
-        /// </summary>
-        public Assembly Assembly
-        {
-            get { return program; }
-        }
-
-#if false
-        /// <summary>
-        /// Converts a SEG:OFF pointer to its offset within the image. The
-        /// returned value may pass the end of the image.
-        /// </summary>
-        /// <param name="location">A pointer to convert.</param>
-        /// <returns>The offset within the image.</returns>
-        public static int PointerToOffset(Pointer location)
-        {
-            return location.Segment * 16 + location.Offset;
-        }
-#endif
-
-        /// <summary>
         /// Analyzes code starting from the given location. That location
         /// should be the entry point of a procedure, or otherwise the
         /// analysis may not work correctly.
@@ -64,7 +30,7 @@ namespace Disassembler2
         /// This location is relative to the beginning of the image.</param>
         /// <param name="entryType">Type of entry, should usually be JMP or
         /// CALL.</param>
-        public void Analyze(LogicalAddress entryPoint, XRefType entryType)
+        public void Analyze(LogicalAddress entryPoint)
         {
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
@@ -87,7 +53,12 @@ namespace Disassembler2
         public void GenerateBasicBlocks(LogicalAddress entryPoint)
         {
             ResolvedAddress address = entryPoint.ResolvedAddress;
-            
+
+            // Maintain a queue of basic block entry points to analyze. At
+            // the beginning, only the user-specified entry point is in the
+            // queue. As we encounter b/c/j instructions during the course
+            // of analysis, we push the target addresses to the queue of
+            // entry points to be analyzed later.
             PriorityQueue<XRef> xrefQueue =
                 new PriorityQueue<XRef>(XRef.CompareByPriority);
 
@@ -131,14 +102,6 @@ namespace Disassembler2
                     continue;
                 }
 
-                // Keep note of procedure calls, but postpone processing
-                // after we finish all the basic blocks.
-                //if (entry.Type == XRefType.NearCall ||
-                //    entry.Type == XRefType.FarCall)
-                //{
-                //    xrefCalls.Add(entry);
-                //}
-
                 // Process the basic block starting at the target address.
                 BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
                 if (block != null)
@@ -175,8 +138,8 @@ namespace Disassembler2
 
                 // Find the basic blocks that owns the source location
                 // and target location.
-                BasicBlock sourceBlock = xref.Source.ImageByte.BasicBlock;
-                BasicBlock targetBlock = xref.Target.ImageByte.BasicBlock;
+                BasicBlock sourceBlock = program.BasicBlocks.Find(xref.Source.ResolvedAddress);
+                BasicBlock targetBlock = program.BasicBlocks.Find(xref.Target.ResolvedAddress);
                 System.Diagnostics.Debug.Assert(sourceBlock != null);
                 System.Diagnostics.Debug.Assert(targetBlock != null);
 
@@ -420,16 +383,12 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Analyzes a continuous sequence of instructions that form a basic
+        /// Analyzes a contiguous sequence of instructions that form a basic
         /// block. The termination conditions include end-of-input, analyzed
         /// code/data, or any of the following instructions: RET, IRET, JMP,
         /// HLT.
         /// </summary>
         /// <param name="start">Address to begin analysis.</param>
-        /// <param name="jumps">Jump instructions are added to this list.</param>
-        /// <param name="calls">Call instructions are added to this list.</param>
-        /// <param name="dynamicJumps">Jump instructions with a dynamic target
-        /// are added to this list.</param>
         /// <returns>
         /// A new BasicBlock if one was created during the analysis.
         /// If analysis failed or an existing block was split into two,
@@ -440,32 +399,31 @@ namespace Disassembler2
         private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             LogicalAddress pos = start.Target;
+            ImageChunk image = pos.ResolvedAddress.Image;
             ImageByte b = pos.ImageByte;
 
-            // Check if we are running into the middle of code or data. This
-            // can only happen when we process the first instruction in the
-            // block.
-            if (b.Type != ByteType.Unknown && !b.IsLeadByte) // TODO: handle padding byte
+            // Check if the entry address is already analyzed.
+            if (b.Type != ByteType.Unknown)
             {
-                AddError(pos,
-                    "XRef target is in the middle of code/data (referred from {0})",
-                    start.Source);
-                return null;
-            }
-
-            // Check if this location is already analyzed as code.
-            if (b.Type == ByteType.Code)
-            {
-                // Now we are already covered by a basic block. If the
-                // basic block *starts* from this address, do nothing.
-                // Otherwise, split the basic block into two.
-                if (b.BasicBlock.Location.Offset == pos.ImageOffset)
+                // Fail if we ran into data or padding while expecting code.
+                if (b.Type != ByteType.Code)
                 {
+                    AddError(pos, ErrorCode.RanIntoData,
+                        "XRef target is in the middle of data (referred from {0})",
+                        start.Source);
                     return null;
                 }
-                else
-                {
-                    // TBD: recover the following in some way...
+
+                // Now the byte was previously analyzed as code. We must have
+                // already created a basic block.
+                BasicBlock block = program.BasicBlocks.Find(pos.ResolvedAddress);
+                System.Diagnostics.Debug.Assert(block != null);
+                
+                // If the block starts at this address, we're done.
+                if (block.Location == pos.ResolvedAddress)
+                    return null;
+
+                // TBD: recover the following in some way...
 #if false
                     if (image[b.BasicBlock.StartAddress].Address.Segment != pos.Segment)
                     {
@@ -477,9 +435,18 @@ namespace Disassembler2
                         return null;
                     }
 #endif
-                    //BasicBlock newBlock = b.BasicBlock.Split(pos.ImageOffset);
-                    return null; // newBlock;
+
+                // Now split the existing basic block into two. This requires
+                // that the cut-off point is instruction boundary.
+                if (!b.IsLeadByte)
+                {
+                    AddError(pos, ErrorCode.RanIntoCode,
+                        "XRef target is in the middle of an instruction (referred from {0})",
+                        start.Source);
+                    return null;
                 }
+                program.BasicBlocks.SplitBasicBlock(block, pos.ResolvedAddress);
+                return null;
             }
 
             // Analyze each instruction in sequence until we encounter
@@ -582,7 +549,7 @@ namespace Disassembler2
                 Range<int> blockLocation = new Range<int>(
                    start.Target.ImageOffset, pos.ImageOffset);
                 BasicBlock block = new BasicBlock(pos.Image, blockLocation);
-                pos.Image.BasicBlocks.Add(blockLocation, block);
+                program.BasicBlocks.Add(block);
             }
             return null;
         }
@@ -762,7 +729,7 @@ namespace Disassembler2
             LogicalAddress location, ErrorCategory category,
             string format, params object[] args)
         {
-            //image.Errors.Add(new Error(location, string.Format(format, args), category));
+            AddError(location, ErrorCode.GenericError, format, args);
         }
 
         private void AddError(LogicalAddress location, string format, params object[] args)
@@ -773,7 +740,7 @@ namespace Disassembler2
         public static void Disassemble(Assembly assembly, LogicalAddress entryPoint)
         {
             Disassembler16New dasm = new Disassembler16New(assembly);
-            dasm.Analyze(entryPoint, XRefType.None);
+            dasm.Analyze(entryPoint);
         }
     }
 }

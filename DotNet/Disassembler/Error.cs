@@ -63,6 +63,16 @@ namespace Disassembler2
         /// a potential problem with the analysis.
         /// </summary>
         InconsistentCall,
+
+        /// <summary>
+        /// Indicates that data was encountered when code was expected.
+        /// </summary>
+        RanIntoData,
+
+        /// <summary>
+        /// Indicates that we ran into the middle of an instruction.
+        /// </summary>
+        RanIntoCode,
     }
 
     public class ErrorCollection : List<Error>

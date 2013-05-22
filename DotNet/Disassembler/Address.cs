@@ -76,6 +76,9 @@ namespace Disassembler2
         {
             get
             {
+                if (this == Invalid)
+                    return ResolvedAddress.Invalid;
+
                 ResolvedAddress address = Referent.Resolve();
                 return new ResolvedAddress(address.Image, address.Offset + this.Displacement);
             }

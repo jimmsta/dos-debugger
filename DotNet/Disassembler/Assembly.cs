@@ -34,14 +34,15 @@ namespace Disassembler2
     public class Assembly
     {
         private readonly XRefCollection crossReferences;
+        private readonly BasicBlockCollection basicBlocks;
         private readonly ProcedureCollection procedures;
         private readonly ModuleCollection modules;
         private readonly ErrorCollection errors;
-        private readonly BasicBlockCollection basicBlocks;
 
         public Assembly()
         {
             this.crossReferences = new XRefCollection();
+            this.basicBlocks = new BasicBlockCollection();
             this.procedures = new ProcedureCollection();
             this.modules = new ModuleCollection();
             this.errors = new ErrorCollection();
@@ -50,6 +51,11 @@ namespace Disassembler2
         public XRefCollection CrossReferences
         {
             get { return crossReferences; }
+        }
+
+        public BasicBlockCollection BasicBlocks
+        {
+            get { return basicBlocks; }
         }
 
         public ProcedureCollection Procedures
@@ -65,11 +71,6 @@ namespace Disassembler2
         public ErrorCollection Errors
         {
             get { return errors; }
-        }
-
-        public BasicBlockCollection BasicBlocks
-        {
-            get { return basicBlocks; }
         }
     }
 

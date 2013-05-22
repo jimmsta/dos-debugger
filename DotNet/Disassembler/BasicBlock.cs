@@ -42,54 +42,157 @@ namespace Disassembler2
             this.length = range.End - range.Begin;
         }
 
-        //public ImageChunk Image { get { return image; } }
-
         public ResolvedAddress Location
         {
             get { return location; }
+        }
+
+        public Range<int> Bounds
+        {
+            get { return new Range<int>(location.Offset, location.Offset + length); }
         }
 
         public int Length
         {
             get { return length; }
         }
-
-#if false
-        /// <summary>
-        /// Splits the basic block into two at the given position.
-        /// </summary>
-        /// <param name="location"></param>
-        /// TODO: how does this sync with Procedure.BasicBlocks?
-        internal BasicBlock Split(int position)
-        {
-            if (position <= location.Begin || position >= location.End)
-                throw new ArgumentOutOfRangeException("position");
-            if (!image[position].IsLeadByte)
-                throw new ArgumentException("position must be a lead byte.");
-
-            // Create a new block that covers [location, end).
-            BasicBlock newBlock = new BasicBlock(
-                image, new Range<int>(position, location.End));
-
-#if false
-            // Update the BasicBlock property of bytes in the second block.
-            for (var i = location; i < EndAddress; i++)
-            {
-                image[i].BasicBlock = newBlock;
-            }
-#endif
-
-            // Update the end position of this block.
-            location = new Range<int>(location.Begin, position);
-
-            return newBlock;
-        }
-#endif
     }
 
-    public class BasicBlockCollection : List<BasicBlock>
+    public class BasicBlockCollection : ICollection<BasicBlock>
     {
+        readonly List<BasicBlock> blocks = new List<BasicBlock>();
+        readonly Dictionary<ImageChunk, RangeDictionary<int, BasicBlock>> map =
+            new Dictionary<ImageChunk, RangeDictionary<int, BasicBlock>>();
         readonly XRefCollection controlFlowGraph = new XRefCollection();
+
+        public BasicBlockCollection()
+        {
+        }
+
+        private RangeDictionary<int, BasicBlock> GetSubMap(ImageChunk image, bool autoAdd)
+        {
+            RangeDictionary<int, BasicBlock> subMap;
+            if (!map.TryGetValue(image, out subMap) && autoAdd)
+            {
+                subMap = new RangeDictionary<int, BasicBlock>(0, image.Length);
+                map.Add(image, subMap);
+            }
+            return subMap;
+        }
+
+        private RangeDictionary<int, BasicBlock> GetSubMap(BasicBlock block)
+        {
+            return GetSubMap(block.Location.Image, true);
+        }
+
+        public void Add(BasicBlock block)
+        {
+            if (block == null)
+                throw new ArgumentNullException("block");
+            if (blocks.Contains(block))
+                throw new ArgumentException("Block already exists.");
+
+            this.blocks.Add(block);
+
+            GetSubMap(block).Add(block.Bounds, block);
+        }
+
+        public BasicBlock Find(ResolvedAddress address)
+        {
+            var subMap = GetSubMap(address.Image, false);
+            if (subMap != null)
+                return subMap.GetValueOrDefault(new Range<int>(address.Offset, address.Offset + 1));
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Splits an existing basic block into two. This basic block must
+        /// be in the collection.
+        /// </summary>
+        /// <param name="block"></param>
+        public void SplitBasicBlock(BasicBlock block, ResolvedAddress cutoff)
+        {
+            if (block == null)
+                throw new ArgumentNullException("block");
+            if (cutoff.Image != block.Location.Image)
+                throw new ArgumentException("Cutoff position must be within the block.");
+
+            Range<int> range = new Range<int>(
+                block.Location.Offset, block.Location.Offset + block.Length);
+            int pos = cutoff.Offset;
+            if (pos <= range.Begin || pos >= range.End)
+                throw new ArgumentOutOfRangeException("cutoff");
+            if (!cutoff.ImageByte.IsLeadByte)
+                throw new ArgumentException("cutoff must be a lead byte.");
+
+            int k = blocks.IndexOf(block);
+            if (k < 0)
+                throw new ArgumentException("Block must be within the collection.");
+
+            // Create two blocks.
+            Range<int> range1 = new Range<int>(range.Begin, pos);
+            Range<int> range2 = new Range<int>(pos, range.End);
+            BasicBlock block1 = new BasicBlock(block.Location.Image, range1);
+            BasicBlock block2 = new BasicBlock(block.Location.Image, range2);
+
+            // Remove the big block from this collection and add the newly
+            // created smaller blocks.
+            blocks[k] = block1;
+            blocks.Add(block2);
+
+            // Update lookup map.
+            var subMap = GetSubMap(block);
+            subMap.Remove(block.Bounds);
+            subMap.Add(block1.Bounds, block1);
+            subMap.Add(block2.Bounds, block2);
+        }
+
+        #region ICollection Interface Implementation
+
+        public void Clear()
+        {
+            blocks.Clear();
+            map.Clear();
+            controlFlowGraph.Clear();
+        }
+
+        public bool Contains(BasicBlock item)
+        {
+            return blocks.Contains(item);
+        }
+
+        public void CopyTo(BasicBlock[] array, int arrayIndex)
+        {
+            blocks.CopyTo(array, arrayIndex);
+        }
+
+        public int Count
+        {
+            get { return blocks.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        public bool Remove(BasicBlock item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<BasicBlock> GetEnumerator()
+        {
+            return blocks.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        #endregion
 
         public void AddControlFlowGraphEdge(
             BasicBlock source, BasicBlock target, XRef xref)

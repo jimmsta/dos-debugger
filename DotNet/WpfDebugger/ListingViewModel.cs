@@ -53,10 +53,12 @@ namespace WpfDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.Location.Offset == i)
+#if false
+                    if ( b.BasicBlock != null && b.BasicBlock.Location.Offset == i)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
+#endif
 
                     Instruction insn = b.Instruction;
                     System.Diagnostics.Debug.Assert(insn != null);

@@ -80,7 +80,7 @@ namespace WpfDebugger
             LogicalAddress entryPoint = new LogicalAddress(segment, (UInt16)offset);
 
             Disassembler16New dasm = new Disassembler16New(library);
-            dasm.Analyze(entryPoint, XRefType.None);
+            dasm.Analyze(entryPoint);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)

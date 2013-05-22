@@ -5,6 +5,10 @@ using System.Text;
 using Util.Data;
 using X86Codec;
 
+// Note: we might as well equate ImageChunk with Segment.
+// This will significantly reduce the complexity of our model.
+// For an executable, we just dynamically adjust the segment
+// boundaries.
 namespace Disassembler2
 {
     /// <summary>
@@ -17,9 +21,10 @@ namespace Disassembler2
         readonly byte[] image;
         readonly ByteAttribute[] attrs;
         readonly FixupCollection fixups;
-        readonly RangeDictionary<int, Procedure> procedures;
-        readonly RangeDictionary<int, BasicBlock> basicBlocks;
         readonly Dictionary<int, Instruction> instructions;
+
+        readonly RangeDictionary<int, Procedure> procedureMapping;
+        //readonly RangeDictionary<int, BasicBlock> basicBlockMapping;
 
         public ImageChunk(int length)
             : this(new byte[length])
@@ -38,8 +43,8 @@ namespace Disassembler2
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
             this.fixups = new FixupCollection();
-            this.procedures = new RangeDictionary<int, Procedure>(0, image.Length);
-            this.basicBlocks = new RangeDictionary<int, BasicBlock>(0, image.Length);
+            this.procedureMapping = new RangeDictionary<int, Procedure>(0, image.Length);
+            //this.basicBlockMapping = new RangeDictionary<int, BasicBlock>(0, image.Length);
             this.instructions = new Dictionary<int, Instruction>();
         }
 
@@ -209,15 +214,15 @@ namespace Disassembler2
 #endif
         }
 
-        public RangeDictionary<int, Procedure> Procedures
+        public RangeDictionary<int, Procedure> ProcedureMapping
         {
-            get { return this.procedures; }
+            get { return this.procedureMapping; }
         }
 
-        public RangeDictionary<int, BasicBlock> BasicBlocks
-        {
-            get { return this.basicBlocks; }
-        }
+        //public RangeDictionary<int, BasicBlock> BasicBlockMapping
+        //{
+        //    get { return this.basicBlockMapping; }
+        //}
 
         public Dictionary<int, Instruction> Instructions
         {
@@ -313,13 +318,17 @@ namespace Disassembler2
 
         public Procedure Procedure
         {
-            get { return image.Procedures.GetValueOrDefault(index); }
+            get
+            {
+                return image.ProcedureMapping.GetValueOrDefault(
+                    new Range<int>(index, index + 1));
+            }
         }
 
-        public BasicBlock BasicBlock
-        {
-            get { return image.BasicBlocks.GetValueOrDefault(index); }
-        }
+        //public BasicBlock BasicBlock
+        //{
+        //    get { return image.BasicBlockMapping.GetValueOrDefault(index); }
+        //}
 
         public Instruction Instruction
         {
