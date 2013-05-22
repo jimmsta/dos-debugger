@@ -53,7 +53,7 @@ namespace WpfDebugger
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.Location.Begin == i)
+                    if (b.BasicBlock != null && b.BasicBlock.Location.Offset == i)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
@@ -456,7 +456,7 @@ namespace WpfDebugger
 
         public override string Text
         {
-            get { return string.Format("loc_{0}", block.Location.Begin); }
+            get { return string.Format("loc_{0}", block.Location.Offset); }
         }
 
 #if false

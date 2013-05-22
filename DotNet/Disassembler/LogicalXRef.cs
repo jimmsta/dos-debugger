@@ -9,7 +9,7 @@ namespace Disassembler2
     /// A xref between code and code is analog to an edge in a Control Flow 
     /// Graph.
     /// </summary>
-    public class XRef : IGraphEdge<LogicalAddress>
+    public class XRef : IGraphEdge<ResolvedAddress>
     {
         /// <summary>
         /// Gets the target address being referenced. This may be set to
@@ -48,9 +48,6 @@ namespace Disassembler2
 
         public XRef()
         {
-            this.Source = LogicalAddress.Invalid;
-            this.Target = LogicalAddress.Invalid;
-            this.DataLocation = LogicalAddress.Invalid;
         }
 
         public XRef(XRefType type, LogicalAddress source, LogicalAddress target, LogicalAddress dataLocation)
@@ -96,6 +93,16 @@ namespace Disassembler2
         {
             return (int)x.Type - (int)y.Type;
         }
+
+        ResolvedAddress IGraphEdge<ResolvedAddress>.Source
+        {
+            get { return this.Source.ResolvedAddress; }
+        }
+
+        ResolvedAddress IGraphEdge<ResolvedAddress>.Target
+        {
+            get { return this.Target.ResolvedAddress; }
+        }
     }
 
     /// <summary>
@@ -104,18 +111,18 @@ namespace Disassembler2
     /// </summary>
     public enum XRefType
     {
+        /// <summary>
+        /// Indicates that the XRef object is invalid.
+        /// </summary>
+        None = 0,
+
 #if false
         /// <summary>
         /// User specified entry point (such as program start).
         /// </summary>
         UserSpecified,
 #endif
-
-        /// <summary>
-        /// Indicates that the XRef object is invalid.
-        /// </summary>
-        None = 0,
-
+        
         /// <summary>
         /// A JMPN instruction refers to this location.
         /// </summary>
@@ -175,17 +182,14 @@ namespace Disassembler2
     /// </summary>
     public class XRefCollection : ICollection<XRef>
     {
-        //private Range<LinearPointer> addressRange;
-        private Graph<LogicalAddress, XRef> graph;
+        readonly Graph<ResolvedAddress, XRef> graph;
 
         /// <summary>
         /// Creates a cross reference collection.
         /// </summary>
         public XRefCollection()
         {
-            //this.addressRange = addressRange;
-            //this.graph = new Graph<LinearPointer, XRef>(XRef.CompareByLocation);
-            this.graph = new Graph<LogicalAddress, XRef>();
+            this.graph = new Graph<ResolvedAddress, XRef>();
         }
 
         /// <summary>
@@ -213,17 +217,17 @@ namespace Disassembler2
             if (xref.Source == LogicalAddress.Invalid &&
                 xref.Target == LogicalAddress.Invalid)
             {
-                throw new ArgumentException("can't have both source and target invalid");
+                throw new ArgumentException("Source and Target cannot be both Invalid.");
             }
 
             graph.AddEdge(xref);
 
             // Raise the XRefAdded event.
-            if (XRefAdded != null)
-            {
-                LogicalXRefAddedEventArgs e = new LogicalXRefAddedEventArgs(xref);
-                XRefAdded(this, e);
-            }
+            //if (XRefAdded != null)
+            //{
+            //    LogicalXRefAddedEventArgs e = new LogicalXRefAddedEventArgs(xref);
+            //    XRefAdded(this, e);
+            //}
         }
 
         /// <summary>
@@ -232,7 +236,7 @@ namespace Disassembler2
         /// <returns></returns>
         public IEnumerable<XRef> GetDynamicReferences()
         {
-            return graph.GetIncomingEdges(LogicalAddress.Invalid);
+            return graph.GetIncomingEdges(ResolvedAddress.Invalid);
         }
 
         /// <summary>
@@ -241,7 +245,7 @@ namespace Disassembler2
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesTo(LogicalAddress target)
+        public IEnumerable<XRef> GetReferencesTo(ResolvedAddress target)
         {
             return graph.GetIncomingEdges(target);
         }
@@ -251,18 +255,18 @@ namespace Disassembler2
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesFrom(LogicalAddress source)
+        public IEnumerable<XRef> GetReferencesFrom(ResolvedAddress source)
         {
             return graph.GetOutgoingEdges(source);
         }
 
-        public event EventHandler<LogicalXRefAddedEventArgs> XRefAdded;
+        //public event EventHandler<LogicalXRefAddedEventArgs> XRefAdded;
 
         #region ICollection Interface Implementation
 
         public bool Contains(XRef item)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void CopyTo(XRef[] array, int arrayIndex)
@@ -277,7 +281,7 @@ namespace Disassembler2
 
         public bool Remove(XRef item)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public IEnumerator<XRef> GetEnumerator()
@@ -293,6 +297,7 @@ namespace Disassembler2
         #endregion
     }
 
+#if false
     public class LogicalXRefAddedEventArgs : EventArgs
     {
         public XRef XRef { get; private set; }
@@ -302,6 +307,5 @@ namespace Disassembler2
             this.XRef = xref;
         }
     }
-
-
+#endif
 }

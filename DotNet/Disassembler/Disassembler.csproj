@@ -76,6 +76,7 @@
     <Compile Include="BasicBlock.cs" />
     <Compile Include="ByteBlock.cs" />
     <Compile Include="Disassembler2.cs" />
+    <Compile Include="Error.cs" />
     <Compile Include="Executable.cs" />
     <Compile Include="Fixup.cs" />
     <Compile Include="FunctionSignature.cs" />

@@ -15,8 +15,8 @@ namespace Disassembler2
     /// |-- Module1             LoadModule(1)           ObjectModule(*)
     /// |-- Module2
     ///     |-- Segment1        All segments share      Each segment has
-    ///     |-- Segmeng2        the same image          its own image
-    ///     |-- Segment3        buffer                  buffer
+    ///     |-- Segmeng2        the same image chunk    its own image chunk
+    ///     |-- Segment3
     ///     |-- ...
     /// |-- Module3
     /// |-- ...
@@ -36,12 +36,15 @@ namespace Disassembler2
         private readonly XRefCollection crossReferences;
         private readonly ProcedureCollection procedures;
         private readonly ModuleCollection modules;
+        private readonly ErrorCollection errors;
+        private readonly BasicBlockCollection basicBlocks;
 
         public Assembly()
         {
             this.crossReferences = new XRefCollection();
-            this.procedures = new ProcedureCollection(this);
+            this.procedures = new ProcedureCollection();
             this.modules = new ModuleCollection();
+            this.errors = new ErrorCollection();
         }
 
         public XRefCollection CrossReferences
@@ -57,6 +60,16 @@ namespace Disassembler2
         public ModuleCollection Modules
         {
             get { return modules; }
+        }
+
+        public ErrorCollection Errors
+        {
+            get { return errors; }
+        }
+
+        public BasicBlockCollection BasicBlocks
+        {
+            get { return basicBlocks; }
         }
     }
 
@@ -75,29 +88,22 @@ namespace Disassembler2
 
     /// <summary>
     /// Contains information about a procedure in an assembly (executable or
-    /// library).
+    /// library). The procedure is uniquely identified by its resolved entry
+    /// point address. If the same entry point is called with different
+    /// logical addresses, they are stored in Aliases.
     /// </summary>
-    // As this class interacts a lot with ProcedureCollection, it's easier
-    // to think of this class as a 'wrapper' around a procedure defined in
-    // ProcedureCollection/ProcedureMap.
     public class Procedure
     {
-        private LogicalAddress entryPoint;
-        private string name;
-
-        //private BinaryImage image;
-        //private ProcedureCollection procMap;
-        public CallType CallType { get; set; } // near or far
+        private ResolvedAddress entryPoint;
+        private string name; // TODO: add Names property to store aliases
 
         /// <summary>
         /// Creates a procedure with the given entry point.
         /// </summary>
         /// <param name="entryPoint">Entry point of the procedure.</param>
-        public Procedure(LogicalAddress entryPoint)
+        public Procedure(ResolvedAddress entryPoint)
         {
             this.entryPoint = entryPoint;
-            //this.image = image;
-            //this.procMap = procMap;
         }
 
         /// <summary>
@@ -111,10 +117,12 @@ namespace Disassembler2
             set { this.name = value; }
         }
 
+        public CallType CallType { get; set; } // near or far
+
         /// <summary>
-        /// Gets the (logical) entry point address of the procedure.
+        /// Gets the entry point address of the procedure.
         /// </summary>
-        public LogicalAddress EntryPoint
+        public ResolvedAddress EntryPoint
         {
             get { return this.entryPoint; }
         }
@@ -363,12 +371,13 @@ namespace Disassembler2
         /// </remarks>
         internal XRefCollection callGraph;
 
-        public ProcedureCollection(Assembly assembly)
+        public ProcedureCollection()
         {
             this.callGraph = new XRefCollection();
-            assembly.CrossReferences.XRefAdded += CrossReferences_XRefAdded;
+            //assembly.CrossReferences.XRefAdded += CrossReferences_XRefAdded;
         }
 
+#if false
         /// <summary>
         /// Raised after the disassembler adds a new xref to the assembly.
         /// We update our call graph in this handler.
@@ -399,6 +408,7 @@ namespace Disassembler2
                 callGraph.Add(xCall);
             }
         }
+#endif
 
         /// <summary>
         /// Finds a procedure at the given entry point.
@@ -406,15 +416,16 @@ namespace Disassembler2
         /// <param name="entryPoint"></param>
         /// <returns>A Procedure object with the given entry point if found,
         /// or null otherwise.</returns>
-        public Procedure Find(LogicalAddress entryPoint)
+        public Procedure Find(ResolvedAddress entryPoint)
         {
             Procedure proc;
-            if (procMap.TryGetValue(entryPoint.ResolvedAddress, out proc))
+            if (procMap.TryGetValue(entryPoint, out proc))
                 return proc;
             else
                 return null;
         }
 
+#if false
         /// <summary>
         /// Creates a procedure at the given entry point.
         /// </summary>
@@ -432,6 +443,29 @@ namespace Disassembler2
             Procedure proc = new Procedure(entryPoint);
             procMap.Add(address, proc);
             return proc;
+        }
+#endif
+
+        public void AddCallGraphEdge(Procedure caller, Procedure callee, XRef xref)
+        {
+            if (caller == null)
+                throw new ArgumentNullException("caller");
+            if (callee == null)
+                throw new ArgumentNullException("callee");
+            if (xref == null)
+                throw new ArgumentNullException("xref");
+
+            // TBD: check that the xref indeed refers to these two
+            // procedures.
+#if false
+            XRef xCall = new XRef(
+                type: xref.Type,
+                source: caller.EntryPoint,
+                target: callee.EntryPoint,
+                dataLocation: xref.Source
+            );
+            callGraph.Add(xCall);
+#endif
         }
 
         #region ICollection implementation

@@ -66,17 +66,40 @@ namespace Disassembler2
         /// CALL.</param>
         public void Analyze(LogicalAddress entryPoint, XRefType entryType)
         {
-            ResolvedAddress address = entryPoint.ResolvedAddress;
-            if (!address.IsValid)
-                throw new ArgumentOutOfRangeException("entryPoint");
+            GenerateBasicBlocks(entryPoint);
+            GenerateControlFlowGraph();
+            GenerateProcedures();
+            CheckSegmentOverlaps();
 
+#if false
+            /* Sort the XREFs built from the above analyses by target address. 
+             * After this is done, the client can easily list the disassembled
+             * instructions with xrefs sequentially in physical order.
+             */
+            VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
+#endif
+        }
+
+        /// <summary>
+        /// Analyzes code starting from the given location, and create basic
+        /// blocks iteratively.
+        /// </summary>
+        public void GenerateBasicBlocks(LogicalAddress entryPoint)
+        {
+            ResolvedAddress address = entryPoint.ResolvedAddress;
+            
             PriorityQueue<XRef> xrefQueue =
                 new PriorityQueue<XRef>(XRef.CompareByPriority);
+
+            // Maintain a list of all procedure calls (with known target)
+            // encountered during the analysis. After we finish analyzing
+            // all the basic blocks, we update the list of procedures.
+            // List<XRef> xrefCalls = new List<XRef>();
 
             // Create a a dummy xref entry using the user-supplied starting
             // address.
             xrefQueue.Enqueue(new XRef(
-                type: entryType,
+                type: XRefType.None,
                 source: LogicalAddress.Invalid,
                 target: entryPoint
             ));
@@ -90,7 +113,7 @@ namespace Disassembler2
             {
                 XRef entry = xrefQueue.Dequeue();
 
-                // Handle jump table entry (where Target == Invalid).
+                // Handle jump table entry, whose Target == Invalid.
                 if (entry.Type == XRefType.NearIndexedJump)
                 {
                     System.Diagnostics.Debug.Assert(entry.Target == LogicalAddress.Invalid);
@@ -108,48 +131,13 @@ namespace Disassembler2
                     continue;
                 }
 
-                // Note: we do not maintain procedure information for the
-                // moment.
-#if false
-                Procedure proc;
-
-                // Handle function call.
-                if (entry.Type == XRefType.NearCall ||
-                    entry.Type == XRefType.FarCall)
-                {
-                    CallType callType = (entry.Type == XRefType.NearCall) ?
-                        CallType.Near : CallType.Far;
-
-                    // If a procedure with that entry point has already been
-                    // defined, perform some sanity checks but no need to
-                    // analyze again.
-                    proc = program.Procedures.Find(entry.Target);
-                    if (proc != null)
-                    {
-                        if (proc.CallType != callType)
-                        {
-                            AddError(entry.Target, ErrorCategory.Error,
-                                "Procedure {0} has inconsistent call type.",
-                                proc.EntryPoint);
-                        }
-                        program.CrossReferences.Add(entry);
-                        continue;
-                    }
-
-                    // Create a new Procedure object with that entry point.
-                    // TODO: we may be calling into the middle of an already
-                    // defined procedure. This can happen if two procedures
-                    // share a chunk of code. We need to handle this later.
-                    proc = program.Procedures.Create(entry.Target);
-                    proc.CallType = (entry.Type == XRefType.NearCall) ?
-                        CallType.Near : CallType.Far;
-                }
-                else
-                {
-                    proc = address.ImageByte.Procedure;
-                    // TBD: how do we know this is not null?
-                }
-#endif
+                // Keep note of procedure calls, but postpone processing
+                // after we finish all the basic blocks.
+                //if (entry.Type == XRefType.NearCall ||
+                //    entry.Type == XRefType.FarCall)
+                //{
+                //    xrefCalls.Add(entry);
+                //}
 
                 // Process the basic block starting at the target address.
                 BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
@@ -170,16 +158,138 @@ namespace Disassembler2
 
                 program.CrossReferences.Add(entry);
             }
+        }
 
-            // Update the segment statistics.
-            CheckSegmentOverlaps();
+        /// <summary>
+        /// Generates control flow graph from existing xrefs.
+        /// </summary>
+        private void GenerateControlFlowGraph()
+        {
+            foreach (XRef xref in program.CrossReferences)
+            {
+                // Skip xrefs with unknown source (e.g. user-specified entry
+                // point) or target (e.g. dynamic call or jump).
+                if (xref.Source == LogicalAddress.Invalid ||
+                    xref.Target == LogicalAddress.Invalid)
+                    continue;
 
+                // Find the basic blocks that owns the source location
+                // and target location.
+                BasicBlock sourceBlock = xref.Source.ImageByte.BasicBlock;
+                BasicBlock targetBlock = xref.Target.ImageByte.BasicBlock;
+                System.Diagnostics.Debug.Assert(sourceBlock != null);
+                System.Diagnostics.Debug.Assert(targetBlock != null);
+
+                // Create a directed edge from the source basic block to
+                // the target basic block.
+                program.BasicBlocks.AddControlFlowGraphEdge(
+                    sourceBlock, targetBlock, xref);
+            }
+        }
+
+        private void GenerateProcedures()
+        {
+            foreach (XRef xref in program.CrossReferences)
+            {
+                LogicalAddress entryPoint = xref.Target;
+                CallType callType = 
+                    (xref.Type == XRefType.NearCall) ?
+                    CallType.Near : CallType.Far;
+
+                // If there is already a procedure defined at the given
+                // entry point, perform some sanity checks.
+                // TBD: should check and emit a message if two procedures
+                // are defined at the same ResolvedAddress but with different
+                // logical address.
+                Procedure proc = program.Procedures.Find(entryPoint.ResolvedAddress);
+                if (proc != null)
+                {
+                    if (proc.CallType != callType)
+                    {
+                        AddError(entryPoint, ErrorCode.InconsistentCall,
+                            "Procedure at entry point {0} has inconsistent call type.",
+                            entryPoint);
+                    }
+                    // add call graph
+                    continue;
+                }
+
+                // Create a procedure at the entry point. The entry point must
+                // be the first byte of a basic block, or otherwise some flow
+                // analysis error must have occurred. On the other hand, note
+                // that multiple procedures may share one or more basic blocks
+                // as part of their implementation.
+                proc = new Procedure(entryPoint.ResolvedAddress);
+                proc.Name = "TBD";
+                proc.CallType = callType;
+
+                program.Procedures.Add(proc);
+            }
+
+            // Second pass: update the call graph.
+
+        }
+
+        private void GenerateCallGraph()
+        {
 #if false
-            /* Sort the XREFs built from the above analyses by target address. 
-             * After this is done, the client can easily list the disassembled
-             * instructions with xrefs sequentially in physical order.
-             */
-            VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
+            foreach (XRef xref in program.CrossReferences)
+            {
+                LogicalAddress entryPoint = xref.Target;
+                CallType callType =
+                    (xref.Type == XRefType.NearCall) ?
+                    CallType.Near : CallType.Far;
+
+                // If there is already a procedure defined at that entry
+                // point, perform some sanity checks.
+                // TBD: should check and emit a message if two procedures
+                // are defined at the same ResolvedAddress but with different
+                // logical address.
+                Procedure proc = program.Procedures.Find(entryPoint);
+                if (proc != null)
+                {
+                    if (proc.CallType != callType)
+                    {
+                        AddError(entryPoint, ErrorCode.InconsistentCall,
+                            "Procedure at entry point {0} has inconsistent call type.",
+                            entryPoint);
+                    }
+                    // add call graph
+                    continue;
+                }
+
+                // Create a procedure at the entry point. The entry point must
+                // be the first byte of a basic block, or otherwise some flow
+                // analysis error must have occurred. On the other hand, note
+                // that multiple procedures may share one or more basic blocks
+                // as part of their implementation.
+                proc = new Procedure(entryPoint);
+                proc.Name = "TBD";
+                proc.CallType = callType;
+
+                program.Procedures.Add(proc);
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Adds all basic blocks, starting from the procedure's entry point,
+        /// to the procedure's owning blocks. Note that multiple procedures
+        /// may share one or more basic blocks.
+        /// </summary>
+        /// <param name="proc"></param>
+        /// <param name="xrefs"></param>
+        private void MapBasicBlocksToProcedures(Procedure proc, XRefCollection xrefs)
+        {
+#if false
+            // TODO: introduce ProcedureAlias, so that we don't need to
+            // analyze the same procedure twice.
+
+            LogicalAddress entryPoint = proc.EntryPoint;
+            ResolvedAddress address = entryPoint.ResolvedAddress;
+            // TODO: we need to make BasicBlock dependent on ResolvedAddress
+            BasicBlock block = address.Image.BasicBlocks.GetValueOrDefault(address.Offset);
+
 #endif
         }
 
@@ -349,7 +459,7 @@ namespace Disassembler2
                 // Now we are already covered by a basic block. If the
                 // basic block *starts* from this address, do nothing.
                 // Otherwise, split the basic block into two.
-                if (b.BasicBlock.Location.Begin == pos.ImageOffset)
+                if (b.BasicBlock.Location.Offset == pos.ImageOffset)
                 {
                     return null;
                 }
@@ -367,7 +477,7 @@ namespace Disassembler2
                         return null;
                     }
 #endif
-                    BasicBlock newBlock = b.BasicBlock.Split(pos.ImageOffset);
+                    //BasicBlock newBlock = b.BasicBlock.Split(pos.ImageOffset);
                     return null; // newBlock;
                 }
             }
@@ -642,6 +752,13 @@ namespace Disassembler2
 #endif
 
         private void AddError(
+            LogicalAddress location, ErrorCode errorCode,
+            string format, params object[] args)
+        {
+            program.Errors.Add(new Error(location, errorCode, string.Format(format, args)));
+        }
+
+        private void AddError(
             LogicalAddress location, ErrorCategory category,
             string format, params object[] args)
         {
@@ -652,38 +769,11 @@ namespace Disassembler2
         {
             AddError(location, ErrorCategory.Error, format, args);
         }
-    }
 
-    public class Error
-    {
-        public ErrorCategory Category { get; private set; }
-        public LogicalAddress Location { get; private set; }
-        public string Message { get; private set; }
-
-        public Error(LogicalAddress location, string message, ErrorCategory category)
+        public static void Disassemble(Assembly assembly, LogicalAddress entryPoint)
         {
-            this.Category = category;
-            this.Location = location;
-            this.Message = message;
+            Disassembler16New dasm = new Disassembler16New(assembly);
+            dasm.Analyze(entryPoint, XRefType.None);
         }
-
-        public Error(LogicalAddress location, string message)
-            : this(location, message, ErrorCategory.Error)
-        {
-        }
-
-        public static int CompareByLocation(Error x, Error y)
-        {
-            return LogicalAddress.CompareByLexical(x.Location, y.Location);
-        }
-    }
-
-    [Flags]
-    public enum ErrorCategory
-    {
-        None = 0,
-        Error = 1,
-        Warning = 2,
-        Message = 4,
     }
 }

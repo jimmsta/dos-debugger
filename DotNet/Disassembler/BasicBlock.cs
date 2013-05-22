@@ -28,27 +28,33 @@ namespace Disassembler2
     /// </remarks>
     public class BasicBlock
     {
-        private ImageChunk image;
-        private Range<int> location;
+        readonly ResolvedAddress location;
+        readonly int length;
 
-        public ImageChunk Image { get { return image; } }
-
-        internal BasicBlock(ImageChunk image, Range<int> location)
+        internal BasicBlock(ImageChunk image, Range<int> range)
         {
             if (image == null)
                 throw new ArgumentNullException("image");
-            if (!image.Bounds.IsSupersetOf(location))
+            if (!image.Bounds.IsSupersetOf(range))
                 throw new ArgumentOutOfRangeException("range");
 
-            this.image = image;
-            this.location = location;
+            this.location = new ResolvedAddress(image, range.Begin);
+            this.length = range.End - range.Begin;
         }
 
-        public Range<int> Location
+        //public ImageChunk Image { get { return image; } }
+
+        public ResolvedAddress Location
         {
             get { return location; }
         }
 
+        public int Length
+        {
+            get { return length; }
+        }
+
+#if false
         /// <summary>
         /// Splits the basic block into two at the given position.
         /// </summary>
@@ -77,6 +83,35 @@ namespace Disassembler2
             location = new Range<int>(location.Begin, position);
 
             return newBlock;
+        }
+#endif
+    }
+
+    public class BasicBlockCollection : List<BasicBlock>
+    {
+        readonly XRefCollection controlFlowGraph = new XRefCollection();
+
+        public void AddControlFlowGraphEdge(
+            BasicBlock source, BasicBlock target, XRef xref)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
+            if (target == null)
+                throw new ArgumentNullException("target");
+            if (xref == null)
+                throw new ArgumentNullException("xref");
+
+            throw new NotImplementedException();
+#if false
+            // TODO: verify that the basic blocks exist in this collection.
+            XRef xFlow = new XRef(
+                type: xref.Type,
+                source: source.Location,
+                target: target.Location,
+                dataLocation: xref.Source
+            );
+            controlFlowGraph.Add(xFlow);
+#endif
         }
     }
 }
