@@ -77,7 +77,6 @@
     <Compile Include="ByteBlock.cs" />
     <Compile Include="Disassembler2.cs" />
     <Compile Include="Executable.cs" />
-    <Compile Include="ExpandableCollectionConverter.cs" />
     <Compile Include="Fixup.cs" />
     <Compile Include="FunctionSignature.cs" />
     <Compile Include="Disassembler.cs" />

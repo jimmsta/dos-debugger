@@ -14,11 +14,12 @@ namespace Disassembler2
     /// </summary>
     public class ImageChunk
     {
-        byte[] image;
-        ByteAttribute[] attrs;
-        FixupCollection fixups;
-        RangeDictionary<int, Procedure> procedures;
-        RangeDictionary<int, BasicBlock> basicBlocks;
+        readonly byte[] image;
+        readonly ByteAttribute[] attrs;
+        readonly FixupCollection fixups;
+        readonly RangeDictionary<int, Procedure> procedures;
+        readonly RangeDictionary<int, BasicBlock> basicBlocks;
+        readonly Dictionary<int, Instruction> instructions;
 
         public ImageChunk(int length)
             : this(new byte[length])
@@ -39,6 +40,7 @@ namespace Disassembler2
             this.fixups = new FixupCollection();
             this.procedures = new RangeDictionary<int, Procedure>(0, image.Length);
             this.basicBlocks = new RangeDictionary<int, BasicBlock>(0, image.Length);
+            this.instructions = new Dictionary<int, Instruction>();
         }
 
         /// <summary>
@@ -95,7 +97,7 @@ namespace Disassembler2
             // Find the first fixup that covers the instruction. If no
             // fix-up covers the instruction, find the closest fix-up
             // that comes after.
-            int fixupIndex = fixups.BinaryLocate(offset);
+            int fixupIndex = fixups.BinarySearch(offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
 
@@ -217,6 +219,11 @@ namespace Disassembler2
             get { return this.basicBlocks; }
         }
 
+        public Dictionary<int, Instruction> Instructions
+        {
+            get { return instructions; }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -272,136 +279,6 @@ namespace Disassembler2
                 }
             }
         }
-
-        /// <summary>
-        /// Provides methods to access the fixups defined on this image chunk.
-        /// </summary>
-        public class FixupCollection : IList<Fixup>
-        {
-            List<Fixup> fixups;
-            bool done;
-
-            public FixupCollection()
-            {
-                this.fixups = new List<Fixup>();
-                this.done = false;
-            }
-
-            public void Seal()
-            {
-                if (!done)
-                {
-                    fixups.Sort((x, y) => x.StartIndex.CompareTo(y.StartIndex));
-                    for (int i = 1; i < fixups.Count; i++)
-                    {
-                        if (fixups[i - 1].EndIndex > fixups[i].StartIndex)
-                            throw new InvalidOperationException("Some fixups overlap.");
-                    }
-                    done = true;
-                }
-            }
-
-            /// <summary>
-            /// Finds the fixup associated with the given position. If no
-            /// fixup is found, find the first one that comes after that
-            /// position.
-            /// </summary>
-            /// <param name="offset"></param>
-            /// <returns></returns>
-            public int BinaryLocate(int offset)
-            {
-                //fixups.BinarySearch(
-                //return fixups[offset];
-                throw new NotImplementedException();
-            }
-
-            public int IndexOf(Fixup item)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void Insert(int index, Fixup item)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void RemoveAt(int index)
-            {
-                throw new NotSupportedException();
-            }
-
-            public Fixup this[int index]
-            {
-                get
-                {
-                    if (!done)
-                        throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
-                    return fixups[index];
-                }
-                set { throw new NotSupportedException(); }
-            }
-
-            public void Add(Fixup item)
-            {
-                if (item == null)
-                    throw new ArgumentNullException("item");
-                fixups.Add(item);
-            }
-
-            public void Clear()
-            {
-                throw new NotSupportedException();
-            }
-
-            public bool Contains(Fixup item)
-            {
-                throw new NotSupportedException();
-            }
-
-            public void CopyTo(Fixup[] array, int arrayIndex)
-            {
-                if (!done)
-                {
-                    throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
-                }
-                fixups.CopyTo(array, arrayIndex);
-            }
-
-            public int Count
-            {
-                get { return fixups.Count; }
-            }
-
-            public bool IsReadOnly
-            {
-                get
-                {
-                    if (done)
-                        return true;
-                    else
-                        return false;
-                }
-            }
-
-            public bool Remove(Fixup item)
-            {
-                throw new NotSupportedException();
-            }
-
-            public IEnumerator<Fixup> GetEnumerator()
-            {
-                if (!done)
-                {
-                    throw new InvalidOperationException("Cannot access the collection until Seal() is called.");
-                }   
-                return fixups.GetEnumerator();
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-        }
     }
 
     /// <summary>
@@ -442,6 +319,11 @@ namespace Disassembler2
         public BasicBlock BasicBlock
         {
             get { return image.BasicBlocks.GetValueOrDefault(index); }
+        }
+
+        public Instruction Instruction
+        {
+            get { return image.Instructions[index]; }
         }
     }
 

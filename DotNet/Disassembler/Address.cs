@@ -148,6 +148,11 @@ namespace Disassembler2
             return base.GetHashCode();
         }
 
+        public override string ToString()
+        {
+            return string.Format("{0}+{1:X4}", referent, displacement);
+        }
+
         /// <summary>
         /// Represents an invalid (null) logical address.
         /// </summary>

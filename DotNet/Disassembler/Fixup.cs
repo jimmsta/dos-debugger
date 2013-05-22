@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
+using Util.Data;
 using X86Codec;
 
 namespace Disassembler2
@@ -199,6 +200,126 @@ namespace Disassembler2
         public BrokenFixupException(Fixup fixup)
         {
             this.Fixup = fixup;
+        }
+    }
+
+    /// <summary>
+    /// Provides methods to access the fixups defined on this image chunk.
+    /// </summary>
+    public class FixupCollection : IList<Fixup>
+    {
+        readonly List<Fixup> fixups = new List<Fixup>();
+
+        public FixupCollection()
+        {
+        }
+
+        /// <summary>
+        /// Finds the fixup associated with the given position. If no
+        /// fixup is found, find the first one that comes after that
+        /// position.
+        /// </summary>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public int BinarySearch(int offset)
+        {
+            int k = fixups.BinarySearch(offset, CompareFixupWithOffset);
+            while (k > 0 && CompareFixupWithOffset(fixups[k - 1], offset) == 0)
+                k--;
+            return k;
+        }
+
+        private static int CompareFixupWithOffset(Fixup fixup, int offset)
+        {
+            if (fixup.StartIndex > offset)
+                return 1;
+            else if (fixup.EndIndex > offset)
+                return 0;
+            else
+                return -1;
+        }
+
+        public int IndexOf(Fixup item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Insert(int index, Fixup item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Fixup this[int index]
+        {
+            get { return fixups[index]; }
+            set { throw new NotSupportedException(); }
+        }
+
+        public void Add(Fixup fixup)
+        {
+            if (fixup == null)
+                throw new ArgumentNullException("fixup");
+
+            int k = BinarySearch(fixup.StartIndex);
+            if (k >= 0) // already exists
+            {
+                System.Diagnostics.Debug.WriteLine("FixupCollection: Overlaps with an existing fixup.");
+                return;
+            }
+
+            k = ~k;
+            if (k > 0 && fixups[k - 1].EndIndex > fixup.StartIndex ||
+                k < fixups.Count && fixup.EndIndex > fixups[k].StartIndex)
+            {
+                System.Diagnostics.Debug.WriteLine("FixupCollection: Overlaps with an existing fixup.");
+                return;
+            }
+            fixups.Insert(k, fixup);
+        }
+
+        public void Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool Contains(Fixup item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void CopyTo(Fixup[] array, int arrayIndex)
+        {
+            fixups.CopyTo(array, arrayIndex);
+        }
+
+        public int Count
+        {
+            get { return fixups.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        public bool Remove(Fixup item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IEnumerator<Fixup> GetEnumerator()
+        {
+            return fixups.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

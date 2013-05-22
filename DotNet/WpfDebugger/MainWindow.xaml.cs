@@ -102,7 +102,7 @@ namespace WpfDebugger
             dasm.Analyze(mzFile.EntryPoint);
 
             this.image = dasm.Image;
-            this.disassemblyList.Image = image;
+            //this.disassemblyList.Image = image;
             this.procedureList.Image = image;
             this.errorList.Image = image;
             this.segmentList.Image = image;
@@ -114,6 +114,16 @@ namespace WpfDebugger
             string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
             library.ResolveAllSymbols();
+
+            ObjectModule module = library.FindModule("_ctype");
+            DefinedSymbol symbol = module.DefinedNames.Find(x => x.Name == "_isupper");
+            LogicalAddress entryPoint = new LogicalAddress(
+                symbol.BaseSegment, (UInt16)symbol.Offset);
+
+            Disassembler16New dasm = new Disassembler16New(library);
+            dasm.Analyze(entryPoint, Disassembler2.XRefType.None);
+
+            this.disassemblyList.SetView(symbol.BaseSegment);
 
             this.libraryBrowser.Library = library;
         }
@@ -258,7 +268,7 @@ namespace WpfDebugger
             //MessageBox.Show(string.Format(
             //    "Navigating to {0} in {1}", e.Uri, e.Target));
             Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
-            disassemblyList.GoToAddress(address);
+            //disassemblyList.GoToAddress(address);
         }
 
         private void FileOpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)

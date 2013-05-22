@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using Disassembler;
+using Disassembler2;
 
 namespace WpfDebugger
 {
@@ -15,10 +15,11 @@ namespace WpfDebugger
             InitializeComponent();
         }
 
-        private BinaryImage image;
+        private ImageChunk image;
         private ListingViewModel viewModel;
 
-        public BinaryImage Image
+#if false
+        public ImageChunk Image
         {
             get { return image; }
             set
@@ -27,19 +28,19 @@ namespace WpfDebugger
                 UpdateUI();
             }
         }
+#endif
 
-        private void UpdateUI()
+        public void SetView(IAddressReferent viewObject)
         {
             this.DataContext = null;
-            if (image == null)
-                return;
 
-            this.viewModel = new ListingViewModel(image);
-            //gridListing.ItemsSource = viewModel.Rows;
+
+            this.viewModel = new ListingViewModel(viewObject);
             this.DataContext = viewModel;
         }
 
-        public void GoToAddress(Pointer address)
+#if false
+        public void GoToAddress(LogicalAddress address)
         {
             int index = viewModel.FindRowIndex(address.LinearAddress);
 
@@ -70,6 +71,7 @@ namespace WpfDebugger
                 item.Focus();
             }
         }
+#endif
 
         private void ChildHyperlink_Click(object sender, RoutedEventArgs e)
         {

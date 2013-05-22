@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-//using System.Drawing;
 using System.Text;
-using Disassembler;
+using Disassembler2;
+using Util.Data;
 using X86Codec;
 
 namespace WpfDebugger
@@ -12,11 +12,12 @@ namespace WpfDebugger
     /// </summary>
     class ListingViewModel
     {
-        private List<ListingRow> rows = new List<ListingRow>();
-        private List<ProcedureItem> procItems = new List<ProcedureItem>();
-        private List<SegmentItem> segmentItems = new List<SegmentItem>();
+        readonly List<ListingRow> rows = new List<ListingRow>();
+        readonly List<ProcedureItem> procItems = new List<ProcedureItem>();
+        //readonly List<SegmentItem> segmentItems = new List<SegmentItem>();
         //private Disassembler16 dasm;
-        private BinaryImage image;
+        //private BinaryImage image;
+        readonly ImageChunk image;
 
         /// <summary>
         /// Array of the address of each row. This array is used to speed up
@@ -27,12 +28,14 @@ namespace WpfDebugger
         /// 2, it saves extra memory indirections and is thus faster.
         /// The cost is of course a little extra memory footprint.
         /// </summary>
-        private LinearPointer[] rowAddresses;
+        private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(BinaryImage image)
+        public ListingViewModel(IAddressReferent segment)
         {
-            this.image = image;
+            ImageChunk image = segment.Resolve().Image;
 
+            this.image = image;
+#if false
             // Make a dictionary that maps a location to the error at that location.
             // TODO: there may be multiple errors at a single location.
             Dictionary<LinearPointer, Error> errorMap = new Dictionary<LinearPointer, Error>();
@@ -40,74 +43,74 @@ namespace WpfDebugger
             {
                 errorMap[error.Location.LinearAddress] = error;
             }
+#endif
 
             // Display analyzed code and data.
-            Pointer address = image.BaseAddress;
-            for (var i = image.StartAddress; i < image.EndAddress; )
+            LogicalAddress address = new LogicalAddress(segment, 0);
+            for (int i = 0; i < image.Length; )
             {
-                ByteProperties b = image[i];
+                ImageByte b = image[i];
 
                 if (IsLeadByteOfCode(b))
                 {
-                    if (b.BasicBlock != null && b.BasicBlock.StartAddress == i)
+                    if (b.BasicBlock != null && b.BasicBlock.Location.Begin == i)
                     {
                         rows.Add(new LabelListingRow(0, b.BasicBlock));
                     }
 
                     Instruction insn = b.Instruction;
-                    if (insn == null)
-                    {
-                        insn = image.DecodeInstruction(b.Address);
-                        //b.Instruction = insn;
-                    }
-                    rows.Add(new CodeListingRow(0, b.Address, insn, image.GetBytes(i, insn.EncodedLength)));
-                    address = b.Address + insn.EncodedLength;
+                    System.Diagnostics.Debug.Assert(insn != null);
+                    rows.Add(new CodeListingRow(0, address, insn, image.Data.Slice(i, insn.EncodedLength)));
+
+                    address.Increment(insn.EncodedLength);
                     i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
                 {
                     var j = i + 1;
-                    while (j < image.EndAddress &&
+                    while (j < image.Length &&
                            image[j].Type == ByteType.Data &&
                            !image[j].IsLeadByte)
                         j++;
 
-                    rows.Add(new DataListingRow(0, b.Address, image.GetBytes(i, j - i)));
-                    address = b.Address + (j - i);
+                    rows.Add(new DataListingRow(0, address, image.Data.Slice(i, j - i)));
+                    address.Increment(j - i);
                     i = j;
                 }
                 else
                 {
-                    if (errorMap.ContainsKey(i))
+                    //if (errorMap.ContainsKey(i))
                     {
                         //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
                     var j = i + 1;
-                    while (j < image.EndAddress &&
+                    while (j < image.Length &&
                            !IsLeadByteOfCode(image[j]) &&
                            !IsLeadByteOfData(image[j]))
                         j++;
 
-                    rows.Add(new BlankListingRow(0, address, image.GetBytes(i, j - i)));
+                    rows.Add(new BlankListingRow(0, address, image.Data.Slice(i, j - i)));
                     try
                     {
-                        address += (j - i);
+                        address.Increment(j - i);
                     }
                     catch (AddressWrappedException)
                     {
-                        address = Pointer.Invalid;
+                        address = LogicalAddress.Invalid;
                     }
                     i = j;
                 }
             }
 
+
             // Create a sorted array containing the address of each row.
-            rowAddresses = new LinearPointer[rows.Count];
+            rowAddresses = new int[rows.Count];
             for (int i = 0; i < rows.Count; i++)
             {
-                rowAddresses[i] = rows[i].Location.LinearAddress;
+                rowAddresses[i] = rows[i].Location.ResolvedAddress.Offset;
             }
 
+#if false
             // Create a ProcedureItem view object for each non-empty
             // procedure.
             // TODO: display an error for empty procedures.
@@ -131,19 +134,20 @@ namespace WpfDebugger
             {
                 segmentItems.Add(new SegmentItem(segment));
             }
+#endif
         }
 
-        private static bool IsLeadByteOfCode(ByteProperties b)
+        private static bool IsLeadByteOfCode(ImageByte b)
         {
             return (b.Type == ByteType.Code && b.IsLeadByte);
         }
 
-        private static bool IsLeadByteOfData(ByteProperties b)
+        private static bool IsLeadByteOfData(ImageByte b)
         {
             return (b.Type == ByteType.Data && b.IsLeadByte);
         }
 
-        public BinaryImage Image
+        public ImageChunk Image
         {
             get { return image; }
         }
@@ -153,6 +157,7 @@ namespace WpfDebugger
             get { return rows; }
         }
 
+#if false
         /// <summary>
         /// Finds the row that covers the given address. If no row occupies
         /// that address, finds the closest row.
@@ -163,6 +168,7 @@ namespace WpfDebugger
         {
             return FindRowIndex(address.LinearAddress);
         }
+#endif
 
         /// <summary>
         /// Finds the first row that covers the given address.
@@ -174,8 +180,9 @@ namespace WpfDebugger
         /// empty, or address is smaller than the address of the first row.
         /// </exception>
         /// TODO: maybe we should split this to FindRowLowerBound and FindRowUpperBound
-        public int FindRowIndex(LinearPointer address)
+        public int FindRowIndex(int offset)
         {
+#if false
             if (rowAddresses.Length == 0 ||
                 address < rowAddresses[0])
                 throw new ArgumentOutOfRangeException("address");
@@ -183,11 +190,12 @@ namespace WpfDebugger
                 throw new ArgumentOutOfRangeException("address");
             if (address == image.EndAddress)
                 return rowAddresses.Length;
+#endif
 
-            int k = Array.BinarySearch(rowAddresses, address);
+            int k = Array.BinarySearch(rowAddresses, offset);
             if (k >= 0) // found; find first one
             {
-                while (k > 0 && rowAddresses[k - 1] == address)
+                while (k > 0 && rowAddresses[k - 1] == offset)
                     k--;
                 return k;
             }
@@ -203,10 +211,10 @@ namespace WpfDebugger
             get { return procItems; }
         }
 
-        public List<SegmentItem> SegmentItems
-        {
-            get { return segmentItems; }
-        }
+        //public List<SegmentItem> SegmentItems
+        //{
+        //    get { return segmentItems; }
+        //}
     }
 
     /// <summary>
@@ -219,7 +227,7 @@ namespace WpfDebugger
         /// <summary>
         /// Gets the address of the listing row.
         /// </summary>
-        public abstract Pointer Location { get; }
+        public LogicalAddress Location { get; protected set; }
 
         /// <summary>
         /// Gets the opcode bytes of this listing row. Must not be null.
@@ -249,31 +257,13 @@ namespace WpfDebugger
             get { return Text; }
         }
 
-        protected ListingRow(int index)
+        protected ListingRow(int index, LogicalAddress location)
         {
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index");
             this.Index = index;
+            this.Location = location;
         }
-
-#if false
-        public virtual ListViewItem CreateViewItem()
-        {
-            ListViewItem item = new ListViewItem();
-            item.Text = this.Location.ToString();
-
-            byte[] data = this.Opcode;
-            if (data == null)
-                item.SubItems.Add("");
-            else if (data.Length > 6)
-                item.SubItems.Add(FormatBinary(data, 0, 6) + "...");
-            else
-                item.SubItems.Add(FormatBinary(data, 0, data.Length));
-
-            item.SubItems.Add(this.Text);
-            return item;
-        }
-#endif
 
         public static string FormatBinary(byte[] data, int startIndex, int count)
         {
@@ -303,19 +293,12 @@ namespace WpfDebugger
     /// </summary>
     class BlankListingRow : ListingRow
     {
-        private Pointer location;
         private byte[] data;
 
-        public BlankListingRow(int index, Pointer location, byte[] data)
-            : base(index)
+        public BlankListingRow(int index, LogicalAddress location, byte[] data)
+            : base(index, location)
         {
-            this.location = location;
             this.data = data;
-        }
-
-        public override Pointer Location
-        {
-            get { return location; }
         }
 
         public override byte[] Opcode
@@ -342,13 +325,11 @@ namespace WpfDebugger
     {
         private Instruction instruction;
         private byte[] code;
-        private Pointer location;
         private string strInstruction;
 
-        public CodeListingRow(int index, Pointer location, Instruction instruction, byte[] code)
-            : base(index)
+        public CodeListingRow(int index, LogicalAddress location, Instruction instruction, byte[] code)
+            : base(index, location)
         {
-            this.location = location;
             this.instruction = instruction;
             this.code = code;
             this.strInstruction = instruction.ToString();
@@ -357,11 +338,6 @@ namespace WpfDebugger
         public Instruction Instruction
         {
             get { return this.instruction; }
-        }
-
-        public override Pointer Location
-        {
-            get { return location; }
         }
 
         public override byte[] Opcode
@@ -401,19 +377,12 @@ namespace WpfDebugger
 
     class DataListingRow : ListingRow
     {
-        private Pointer location;
         private byte[] data;
 
-        public DataListingRow(int index, Pointer location, byte[] data)
-            : base(index)
+        public DataListingRow(int index, LogicalAddress location, byte[] data)
+            : base(index, location)
         {
-            this.location = location;
             this.data = data;
-        }
-
-        public override Pointer Location
-        {
-            get { return location; }
         }
 
         public override byte[] Opcode
@@ -445,14 +414,9 @@ namespace WpfDebugger
         private Error error;
 
         public ErrorListingRow(int index, Error error)
-            : base(index)
+            : base(index, error.Location)
         {
             this.error = error;
-        }
-
-        public override Pointer Location
-        {
-            get { return error.Location; }
         }
 
         public override byte[] Opcode
@@ -480,14 +444,9 @@ namespace WpfDebugger
         private BasicBlock block;
 
         public LabelListingRow(int index, BasicBlock block)
-            : base(index)
+            : base(index, LogicalAddress.Invalid)
         {
             this.block = block;
-        }
-
-        public override Pointer Location
-        {
-            get { return block.Image[block.StartAddress].Address; }
         }
 
         public override byte[] Opcode
@@ -497,7 +456,7 @@ namespace WpfDebugger
 
         public override string Text
         {
-            get { return string.Format("loc_{0}", block.StartAddress); }
+            get { return string.Format("loc_{0}", block.Location.Begin); }
         }
 
 #if false
@@ -539,9 +498,9 @@ namespace WpfDebugger
         }
     }
 
+#if false
     class SegmentItem
     {
-        
         public SegmentItem(Segment segment)
         {
             this.SegmentStart = segment.StartAddress.ToFarPointer(segment.SegmentAddress);
@@ -559,6 +518,7 @@ namespace WpfDebugger
             return SegmentStart.ToString();
         }
     }
+#endif
 
     enum ListingScope
     {

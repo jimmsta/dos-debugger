@@ -108,6 +108,9 @@ namespace Disassembler2
                     continue;
                 }
 
+                // Note: we do not maintain procedure information for the
+                // moment.
+#if false
                 Procedure proc;
 
                 // Handle function call.
@@ -146,6 +149,7 @@ namespace Disassembler2
                     proc = address.ImageByte.Procedure;
                     // TBD: how do we know this is not null?
                 }
+#endif
 
                 // Process the basic block starting at the target address.
                 BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
@@ -159,7 +163,9 @@ namespace Disassembler2
                     //{
                     //    image[baseOffset + j].Procedure = proc;
                     //}
+#if false
                     proc.AddBasicBlock(block);
+#endif
                 }
 
                 program.CrossReferences.Add(entry);
@@ -377,6 +383,11 @@ namespace Disassembler2
                 {
                     insn = pos.Image.DecodeInstruction(pos.ImageOffset);
                 }
+                catch (BrokenFixupException ex)
+                {
+                    AddError(pos, "Broken fix-up: {0}", ex.Message);
+                    break;
+                }
                 catch (Exception ex)
                 {
                     AddError(pos, "Bad instruction: {0}", ex.Message);
@@ -398,6 +409,7 @@ namespace Disassembler2
                 {
                     pos.Image.UpdateByteType(
                         pos.ImageOffset, insn.EncodedLength, ByteType.Code);
+                    pos.Image.Instructions.Add(pos.ImageOffset, insn);
                     pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
                 }
                 //catch (AddressWrappedException)

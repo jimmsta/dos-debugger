@@ -37,6 +37,19 @@ namespace Disassembler2
         public Dictionary<string, List<ObjectModule>> UnresolvedSymbols
             = new Dictionary<string, List<ObjectModule>>();
 
+        public ObjectModule FindModule(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException("name");
+
+            foreach (ObjectModule module in Modules)
+            {
+                if (module.ObjectName == name)
+                    return module;
+            }
+            return null;
+        }
+
         public void ResolveAllSymbols()
         {
             // First, we need to build a map of each public name.

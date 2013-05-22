@@ -75,11 +75,12 @@ namespace WpfDebugger
             }
         }
 
-        private void DisassembleSegment(LogicalSegment segment, int entryIndex)
+        private void DisassembleSegment(LogicalSegment segment, int offset)
         {
-            ImageChunk image = segment.Image;
-            //Disassembler16New dasm=new Disassembler16New(
-            //Disassembler16New .Disassemble(image);
+            LogicalAddress entryPoint = new LogicalAddress(segment, (UInt16)offset);
+
+            Disassembler16New dasm = new Disassembler16New(library);
+            dasm.Analyze(entryPoint, XRefType.None);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)
