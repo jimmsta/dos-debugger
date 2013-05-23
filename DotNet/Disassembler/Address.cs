@@ -72,6 +72,7 @@ namespace Disassembler2
             get { return displacement; }
         }
 
+        // TODO: we should eliminate this, and use IAddressReferent::Resolve() only.
         public ResolvedAddress ResolvedAddress
         {
             get
@@ -311,6 +312,11 @@ namespace Disassembler2
         public ResolvedAddress IncrementWithWrapping(int increment)
         {
             return new ResolvedAddress(image, (UInt16)(offset + increment));
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0:X4}", offset);
         }
     }
 

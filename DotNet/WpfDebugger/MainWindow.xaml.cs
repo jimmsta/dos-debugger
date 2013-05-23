@@ -117,8 +117,8 @@ namespace WpfDebugger
 
             ObjectModule module = library.FindModule("_ctype");
             DefinedSymbol symbol = module.DefinedNames.Find(x => x.Name == "_isupper");
-            LogicalAddress entryPoint = new LogicalAddress(
-                symbol.BaseSegment, (UInt16)symbol.Offset);
+            ResolvedAddress entryPoint = new ResolvedAddress(
+                symbol.BaseSegment.Image, (UInt16)symbol.Offset);
 
             Disassembler16New dasm = new Disassembler16New(library);
             dasm.Analyze(entryPoint);

@@ -98,6 +98,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AssemblyUri.cs" />
     <Compile Include="DebuggerCommands.cs" />
     <Compile Include="HtmlConverter.cs" />
     <Compile Include="LibraryBrowserControl.xaml.cs">

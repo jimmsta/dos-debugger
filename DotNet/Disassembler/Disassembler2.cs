@@ -30,7 +30,7 @@ namespace Disassembler2
         /// This location is relative to the beginning of the image.</param>
         /// <param name="entryType">Type of entry, should usually be JMP or
         /// CALL.</param>
-        public void Analyze(LogicalAddress entryPoint)
+        public void Analyze(ResolvedAddress entryPoint)
         {
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
@@ -50,9 +50,9 @@ namespace Disassembler2
         /// Analyzes code starting from the given location, and create basic
         /// blocks iteratively.
         /// </summary>
-        public void GenerateBasicBlocks(LogicalAddress entryPoint)
+        public void GenerateBasicBlocks(ResolvedAddress entryPoint)
         {
-            ResolvedAddress address = entryPoint.ResolvedAddress;
+            ResolvedAddress address = entryPoint;
 
             // Maintain a queue of basic block entry points to analyze. At
             // the beginning, only the user-specified entry point is in the
@@ -72,7 +72,7 @@ namespace Disassembler2
             xrefQueue.Enqueue(new XRef(
                 type: XRefType.None,
                 source: ResolvedAddress.Invalid,
-                target: entryPoint.ResolvedAddress
+                target: entryPoint
             ));
 
             // Analyze each cross reference in order of their priority.
@@ -740,7 +740,7 @@ namespace Disassembler2
         }
 #endif
 
-        public static void Disassemble(Assembly assembly, LogicalAddress entryPoint)
+        public static void Disassemble(Assembly assembly, ResolvedAddress entryPoint)
         {
             Disassembler16New dasm = new Disassembler16New(assembly);
             dasm.Analyze(entryPoint);

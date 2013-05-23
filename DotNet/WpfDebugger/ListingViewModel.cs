@@ -62,7 +62,7 @@ namespace WpfDebugger
                     System.Diagnostics.Debug.Assert(insn != null);
                     rows.Add(new CodeListingRow(0, address, insn, image.Data.Slice(i, insn.EncodedLength)));
 
-                    address.Increment(insn.EncodedLength);
+                    address = address.Increment(insn.EncodedLength);
                     i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
@@ -74,7 +74,7 @@ namespace WpfDebugger
                         j++;
 
                     rows.Add(new DataListingRow(0, address, image.Data.Slice(i, j - i)));
-                    address.Increment(j - i);
+                    address = address.Increment(j - i);
                     i = j;
                 }
                 else
@@ -92,7 +92,7 @@ namespace WpfDebugger
                     rows.Add(new BlankListingRow(0, address, image.Data.Slice(i, j - i)));
                     try
                     {
-                        address.Increment(j - i);
+                        address = address.Increment(j - i);
                     }
                     catch (AddressWrappedException)
                     {

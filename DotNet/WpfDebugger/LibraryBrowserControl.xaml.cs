@@ -62,6 +62,14 @@ namespace WpfDebugger
             }
             else if (sender is LibraryBrowserViewModel.ModuleItem)
             {
+                // Disassemble the first code segment.
+                var module = ((LibraryBrowserViewModel.ModuleItem)sender).Module;
+                LogicalSegment segment = module.Segments.FirstOrDefault(
+                    s => s.Class.EndsWith("CODE"));
+                if (segment != null)
+                {
+                    DisassembleSegment(segment, module);
+                }
             }
             else if (sender is LibraryBrowserViewModel.SymbolItem)
             {
@@ -75,12 +83,25 @@ namespace WpfDebugger
             }
         }
 
+        private void DisassembleSegment(LogicalSegment segment, Module module)
+        {
+            foreach (DefinedSymbol symbol in ((ObjectModule)module).DefinedNames)
+            {
+                if (symbol.BaseSegment == segment)
+                {
+                    Disassembler16New.Disassemble(library,
+                        new ResolvedAddress(segment.Image, (int)symbol.Offset));
+                }
+            }
+            // Raise request navigate event.
+        }
+
         private void DisassembleSegment(LogicalSegment segment, int offset)
         {
             LogicalAddress entryPoint = new LogicalAddress(segment, (UInt16)offset);
 
             Disassembler16New dasm = new Disassembler16New(library);
-            dasm.Analyze(entryPoint);
+            dasm.Analyze(entryPoint.ResolvedAddress);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)
@@ -99,6 +120,10 @@ namespace WpfDebugger
 
                 if (obj != null)
                     RequestProperty(this, new RequestPropertyEventArgs(obj));
+                if (obj is Module)
+                {
+                    TreeView_ItemActivate(sender, null);
+                }
             }
         }
 
