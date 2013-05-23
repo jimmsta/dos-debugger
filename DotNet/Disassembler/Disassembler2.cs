@@ -190,14 +190,29 @@ namespace Disassembler2
                 // that multiple procedures may share one or more basic blocks
                 // as part of their implementation.
                 proc = new Procedure(entryPoint);
-                proc.Name = "TBD";
+                //proc.Name = "TBD";
                 proc.CallType = callType;
 
                 program.Procedures.Add(proc);
             }
 
-            // Second pass: update the call graph.
+            // Enumerate the defined names, and assign names to the procedures.
+            foreach (ObjectModule module in program.Modules)
+            {
+                if (module == null)
+                    continue;
 
+                foreach (DefinedSymbol symbol in module.DefinedNames)
+                {
+                    if (symbol.BaseSegment != null)
+                    {
+                        Address address = new Address(symbol.BaseSegment.Id, (int)symbol.Offset);
+                        Procedure proc = program.Procedures.Find(address);
+                        if (proc != null)
+                            proc.Name = symbol.Name;
+                    }
+                }
+            }
         }
 
         private void GenerateCallGraph()

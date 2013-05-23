@@ -39,6 +39,7 @@ namespace WpfDebugger
         }
 
         BinaryImage image;
+        Assembly assembly;
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -113,6 +114,7 @@ namespace WpfDebugger
         {
             string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
+            this.assembly = library;
             library.ResolveAllSymbols();
 
             ObjectModule module = library.FindModule("_ctype");
@@ -123,7 +125,7 @@ namespace WpfDebugger
             Disassembler16New dasm = new Disassembler16New(library);
             dasm.Analyze(entryPoint);
 
-            this.disassemblyList.SetView(symbol.BaseSegment);
+            this.disassemblyList.SetView(library, symbol.BaseSegment);
 
             this.libraryBrowser.Library = library;
         }
@@ -309,7 +311,7 @@ namespace WpfDebugger
 
             if (uri.Referent is LogicalSegment)
             {
-                this.disassemblyList.SetView(uri.Referent as LogicalSegment);
+                this.disassemblyList.SetView(assembly, uri.Referent as LogicalSegment);
             }
             else
             {

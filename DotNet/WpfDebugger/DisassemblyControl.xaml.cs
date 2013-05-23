@@ -30,11 +30,11 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(LogicalSegment segment)
+        public void SetView(Assembly assembly, LogicalSegment segment)
         {
             this.DataContext = null;
 
-            this.viewModel = new ListingViewModel(segment);
+            this.viewModel = new ListingViewModel(assembly, segment);
             this.DataContext = viewModel;
         }
 

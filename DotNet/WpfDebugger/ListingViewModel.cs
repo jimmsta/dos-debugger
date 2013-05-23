@@ -30,7 +30,7 @@ namespace WpfDebugger
         /// </summary>
         private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(LogicalSegment segment)
+        public ListingViewModel(Assembly assembly, LogicalSegment segment)
         {
             ImageChunk image = segment.Image;
             this.image = image;
@@ -61,7 +61,7 @@ namespace WpfDebugger
 
                     Instruction insn = b.Instruction;
                     System.Diagnostics.Debug.Assert(insn != null);
-                    rows.Add(new CodeListingRow(0, address, insn, image.Data.Slice(i, insn.EncodedLength)));
+                    rows.Add(new CodeListingRow(assembly, address, insn, image.Data.Slice(i, insn.EncodedLength)));
 
                     address += insn.EncodedLength; // TODO: handle wrapping
                     i += insn.EncodedLength;
@@ -74,7 +74,7 @@ namespace WpfDebugger
                            !image[j].IsLeadByte)
                         j++;
 
-                    rows.Add(new DataListingRow(0, address, image.Data.Slice(i, j - i)));
+                    rows.Add(new DataListingRow(assembly, address, image.Data.Slice(i, j - i)));
                     address += (j - i); // TODO: handle wrapping
                     i = j;
                 }
@@ -90,7 +90,7 @@ namespace WpfDebugger
                            !IsLeadByteOfData(image[j]))
                         j++;
 
-                    rows.Add(new BlankListingRow(0, address, image.Data.Slice(i, j - i)));
+                    rows.Add(new BlankListingRow(assembly, address, image.Data.Slice(i, j - i)));
                     address += (j - i); // TODO: handle wrapping
 #if false
                     try
@@ -226,12 +226,27 @@ namespace WpfDebugger
     /// </summary>
     abstract class ListingRow
     {
-        public int Index { get; protected set; }
+        readonly Assembly assembly;
+        readonly Address location;
+        
+        protected ListingRow(Assembly assembly, Address location)
+        {
+            this.assembly = assembly;
+            this.location = location;
+        }
+
+        public Assembly Assembly
+        {
+            get { return assembly; }
+        }
 
         /// <summary>
         /// Gets the address of the listing row.
         /// </summary>
-        public Address Location { get; protected set; }
+        public Address Location
+        {
+            get { return location; }
+        }
 
         /// <summary>
         /// Gets the opcode bytes of this listing row. Must not be null.
@@ -252,6 +267,23 @@ namespace WpfDebugger
         }
 
         /// <summary>
+        /// Gets the label to display for this row, or null if there is no
+        /// label to display.
+        /// </summary>
+        public virtual string Label
+        {
+            get
+            {
+                // Check whether we have a procedure starting at this address.
+                Procedure proc = assembly.Procedures.Find(this.Location);
+                if (proc != null)
+                    return proc.Name;
+                else
+                    return null;
+            }
+        }
+
+        /// <summary>
         /// Gets the main text to display for this listing row.
         /// </summary>
         public abstract string Text { get; }
@@ -259,14 +291,6 @@ namespace WpfDebugger
         public virtual string RichText
         {
             get { return Text; }
-        }
-
-        protected ListingRow(int index, Address location)
-        {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
-            this.Index = index;
-            this.Location = location;
         }
 
         public static string FormatBinary(byte[] data, int startIndex, int count)
@@ -299,8 +323,8 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public BlankListingRow(int index, Address location, byte[] data)
-            : base(index, location)
+        public BlankListingRow(Assembly assembly, Address location, byte[] data)
+            : base(assembly, location)
         {
             this.data = data;
         }
@@ -331,8 +355,8 @@ namespace WpfDebugger
         private byte[] code;
         private string strInstruction;
 
-        public CodeListingRow(int index, Address location, Instruction instruction, byte[] code)
-            : base(index, location)
+        public CodeListingRow(Assembly assembly, Address location, Instruction instruction, byte[] code)
+            : base(assembly, location)
         {
             this.instruction = instruction;
             this.code = code;
@@ -383,8 +407,8 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public DataListingRow(int index, Address location, byte[] data)
-            : base(index, location)
+        public DataListingRow(Assembly assembly, Address location, byte[] data)
+            : base(assembly, location)
         {
             this.data = data;
         }
@@ -417,8 +441,8 @@ namespace WpfDebugger
     {
         private Error error;
 
-        public ErrorListingRow(int index, Error error)
-            : base(index, error.Location)
+        public ErrorListingRow(Assembly assembly, Error error)
+            : base(assembly, error.Location)
         {
             this.error = error;
         }
@@ -447,8 +471,8 @@ namespace WpfDebugger
     {
         private BasicBlock block;
 
-        public LabelListingRow(int index, BasicBlock block)
-            : base(index, Address.Invalid)
+        public LabelListingRow(Assembly assembly, BasicBlock block)
+            : base(assembly, Address.Invalid)
         {
             this.block = block;
         }

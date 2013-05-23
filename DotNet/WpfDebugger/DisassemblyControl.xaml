@@ -65,6 +65,15 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
 
+                    <GridViewColumn Header="Label" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock TextTrimming="CharacterEllipsis"
+                                           Text="{Binding Label,Mode=OneTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    
                     <GridViewColumn Header="Disassembly" Width="250">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
