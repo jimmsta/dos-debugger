@@ -637,10 +637,12 @@ namespace Disassembler2
             if (instruction.Operands[0] is RelativeOperand) // near jump/call to relative address
             {
                 RelativeOperand opr = (RelativeOperand)instruction.Operands[0];
+                Address target = start + instruction.EncodedLength + opr.Offset.Value;
+                Address wrappedTarget = new Address(target.Segment, (UInt16)target.Offset);
                 return new XRef(
                     type: bcjType,
                     source: start,
-                    target: start.IncrementWithWrapping(instruction.EncodedLength + opr.Offset.Value)
+                    target: wrappedTarget
                 );
             }
 

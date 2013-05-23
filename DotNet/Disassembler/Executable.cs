@@ -11,7 +11,7 @@ namespace Disassembler2
         /// <summary>
         /// Gets the entry point address of the executable.
         /// </summary>
-        LogicalAddress EntryPoint
+        public Address EntryPoint
         {
             get
             {

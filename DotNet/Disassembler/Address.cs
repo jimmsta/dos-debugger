@@ -8,7 +8,8 @@ namespace Disassembler2
     /// Represents a logical object that can be used as an address referent
     /// relative to which logical addresses can be defined.
     /// </summary>
-    public interface IAddressReferent
+    public interface IAddressReferent   // may rename to ISymbolicReferent
+                                        // or IAddressResolvable
     {
         /// <summary>
         /// Gets a string representation of the address referent. This label
@@ -27,6 +28,7 @@ namespace Disassembler2
         Address Resolve();
     }
 
+#if false
     /// <summary>
     /// Represents a logical address in an assembly, expressed as an address
     /// referent plus a 16-bit displacement. A logical address must be within
@@ -174,45 +176,43 @@ namespace Disassembler2
             return cmp;
         }
     }
+#endif
 
     public class AddressWrappedException : Exception
     {
     }
 
-    // TODO: try simplify ResolvedAddress to segment:offset, where segment
-    // is a 16-bit segment id, and offset is a 16-bit offset. 
-    // 
-    // For EXE, the segment selector is an actual frame address relative
-    // to the beginning of the load module.
-    //
-    // For LIB, the segment selector is a sequential id assigned to each
-    // logical segment in turn. This will allow at most 65536 segments,
-    // but should be adequate for practical purposes.
-    //
-    // This has the following benefits:
-    // 1 - it simplifies the logic, because segment will have a 1-to-1 
-    //     mapping to ImageChunk
-    // 2 - it enables all addresses to be comparable lexicographically,
-    //     i.e. first by segment selector and then by offset. We can
-    //     then simplify the RangeDictionary into one dictionary i/o
-    //     two levels.
-    // 3 - it unifies EXE and LIB representation, and both can be 
-    //     intuitive.
-    // 4 - it reduces storage by half.
-    // 5 - we can then recover BinaryImage, where it is segmented and
-    //     the storages may or may not be contiguous.
-    //
-    // Drawbacks:
-    // 1 - We need to keep a handle to the containing Assembly in order to
-    //     access such an address.
-    // 2 - the ImageByte property will not work; so coding will be a little
-    //     bit more verbose, but with clearer logic.
-
     /// <summary>
-    /// Represents a unique address in an assembly, expressed as an offset
-    /// within a specific image chunk. Note that a ResolvedAddress is not
-    /// related to the physical address of an image when loaded into memory.
+    /// Represents an address in an assembly. The address is uniquely
+    /// identified its segment id and its offset within the segment.
     /// </summary>
+    /// <remarks>
+    /// The segment id is the one-based index of the segment that contains
+    /// the address, among all segments in an assembly. A segment id of zero
+    /// indicates an invalid segment, which is used as a guard against
+    /// accidental programming error.
+    /// 
+    /// The offset is an integer that references a byte within the segment.
+    /// While 16 bits is adequate to address a byte, it is not sufficient to
+    /// express an 'end' index, which is often used in ranges. Therefore, we
+    /// use 32 bits to store the offset. This also allows for future extension
+    /// to 32-bit disassembly.
+    ///
+    /// Addresses in different segments are not related. However, certain
+    /// tasks will be much simplified if a total order is defined on the
+    /// addresses. Examples:
+    /// 
+    /// 1) When displaying all the instructions in a LoadModule, it is useful
+    ///    to arrange the segments sequentially in the order that they appear
+    ///    in the image.
+    /// 2) When using a RangeDictionary to associate ranges of bytes to a
+    ///    value, it is easier to use one single RangeDictionary than using
+    ///    a separate RangeDictionary for each individual segment.
+    ///    
+    /// Therefore, we define a lexical order on the addresses, by first
+    /// ordering by segment id, and then ordering by offset. This simple
+    /// solution is adequate for the requirements above.
+    /// </remarks>
     public struct Address : IComparable<Address>
     {
         readonly int segment;
@@ -225,7 +225,8 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Gets the segment selector of this segment.
+        /// Gets the id of the segment that contains this address. A value of
+        /// zero indicates an invalid segment (and thus an invalid address).
         /// </summary>
         public int Segment
         {
@@ -233,19 +234,12 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Gets the offset of this address.
+        /// Gets the offset of this address within the segment.
         /// </summary>
         public int Offset
         {
             get { return offset; }
         }
-
-#if false
-        public ImageByte ImageByte
-        {
-            get { return Image[Offset]; }
-        }
-#endif
 
         public static bool operator ==(Address a, Address b)
         {
@@ -268,9 +262,9 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Represents an invalid (null) resolved address.
+        /// Represents an invalid (null) address.
         /// </summary>
-        public static readonly Address Invalid = new Address(0xFFFF, 0xFFFF);
+        public static readonly Address Invalid = new Address();
 
         /// <summary>
         /// Compares this address to another address lexicographically; that
@@ -288,52 +282,26 @@ namespace Disassembler2
         }
 
         /// <summary>
-        /// Increments the offset by the given amount, throwing an exception
-        /// if this would cause it to wrap around 0xFFFF or 0.
+        /// Increments the offset by the given amount. The resulting offset
+        /// may be negative or greater than 0xFFFF.
         /// </summary>
-        /// <param name="increment">The amount to increment. A negative value
-        /// indicates decrement.</param>
-        /// <returns>
-        /// An address with the same segment selector and incremented offset.
-        /// </returns>
-        /// <exception cref="AddressWrappedException">If adding the increment
-        /// would wrap the offset around 0xFFFF or 0.</exception>
-        public Address Increment(int increment)
-        {
-            if (increment > 0xFFFF - offset ||
-                increment < -offset)
-            {
-                throw new AddressWrappedException();
-            }
-            return this.IncrementWithWrapping(increment);
-        }
-
         public static Address operator +(Address address, int increment)
         {
             return new Address(address.segment, address.offset + increment);
         }
 
+        /// <summary>
+        /// Decrements the offset by the given amount. The resulting offset
+        /// may be negative or greater than 0xFFFF.
+        /// </summary>
         public static Address operator -(Address address, int decrement)
         {
             return new Address(address.segment, address.offset - decrement);
         }
 
-        /// <summary>
-        /// Increments the offset by a given amount, wrapping it around 0xFFFF
-        /// if the result is bigger.
-        /// </summary>
-        /// <param name="increment">The amount to increment.</param>
-        /// <returns>
-        /// The incremented (and possibly wrapped) address.
-        /// </returns>
-        public Address IncrementWithWrapping(int increment)
-        {
-            return new Address(segment, (UInt16)(offset + increment));
-        }
-
         public override string ToString()
         {
-            return string.Format("seg{0:X4}:{1:X4}", segment, offset);
+            return string.Format("seg{0:0000}:{1:X4}", segment, offset);
         }
     }
 

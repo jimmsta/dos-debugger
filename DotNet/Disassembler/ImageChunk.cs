@@ -18,12 +18,12 @@ namespace Disassembler2
     /// </summary>
     public class ImageChunk
     {
-        readonly byte[] image;
+        readonly byte[] image; // may rename to bytes
         readonly ByteAttribute[] attrs;
         readonly FixupCollection fixups;
         readonly Dictionary<int, Instruction> instructions;
 
-        readonly RangeDictionary<int, Procedure> procedureMapping;
+        //readonly RangeDictionary<int, Procedure> procedureMapping;
 
         public ImageChunk(int length)
             : this(new byte[length])
@@ -42,7 +42,7 @@ namespace Disassembler2
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
             this.fixups = new FixupCollection();
-            this.procedureMapping = new RangeDictionary<int, Procedure>();
+            //this.procedureMapping = new RangeDictionary<int, Procedure>();
             this.instructions = new Dictionary<int, Instruction>();
         }
 
@@ -212,10 +212,10 @@ namespace Disassembler2
 #endif
         }
 
-        public RangeDictionary<int, Procedure> ProcedureMapping
-        {
-            get { return this.procedureMapping; }
-        }
+        //public RangeDictionary<int, Procedure> ProcedureMapping
+        //{
+        //    get { return this.procedureMapping; }
+        //}
 
         //public RangeDictionary<int, BasicBlock> BasicBlockMapping
         //{
@@ -314,6 +314,7 @@ namespace Disassembler2
             get { return image.Attributes[index].IsLeadByte; }
         }
 
+#if false
         public Procedure Procedure
         {
             get
@@ -322,6 +323,7 @@ namespace Disassembler2
                     new Range<int>(index, index + 1));
             }
         }
+#endif
 
         //public BasicBlock BasicBlock
         //{

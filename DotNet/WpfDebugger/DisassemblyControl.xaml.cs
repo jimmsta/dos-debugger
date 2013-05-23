@@ -30,11 +30,11 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(ImageChunk image)
+        public void SetView(LogicalSegment segment)
         {
             this.DataContext = null;
 
-            this.viewModel = new ListingViewModel(image);
+            this.viewModel = new ListingViewModel(segment);
             this.DataContext = viewModel;
         }
 

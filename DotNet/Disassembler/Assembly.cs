@@ -20,6 +20,8 @@ namespace Disassembler2
     ///     |-- ...
     /// |-- Module3
     /// |-- ...
+    /// * Note: An assembly actually bypasses the Module layer to manage
+    ///         segments directly.
     /// (logical)
     /// |-- Procedures
     ///     |-- Procedure1      procedures should       procedures may
@@ -107,6 +109,81 @@ namespace Disassembler2
 
     public class ModuleCollection : List<Module>
     {
+    }
+
+    /// <summary>
+    /// Represents a contiguous block of bytes in a binary image.
+    /// </summary>
+    /// <remarks>
+    /// A segment is uniquely identified by a one-based SegmentId within its
+    /// owning assembly.
+    /// </remarks>
+    public abstract class Segment : IAddressReferent
+    {
+        private int id;
+
+        /// <summary>
+        /// Gets or sets the ID of the segment. This ID uniquely identifies
+        /// the segment within its containing assembly. This ID may be set
+        /// only once.
+        /// </summary>
+        public int Id
+        {
+            get { return id; }
+            set
+            {
+                if (id != 0)
+                    throw new InvalidOperationException();
+                id = value;
+            }
+        }
+
+        public string Label
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public Address Resolve()
+        {
+            return new Address(this.Id, 0);
+        }
+    }
+
+    public enum SegmentType
+    {
+        /// <summary>
+        /// Indicates a logical segment.
+        /// </summary>
+        /// <remarks>
+        /// A logical segment is not associated with a canonical frame, and
+        /// therefore does not have a frame number. The offset within a
+        /// logical segment is relative to the beginning of the segment,
+        /// and may be changed at run-time; therefore it is not meaningful
+        /// to address an offset relative to the segment; only self-relative
+        /// addressing should be used.
+        /// 
+        /// A logical segment may be combined with other logical segments to
+        /// form a relocatable segment.
+        /// </remarks>
+        Logical,
+
+        /// <summary>
+        /// Indicates a relocatable segment.
+        /// </summary>
+        /// <remarks>
+        /// A relocatable segment is associated with a canonical frame,
+        /// which is the frame with the largest frame number that contains
+        /// the segment. This frame number is meaningful, but it is subject
+        /// to relocation when the image is loaded into memory.
+        /// 
+        /// An offset within a relocatable segment is relative to the
+        /// canonical frame that contains the segment, and NOT relative to
+        /// the beginning of the segment. To avoid confusion, it is convenient
+        /// to think of a relocatable segment as always starting at paragraph
+        /// boundary, though in practice the first few bytes may actually be
+        /// used by a previous segment.
+        /// </remarks>
+        Relocatable,
     }
 
     /// <summary>
@@ -223,7 +300,7 @@ namespace Disassembler2
         /// Adds a basic block to the procedure.
         /// </summary>
         /// <param name="block"></param>
-        public void AddDataBlock(LogicalAddress location, int length)
+        public void AddDataBlock(Address location, int length)
         {
 #if false
             for (var i = start; i < end; i++)

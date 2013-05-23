@@ -30,8 +30,9 @@ namespace WpfDebugger
         /// </summary>
         private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(ImageChunk image)
+        public ListingViewModel(LogicalSegment segment)
         {
+            ImageChunk image = segment.Image;
             this.image = image;
 #if false
             // Make a dictionary that maps a location to the error at that location.
@@ -44,7 +45,7 @@ namespace WpfDebugger
 #endif
 
             // Display analyzed code and data.
-            Address address = new Address(0, 0);
+            Address address = new Address(segment.Id, 0);
             for (int i = 0; i < image.Length; )
             {
                 ImageByte b = image[i];
@@ -528,42 +529,5 @@ namespace WpfDebugger
         Procedure,
         Segment,
         Executable,
-    }
-
-    public enum SegmentType
-    {
-        /// <summary>
-        /// Indicates a logical segment.
-        /// </summary>
-        /// <remarks>
-        /// A logical segment is not associated with a canonical frame, and
-        /// therefore does not have a frame number. The offset within a
-        /// logical segment is relative to the beginning of the segment,
-        /// and may be changed at run-time; therefore it is not meaningful
-        /// to address an offset relative to the segment; only self-relative
-        /// addressing should be used.
-        /// 
-        /// A logical segment may be combined with other logical segments to
-        /// form a relocatable segment.
-        /// </remarks>
-        Logical,
-
-        /// <summary>
-        /// Indicates a relocatable segment.
-        /// </summary>
-        /// <remarks>
-        /// A relocatable segment is associated with a canonical frame,
-        /// which is the frame with the largest frame number that contains
-        /// the segment. This frame number is meaningful, but it is subject
-        /// to relocation when the image is loaded into memory.
-        /// 
-        /// An offset within a relocatable segment is relative to the
-        /// canonical frame that contains the segment, and NOT relative to
-        /// the beginning of the segment. To avoid confusion, it is convenient
-        /// to think of a relocatable segment as always starting at paragraph
-        /// boundary, though in practice the first few bytes may actually be
-        /// used by a previous segment.
-        /// </remarks>
-        Relocatable,
     }
 }

@@ -91,7 +91,7 @@ namespace WpfDebugger
                 {
                     Disassembler16New.Disassemble(library,
                         // TODO: replace with segment selector
-                        new Address(0, (int)symbol.Offset));
+                        new Address(segment.Id, (int)symbol.Offset));
                 }
             }
             // Raise request navigate event.
@@ -99,10 +99,9 @@ namespace WpfDebugger
 
         private void DisassembleSegment(LogicalSegment segment, int offset)
         {
-            LogicalAddress entryPoint = new LogicalAddress(segment, (UInt16)offset);
-
             Disassembler16New dasm = new Disassembler16New(library);
-            dasm.Analyze(entryPoint.ResolvedAddress);
+            Address entryPoint = new Address(segment.Id, offset);
+            dasm.Analyze(entryPoint);
         }
 
         private void TreeView_SelectionChanged(object sender, EventArgs e)

@@ -174,10 +174,10 @@ namespace Disassembler2
     /// <summary>
     /// Provides additional information related to a cross reference.
     /// </summary>
-    public class XRefContext
-    {
-        public LogicalAddress LogicalTarget;
-    }
+    //public class XRefContext
+    //{
+    //    public LogicalAddress LogicalTarget;
+    //}
 
     /// <summary>
     /// Maintains a collection of cross references and provides methods to
