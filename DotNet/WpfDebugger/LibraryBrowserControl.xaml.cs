@@ -90,7 +90,8 @@ namespace WpfDebugger
                 if (symbol.BaseSegment == segment)
                 {
                     Disassembler16New.Disassemble(library,
-                        new ResolvedAddress(segment.Image, (int)symbol.Offset));
+                        // TODO: replace with segment selector
+                        new Address(0, (int)symbol.Offset));
                 }
             }
             // Raise request navigate event.

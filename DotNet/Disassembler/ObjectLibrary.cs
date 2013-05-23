@@ -50,6 +50,20 @@ namespace Disassembler2
             return null;
         }
 
+        public void AssignIdsToSegments()
+        {
+            int id = 0;
+            foreach (ObjectModule module in Modules)
+            {
+                foreach (LogicalSegment segment in module.Segments)
+                {
+                    ++id;
+                    segment.Id = id;
+                    base.AddSegment(id, segment.Image);
+                }
+            }
+        }
+
         public void ResolveAllSymbols()
         {
             // First, we need to build a map of each public name.

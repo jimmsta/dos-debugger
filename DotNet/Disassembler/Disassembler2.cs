@@ -30,7 +30,7 @@ namespace Disassembler2
         /// This location is relative to the beginning of the image.</param>
         /// <param name="entryType">Type of entry, should usually be JMP or
         /// CALL.</param>
-        public void Analyze(ResolvedAddress entryPoint)
+        public void Analyze(Address entryPoint)
         {
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
@@ -50,9 +50,9 @@ namespace Disassembler2
         /// Analyzes code starting from the given location, and create basic
         /// blocks iteratively.
         /// </summary>
-        public void GenerateBasicBlocks(ResolvedAddress entryPoint)
+        public void GenerateBasicBlocks(Address entryPoint)
         {
-            ResolvedAddress address = entryPoint;
+            Address address = entryPoint;
 
             // Maintain a queue of basic block entry points to analyze. At
             // the beginning, only the user-specified entry point is in the
@@ -71,7 +71,7 @@ namespace Disassembler2
             // address.
             xrefQueue.Enqueue(new XRef(
                 type: XRefType.None,
-                source: ResolvedAddress.Invalid,
+                source: Address.Invalid,
                 target: entryPoint
             ));
 
@@ -87,7 +87,7 @@ namespace Disassembler2
                 // Handle jump table entry, whose Target == Invalid.
                 if (entry.Type == XRefType.NearIndexedJump)
                 {
-                    System.Diagnostics.Debug.Assert(entry.Target == ResolvedAddress.Invalid);
+                    System.Diagnostics.Debug.Assert(entry.Target == Address.Invalid);
 
                     // Fill the Target field to make it a static xref.
                     entry = ProcessJumpTableEntry(entry, xrefQueue);
@@ -96,7 +96,7 @@ namespace Disassembler2
                 }
 
                 // Skip other dynamic xrefs.
-                if (entry.Target == ResolvedAddress.Invalid)
+                if (entry.Target == Address.Invalid)
                 {
                     program.CrossReferences.Add(entry);
                     continue;
@@ -132,8 +132,8 @@ namespace Disassembler2
             {
                 // Skip xrefs with unknown source (e.g. user-specified entry
                 // point) or target (e.g. dynamic call or jump).
-                if (xref.Source == ResolvedAddress.Invalid ||
-                    xref.Target == ResolvedAddress.Invalid)
+                if (xref.Source == Address.Invalid ||
+                    xref.Target == Address.Invalid)
                     continue;
 
                 // Find the basic blocks that owns the source location
@@ -154,7 +154,7 @@ namespace Disassembler2
         {
             foreach (XRef xref in program.CrossReferences)
             {
-                ResolvedAddress entryPoint = xref.Target;
+                Address entryPoint = xref.Target;
                 CallType callType = 
                     (xref.Type == XRefType.NearCall) ?
                     CallType.Near : CallType.Far;
@@ -398,9 +398,9 @@ namespace Disassembler2
         // encounters an error on our way? maybe not.
         private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
-            ResolvedAddress pos = start.Target;
-            ImageChunk image = pos.Image;
-            ImageByte b = pos.ImageByte;
+            Address pos = start.Target;
+            ImageChunk image = program.GetSegment(pos.Segment);
+            ImageByte b = image[pos.Offset];
 
             // Check if the entry address is already analyzed.
             if (b.Type != ByteType.Unknown)
@@ -454,11 +454,11 @@ namespace Disassembler2
             while (true)
             {
                 // Decode an instruction at this location.
-                ResolvedAddress insnPos = pos;
+                Address insnPos = pos;
                 Instruction insn;
                 try
                 {
-                    insn = pos.Image.DecodeInstruction(pos.Offset);
+                    insn = image.DecodeInstruction(pos.Offset);
                 }
                 catch (BrokenFixupException ex)
                 {
@@ -472,7 +472,7 @@ namespace Disassembler2
                 }
 
                 // Create a code piece for this instruction.
-                if (!pos.Image.CheckByteType(pos.Offset, insn.EncodedLength, ByteType.Unknown))
+                if (!image.CheckByteType(pos.Offset, insn.EncodedLength, ByteType.Unknown))
                 {
                     AddError(pos, ErrorCode.OverlappingInstruction,
                         "Ran into the middle of code when processing block {0} referred from {1}",
@@ -484,11 +484,19 @@ namespace Disassembler2
                 // if pos.off + count > 0xFFFF. This is probably not intended.
                 try
                 {
-                    pos.Image.UpdateByteType(
+                    image.UpdateByteType(
                         pos.Offset, insn.EncodedLength, ByteType.Code);
-                    pos.Image.Instructions.Add(pos.Offset, insn);
+                    image.Instructions.Add(pos.Offset, insn);
                     //pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
-                    pos = new ResolvedAddress(pos.Image, pos.Offset + insn.EncodedLength);
+                    pos += insn.EncodedLength;
+                    if (pos.Offset > 0xFFFF)
+                    {
+                        pos -= insn.EncodedLength;
+                        AddError(pos, ErrorCode.AddressWrapped,
+                            "CS:IP wrapped when processing block {1} referred from {2}",
+                            start.Target, start.Source);
+                        break;
+                    }
                 }
                 //catch (AddressWrappedException)
                 catch (Exception)
@@ -537,9 +545,9 @@ namespace Disassembler2
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
                 // block, and we are done.
-                if (pos.ImageByte.Type == ByteType.Code)
+                if (image[pos.Offset].Type == ByteType.Code)
                 {
-                    System.Diagnostics.Debug.Assert(pos.ImageByte.IsLeadByte);
+                    System.Diagnostics.Debug.Assert(image[pos.Offset].IsLeadByte);
                     break;
                 }
             }
@@ -547,9 +555,7 @@ namespace Disassembler2
             // Create a basic block unless we failed on the first instruction.
             if (pos.Offset > start.Target.Offset)
             {
-                Range<int> blockLocation = new Range<int>(
-                   start.Target.Offset, pos.Offset);
-                BasicBlock block = new BasicBlock(pos.Image, blockLocation);
+                BasicBlock block = new BasicBlock(start.Target, pos);
                 program.BasicBlocks.Add(block);
             }
             return null;
@@ -565,7 +571,7 @@ namespace Disassembler2
         /// <returns>XRef if the instruction is a b/c/j instruction; 
         /// null otherwise.</returns>
         /// TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
-        private XRef AnalyzeFlowInstruction(ResolvedAddress start, Instruction instruction)
+        private XRef AnalyzeFlowInstruction(Address start, Instruction instruction)
         {
             Operation op = instruction.Operation;
 
@@ -654,7 +660,7 @@ namespace Disassembler2
                 return new XRef(
                     type: bcjType,
                     source: start,
-                    target: ResolvedAddress.Invalid
+                    target: Address.Invalid
                 );
 #endif
             }
@@ -695,7 +701,7 @@ namespace Disassembler2
                     return new XRef(
                         type: XRefType.NearJump,
                         source: start,
-                        target: ResolvedAddress.Invalid
+                        target: Address.Invalid
                         );
 #endif
                 }
@@ -708,7 +714,7 @@ namespace Disassembler2
             return new XRef(
                 type: bcjType,
                 source: start,
-                target: ResolvedAddress.Invalid
+                target: Address.Invalid
             );
         }
 
@@ -720,7 +726,7 @@ namespace Disassembler2
 #endif
 
         private void AddError(
-            ResolvedAddress location, ErrorCode errorCode,
+            Address location, ErrorCode errorCode,
             string format, params object[] args)
         {
             program.Errors.Add(new Error(location, errorCode, string.Format(format, args)));
@@ -740,7 +746,7 @@ namespace Disassembler2
         }
 #endif
 
-        public static void Disassemble(Assembly assembly, ResolvedAddress entryPoint)
+        public static void Disassemble(Assembly assembly, Address entryPoint)
         {
             Disassembler16New dasm = new Disassembler16New(assembly);
             dasm.Analyze(entryPoint);

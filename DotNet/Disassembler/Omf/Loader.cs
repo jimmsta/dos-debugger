@@ -77,7 +77,9 @@ namespace Disassembler2.Omf
             using (Stream stream = File.OpenRead(fileName))
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                return LoadLibrary(reader);
+                ObjectLibrary library = LoadLibrary(reader);
+                library.AssignIdsToSegments();
+                return library;
             }
         }
     }

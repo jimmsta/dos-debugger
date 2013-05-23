@@ -20,6 +20,12 @@ namespace Disassembler2
     public class LogicalSegment : IAddressReferent
     {
         /// <summary>
+        /// Returns the ID of the segment. This ID is unique within the
+        /// library that contains this segment.
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
         /// Gets the segment's name, such as "_TEXT". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
@@ -116,9 +122,10 @@ namespace Disassembler2
             get { throw new NotImplementedException(); }
         }
 
-        public ResolvedAddress Resolve()
+        public Address Resolve()
         {
-            return new ResolvedAddress(Image, 0);
+            //return new Address(Image, 0);
+            throw new NotImplementedException();
         }
     }
 

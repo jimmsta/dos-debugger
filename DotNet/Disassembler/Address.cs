@@ -24,7 +24,7 @@ namespace Disassembler2
         /// The resolved address of the referent, or ResolvedAddress.Invalid
         /// if this referent cannot be resolved.
         /// </returns>
-        ResolvedAddress Resolve();
+        Address Resolve();
     }
 
     /// <summary>
@@ -73,15 +73,15 @@ namespace Disassembler2
         }
 
         // TODO: we should eliminate this, and use IAddressReferent::Resolve() only.
-        public ResolvedAddress ResolvedAddress
+        public Address ResolvedAddress
         {
             get
             {
                 if (this == Invalid)
-                    return ResolvedAddress.Invalid;
+                    return Address.Invalid;
 
-                ResolvedAddress address = Referent.Resolve();
-                return new ResolvedAddress(address.Image, address.Offset + this.Displacement);
+                Address address = Referent.Resolve();
+                return address + this.Displacement;
             }
         }
 
@@ -116,6 +116,7 @@ namespace Disassembler2
             return new LogicalAddress(referent, (UInt16)(displacement + increment));
         }
 
+#if false
         public ImageChunk Image
         {
             get { return ResolvedAddress.Image; }
@@ -130,7 +131,7 @@ namespace Disassembler2
         {
             get { return this.Image[this.ImageOffset]; }
         }
-
+#endif
         
         public static bool operator ==(LogicalAddress a, LogicalAddress b)
         {
@@ -212,71 +213,77 @@ namespace Disassembler2
     /// within a specific image chunk. Note that a ResolvedAddress is not
     /// related to the physical address of an image when loaded into memory.
     /// </summary>
-    public struct ResolvedAddress
+    public struct Address : IComparable<Address>
     {
-        private readonly ImageChunk image;
-        private readonly int offset;
+        readonly int segment;
+        readonly int offset;
 
-        public ResolvedAddress(ImageChunk image, int offset)
+        public Address(int segment, int offset)
         {
-            if (image == null)
-                throw new ArgumentNullException("image");
-            
-            this.image = image;
+            this.segment = segment;
             this.offset = offset;
         }
 
         /// <summary>
-        /// Gets the image that contains this resolved address.
+        /// Gets the segment selector of this segment.
         /// </summary>
-        public ImageChunk Image
+        public int Segment
         {
-            get { return image; }
+            get { return segment; }
         }
 
         /// <summary>
-        /// Gets the offset of this address within the image.
+        /// Gets the offset of this address.
         /// </summary>
         public int Offset
         {
             get { return offset; }
         }
 
+#if false
         public ImageByte ImageByte
         {
             get { return Image[Offset]; }
         }
+#endif
 
-        public static bool operator ==(ResolvedAddress a, ResolvedAddress b)
+        public static bool operator ==(Address a, Address b)
         {
-            return (a.Image == b.Image) && (a.Offset == b.Offset);
+            return (a.segment == b.segment) && (a.offset == b.offset);
         }
 
-        public static bool operator !=(ResolvedAddress a, ResolvedAddress b)
+        public static bool operator !=(Address a, Address b)
         {
-            return (a.Image != b.Image) || (a.Offset != b.Offset);
+            return !(a == b);
         }
 
         public override bool Equals(object obj)
         {
-            return (obj is ResolvedAddress) && (this == (ResolvedAddress)obj);
+            return (obj is Address) && (this == (Address)obj);
         }
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return (segment << 16) | offset;
         }
 
         /// <summary>
         /// Represents an invalid (null) resolved address.
         /// </summary>
-        public static readonly ResolvedAddress Invalid = new ResolvedAddress();
+        public static readonly Address Invalid = new Address(0xFFFF, 0xFFFF);
 
-        public static int CompareByLexical(ResolvedAddress a, ResolvedAddress b)
+        /// <summary>
+        /// Compares this address to another address lexicographically; that
+        /// is, first the segment selectors are compared, then the offsets
+        /// are compared.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public int CompareTo(Address other)
         {
-            int cmp = a.Image.GetHashCode().CompareTo(b.Image.GetHashCode());
+            int cmp = this.segment.CompareTo(other.segment);
             if (cmp == 0)
-                cmp = a.Offset.CompareTo(b.Offset);
+                cmp = this.offset.CompareTo(other.offset);
             return cmp;
         }
 
@@ -291,14 +298,24 @@ namespace Disassembler2
         /// </returns>
         /// <exception cref="AddressWrappedException">If adding the increment
         /// would wrap the offset around 0xFFFF or 0.</exception>
-        public ResolvedAddress Increment(int increment)
+        public Address Increment(int increment)
         {
-            if (increment > 0xFFFF - (int)offset ||
-                increment < -(int)offset)
+            if (increment > 0xFFFF - offset ||
+                increment < -offset)
             {
                 throw new AddressWrappedException();
             }
             return this.IncrementWithWrapping(increment);
+        }
+
+        public static Address operator +(Address address, int increment)
+        {
+            return new Address(address.segment, address.offset + increment);
+        }
+
+        public static Address operator -(Address address, int decrement)
+        {
+            return new Address(address.segment, address.offset - decrement);
         }
 
         /// <summary>
@@ -309,14 +326,14 @@ namespace Disassembler2
         /// <returns>
         /// The incremented (and possibly wrapped) address.
         /// </returns>
-        public ResolvedAddress IncrementWithWrapping(int increment)
+        public Address IncrementWithWrapping(int increment)
         {
-            return new ResolvedAddress(image, (UInt16)(offset + increment));
+            return new Address(segment, (UInt16)(offset + increment));
         }
 
         public override string ToString()
         {
-            return string.Format("{0:X4}", offset);
+            return string.Format("seg{0:X4}:{1:X4}", segment, offset);
         }
     }
 
@@ -337,7 +354,7 @@ namespace Disassembler2
             get { return string.Format("X4:X4", Frame, Offset); }
         }
 
-        public ResolvedAddress Resolve()
+        public Address Resolve()
         {
             throw new NotSupportedException();
         }

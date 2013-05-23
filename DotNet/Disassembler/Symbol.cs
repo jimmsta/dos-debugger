@@ -60,7 +60,7 @@ namespace Disassembler2
             get { throw new NotImplementedException(); }
         }
 
-        public ResolvedAddress Resolve()
+        public Address Resolve()
         {
             throw new NotSupportedException();
         }

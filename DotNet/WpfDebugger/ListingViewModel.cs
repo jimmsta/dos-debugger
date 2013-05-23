@@ -44,7 +44,7 @@ namespace WpfDebugger
 #endif
 
             // Display analyzed code and data.
-            ResolvedAddress address = new ResolvedAddress(image, 0);
+            Address address = new Address(0, 0);
             for (int i = 0; i < image.Length; )
             {
                 ImageByte b = image[i];
@@ -62,7 +62,7 @@ namespace WpfDebugger
                     System.Diagnostics.Debug.Assert(insn != null);
                     rows.Add(new CodeListingRow(0, address, insn, image.Data.Slice(i, insn.EncodedLength)));
 
-                    address = address.Increment(insn.EncodedLength);
+                    address += insn.EncodedLength; // TODO: handle wrapping
                     i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
@@ -74,7 +74,7 @@ namespace WpfDebugger
                         j++;
 
                     rows.Add(new DataListingRow(0, address, image.Data.Slice(i, j - i)));
-                    address = address.Increment(j - i);
+                    address += (j - i); // TODO: handle wrapping
                     i = j;
                 }
                 else
@@ -90,14 +90,17 @@ namespace WpfDebugger
                         j++;
 
                     rows.Add(new BlankListingRow(0, address, image.Data.Slice(i, j - i)));
+                    address += (j - i); // TODO: handle wrapping
+#if false
                     try
                     {
                         address = address.Increment(j - i);
                     }
                     catch (AddressWrappedException)
                     {
-                        address = ResolvedAddress.Invalid;
+                        address = Address.Invalid;
                     }
+#endif
                     i = j;
                 }
             }
@@ -227,7 +230,7 @@ namespace WpfDebugger
         /// <summary>
         /// Gets the address of the listing row.
         /// </summary>
-        public ResolvedAddress Location { get; protected set; }
+        public Address Location { get; protected set; }
 
         /// <summary>
         /// Gets the opcode bytes of this listing row. Must not be null.
@@ -257,7 +260,7 @@ namespace WpfDebugger
             get { return Text; }
         }
 
-        protected ListingRow(int index, ResolvedAddress location)
+        protected ListingRow(int index, Address location)
         {
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index");
@@ -295,7 +298,7 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public BlankListingRow(int index, ResolvedAddress location, byte[] data)
+        public BlankListingRow(int index, Address location, byte[] data)
             : base(index, location)
         {
             this.data = data;
@@ -327,7 +330,7 @@ namespace WpfDebugger
         private byte[] code;
         private string strInstruction;
 
-        public CodeListingRow(int index, ResolvedAddress location, Instruction instruction, byte[] code)
+        public CodeListingRow(int index, Address location, Instruction instruction, byte[] code)
             : base(index, location)
         {
             this.instruction = instruction;
@@ -379,7 +382,7 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public DataListingRow(int index, ResolvedAddress location, byte[] data)
+        public DataListingRow(int index, Address location, byte[] data)
             : base(index, location)
         {
             this.data = data;
@@ -444,7 +447,7 @@ namespace WpfDebugger
         private BasicBlock block;
 
         public LabelListingRow(int index, BasicBlock block)
-            : base(index, ResolvedAddress.Invalid)
+            : base(index, Address.Invalid)
         {
             this.block = block;
         }

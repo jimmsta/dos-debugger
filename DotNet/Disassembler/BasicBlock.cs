@@ -24,13 +24,16 @@ namespace Disassembler2
     /// For the purpose in our application, we do NOT terminate a basic block
     /// when we encounter a CALL instruction. This has the benefit that the
     /// resulting control flow graph won't have too many nodes that merely
-    /// call another function. 
+    /// call another function.
+    /// 
+    /// A basic block is always contained in a single segment.
     /// </remarks>
     public class BasicBlock
     {
-        readonly ResolvedAddress location;
+        readonly Address location;
         readonly int length;
 
+#if false
         internal BasicBlock(ImageChunk image, Range<int> range)
         {
             if (image == null)
@@ -38,51 +41,50 @@ namespace Disassembler2
             if (!image.Bounds.IsSupersetOf(range))
                 throw new ArgumentOutOfRangeException("range");
 
-            this.location = new ResolvedAddress(image, range.Begin);
+            this.location = new Address(image, range.Begin);
             this.length = range.End - range.Begin;
         }
+#endif
 
-        public ResolvedAddress Location
+        public BasicBlock(Address location, int length)
         {
-            get { return location; }
+            this.location = location;
+            this.length = length;
         }
 
-        public Range<int> Bounds
+        public BasicBlock(Address begin, Address end)
         {
-            get { return new Range<int>(location.Offset, location.Offset + length); }
+            if (begin.Segment != end.Segment)
+                throw new ArgumentException("Basic block must be on the same segment.");
+            this.location = begin;
+            this.length = end.Offset - begin.Offset;
+        }
+
+        public Address Location
+        {
+            get { return location; }
         }
 
         public int Length
         {
             get { return length; }
         }
+
+        public Range<Address> Bounds
+        {
+            get { return new Range<Address>(location, location + length); }
+        }
     }
 
     public class BasicBlockCollection : ICollection<BasicBlock>
     {
         readonly List<BasicBlock> blocks = new List<BasicBlock>();
-        readonly Dictionary<ImageChunk, RangeDictionary<int, BasicBlock>> map =
-            new Dictionary<ImageChunk, RangeDictionary<int, BasicBlock>>();
+        readonly RangeDictionary<Address, BasicBlock> map =
+            new RangeDictionary<Address, BasicBlock>();
         readonly XRefCollection controlFlowGraph = new XRefCollection();
 
         public BasicBlockCollection()
         {
-        }
-
-        private RangeDictionary<int, BasicBlock> GetSubMap(ImageChunk image, bool autoAdd)
-        {
-            RangeDictionary<int, BasicBlock> subMap;
-            if (!map.TryGetValue(image, out subMap) && autoAdd)
-            {
-                subMap = new RangeDictionary<int, BasicBlock>(0, image.Length);
-                map.Add(image, subMap);
-            }
-            return subMap;
-        }
-
-        private RangeDictionary<int, BasicBlock> GetSubMap(BasicBlock block)
-        {
-            return GetSubMap(block.Location.Image, true);
         }
 
         public void Add(BasicBlock block)
@@ -90,20 +92,22 @@ namespace Disassembler2
             if (block == null)
                 throw new ArgumentNullException("block");
             if (blocks.Contains(block))
-                throw new ArgumentException("Block already exists.");
+                throw new ArgumentException("Block already exists in the collection.");
 
             this.blocks.Add(block);
-
-            GetSubMap(block).Add(block.Bounds, block);
+            this.map.Add(block.Bounds, block);
         }
 
-        public BasicBlock Find(ResolvedAddress address)
+        /// <summary>
+        /// Finds a basic block that covers the given address. Returns null
+        /// if the address is not covered by any basic block.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public BasicBlock Find(Address address)
         {
-            var subMap = GetSubMap(address.Image, false);
-            if (subMap != null)
-                return subMap.GetValueOrDefault(new Range<int>(address.Offset, address.Offset + 1));
-            else
-                return null;
+            return map.GetValueOrDefault(
+                new Range<Address>(address, address + 1));
         }
 
         /// <summary>
@@ -111,41 +115,33 @@ namespace Disassembler2
         /// be in the collection.
         /// </summary>
         /// <param name="block"></param>
-        public void SplitBasicBlock(BasicBlock block, ResolvedAddress cutoff)
+        public void SplitBasicBlock(BasicBlock block, Address cutoff)
         {
             if (block == null)
                 throw new ArgumentNullException("block");
-            if (cutoff.Image != block.Location.Image)
-                throw new ArgumentException("Cutoff position must be within the block.");
-
-            Range<int> range = new Range<int>(
-                block.Location.Offset, block.Location.Offset + block.Length);
-            int pos = cutoff.Offset;
-            if (pos <= range.Begin || pos >= range.End)
+            if (!block.Bounds.Contains(cutoff))
                 throw new ArgumentOutOfRangeException("cutoff");
-            if (!cutoff.ImageByte.IsLeadByte)
-                throw new ArgumentException("cutoff must be a lead byte.");
+            if (cutoff == block.Location)
+                return;
 
             int k = blocks.IndexOf(block);
             if (k < 0)
                 throw new ArgumentException("Block must be within the collection.");
 
             // Create two blocks.
-            Range<int> range1 = new Range<int>(range.Begin, pos);
-            Range<int> range2 = new Range<int>(pos, range.End);
-            BasicBlock block1 = new BasicBlock(block.Location.Image, range1);
-            BasicBlock block2 = new BasicBlock(block.Location.Image, range2);
+            var range = block.Bounds;
+            BasicBlock block1 = new BasicBlock(range.Begin, cutoff);
+            BasicBlock block2 = new BasicBlock(cutoff, range.End);
 
-            // Remove the big block from this collection and add the newly
+            // Replace the big block from this collection and add the newly
             // created smaller blocks.
             blocks[k] = block1;
             blocks.Add(block2);
 
             // Update lookup map.
-            var subMap = GetSubMap(block);
-            subMap.Remove(block.Bounds);
-            subMap.Add(block1.Bounds, block1);
-            subMap.Add(block2.Bounds, block2);
+            map.Remove(block.Bounds);
+            map.Add(block1.Bounds, block1);
+            map.Add(block2.Bounds, block2);
         }
 
         #region ICollection Interface Implementation
@@ -159,7 +155,10 @@ namespace Disassembler2
 
         public bool Contains(BasicBlock item)
         {
-            return blocks.Contains(item);
+            if (item == null)
+                return false;
+            else
+                return Find(item.Location) == item;
         }
 
         public void CopyTo(BasicBlock[] array, int arrayIndex)

@@ -24,7 +24,6 @@ namespace Disassembler2
         readonly Dictionary<int, Instruction> instructions;
 
         readonly RangeDictionary<int, Procedure> procedureMapping;
-        //readonly RangeDictionary<int, BasicBlock> basicBlockMapping;
 
         public ImageChunk(int length)
             : this(new byte[length])
@@ -43,8 +42,7 @@ namespace Disassembler2
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
             this.fixups = new FixupCollection();
-            this.procedureMapping = new RangeDictionary<int, Procedure>(0, image.Length);
-            //this.basicBlockMapping = new RangeDictionary<int, BasicBlock>(0, image.Length);
+            this.procedureMapping = new RangeDictionary<int, Procedure>();
             this.instructions = new Dictionary<int, Instruction>();
         }
 

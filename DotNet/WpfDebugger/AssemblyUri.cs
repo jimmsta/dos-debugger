@@ -78,7 +78,7 @@ namespace WpfDebugger
         {
         }
 
-        public AssemblyUri(Assembly assembly, ResolvedAddress address)
+        public AssemblyUri(Assembly assembly, Address address)
             : base(MakeUriString(assembly, address))
         {
         }
@@ -116,7 +116,7 @@ namespace WpfDebugger
             return sb.ToString();
         }
 
-        private static string MakeUriString(Assembly assembly, ResolvedAddress address)
+        private static string MakeUriString(Assembly assembly, Address address)
         {
             return string.Format(
                 "ddd://{0}{1}/{2}/{3:X4}",

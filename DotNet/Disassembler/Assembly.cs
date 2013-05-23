@@ -38,6 +38,7 @@ namespace Disassembler2
         private readonly ProcedureCollection procedures;
         private readonly ModuleCollection modules;
         private readonly ErrorCollection errors;
+        private readonly Dictionary<int, ImageChunk> segments;
 
         public Assembly()
         {
@@ -46,6 +47,7 @@ namespace Disassembler2
             this.procedures = new ProcedureCollection();
             this.modules = new ModuleCollection();
             this.errors = new ErrorCollection();
+            this.segments = new Dictionary<int, ImageChunk>();
         }
 
         public XRefCollection CrossReferences
@@ -72,6 +74,26 @@ namespace Disassembler2
         {
             get { return errors; }
         }
+
+        /// <summary>
+        /// Finds the segment with the given segment selector.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public ImageChunk GetSegment(int segmentSelector)
+        {
+            return segments[segmentSelector];
+        }
+
+        /// <summary>
+        /// Finds the segment with the given segment selector.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public void AddSegment(int segmentSelector, ImageChunk image)
+        {
+            segments.Add(segmentSelector, image);
+        }
     }
 
     /// <summary>
@@ -95,14 +117,14 @@ namespace Disassembler2
     /// </summary>
     public class Procedure
     {
-        private ResolvedAddress entryPoint;
+        private Address entryPoint;
         private string name; // TODO: add Names property to store aliases
 
         /// <summary>
         /// Creates a procedure with the given entry point.
         /// </summary>
         /// <param name="entryPoint">Entry point of the procedure.</param>
-        public Procedure(ResolvedAddress entryPoint)
+        public Procedure(Address entryPoint)
         {
             this.entryPoint = entryPoint;
         }
@@ -123,7 +145,7 @@ namespace Disassembler2
         /// <summary>
         /// Gets the entry point address of the procedure.
         /// </summary>
-        public ResolvedAddress EntryPoint
+        public Address EntryPoint
         {
             get { return this.entryPoint; }
         }
@@ -338,8 +360,8 @@ namespace Disassembler2
         /// Dictionary that maps the (resolved) entry point address of a
         /// procedure to the corresponding Procedure object.
         /// </summary>
-        readonly Dictionary<ResolvedAddress, Procedure> procMap
-            = new Dictionary<ResolvedAddress, Procedure>();
+        readonly Dictionary<Address, Procedure> procMap
+            = new Dictionary<Address, Procedure>();
 
         /// <summary>
         /// Maintains a call graph of the procedures in this collection.
@@ -382,7 +404,7 @@ namespace Disassembler2
         /// <param name="entryPoint"></param>
         /// <returns>A Procedure object with the given entry point if found,
         /// or null otherwise.</returns>
-        public Procedure Find(ResolvedAddress entryPoint)
+        public Procedure Find(Address entryPoint)
         {
             Procedure proc;
             if (procMap.TryGetValue(entryPoint, out proc))

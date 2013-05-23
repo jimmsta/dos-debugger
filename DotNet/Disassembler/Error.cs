@@ -10,34 +10,55 @@ namespace Disassembler2
     /// </summary>
     public class Error
     {
-        public ErrorCode ErrorCode { get; private set; }
-        public ErrorCategory Category { get; private set; }
-        public ResolvedAddress Location { get; private set; }
-        public string Message { get; private set; }
+        readonly ErrorCode errorCode;
+        readonly ErrorCategory category;
+        readonly Address location;
+        readonly string message;
 
-        public Error(ResolvedAddress location, ErrorCode errorCode, string message)
+        public Error(Address location, ErrorCode errorCode, string message)
         {
-            this.Category = ErrorCategory.Error;
-            this.Location = location;
-            this.Message = message;
-            this.ErrorCode = errorCode;
+            this.category = ErrorCategory.Error;
+            this.location = location;
+            this.message = message;
+            this.errorCode = errorCode;
         }
 
-        public Error(ResolvedAddress location, string message, ErrorCategory category)
+        public ErrorCode ErrorCode
+        {
+            get { return errorCode; }
+        }
+
+        public ErrorCategory Category
+        {
+            get { return category; }
+        }
+
+        public Address Location
+        {
+            get { return location; }
+        }
+
+        public string Message
+        {
+            get { return message; }
+        }
+
+#if false
+        public Error(Address location, string message, ErrorCategory category)
         {
             this.Category = category;
             this.Location = location;
             this.Message = message;
         }
 
-        public Error(ResolvedAddress location, string message)
+        public Error(Address location, string message)
             : this(location, message, ErrorCategory.Error)
         {
         }
-
+#endif
         public static int CompareByLocation(Error x, Error y)
         {
-            return ResolvedAddress.CompareByLexical(x.Location, y.Location);
+            return x.Location.CompareTo(y.Location);
         }
     }
 
@@ -62,7 +83,9 @@ namespace Disassembler2
 
     public enum ErrorCode
     {
+        [ErrorCategory(ErrorCategory.None)]
         OK = 0,
+
         GenericError,
         InvalidInstruction,
         BrokenFixup,

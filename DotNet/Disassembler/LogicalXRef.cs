@@ -9,21 +9,21 @@ namespace Disassembler2
     /// A xref between code and code is analog to an edge in a Control Flow 
     /// Graph.
     /// </summary>
-    public class XRef : IGraphEdge<ResolvedAddress>
+    public class XRef : IGraphEdge<Address>
     {
         /// <summary>
         /// Gets the target address being referenced. This may be set to
         /// <code>ResolvedAddress.Invalid</code> if the target address cannot
         /// be determined, such as in a dynamic jump or call.
         /// </summary>
-        public ResolvedAddress Target { get; private set; }
+        public Address Target { get; private set; }
 
         /// <summary>
         /// Gets the source address that refers to target. This may be set to
         /// <code>ResolvedAddress.Invalid</code> if the source address cannot
         /// be determined, such as in the entry routine of a program.
         /// </summary>
-        public ResolvedAddress Source { get; private set; }
+        public Address Source { get; private set; }
 
         /// <summary>
         /// Gets the type of this cross-reference.
@@ -35,9 +35,9 @@ namespace Disassembler2
         /// if Type is NearIndexedJump or FarIndexedJump, where DataLocation
         /// contains the address of the jump table entry.
         /// </summary>
-        public ResolvedAddress DataLocation { get; private set; }
+        public Address DataLocation { get; private set; }
 
-        public XRefContext Context { get; set; }
+        //public XRefContext Context { get; set; }
 
         /// <summary>
         /// Returns true if this xref is dynamic, i.e. its Target address
@@ -45,14 +45,17 @@ namespace Disassembler2
         /// </summary>
         public bool IsDynamic
         {
-            get { return Target == ResolvedAddress.Invalid; }
+            get { return Target == Address.Invalid; }
         }
 
         public XRef()
         {
+            this.Source = Address.Invalid;
+            this.Target = Address.Invalid;
+            this.DataLocation = Address.Invalid;
         }
 
-        public XRef(XRefType type, ResolvedAddress source, ResolvedAddress target, ResolvedAddress dataLocation)
+        public XRef(XRefType type, Address source, Address target, Address dataLocation)
         {
             this.Source = source;
             this.Target = target;
@@ -60,8 +63,8 @@ namespace Disassembler2
             this.DataLocation = dataLocation;
         }
 
-        public XRef(XRefType type, ResolvedAddress source, ResolvedAddress target)
-            : this(type, source, target, ResolvedAddress.Invalid)
+        public XRef(XRefType type, Address source, Address target)
+            : this(type, source, target, Address.Invalid)
         {
         }
 
@@ -182,14 +185,14 @@ namespace Disassembler2
     /// </summary>
     public class XRefCollection : ICollection<XRef>
     {
-        readonly Graph<ResolvedAddress, XRef> graph;
+        readonly Graph<Address, XRef> graph;
 
         /// <summary>
         /// Creates a cross reference collection.
         /// </summary>
         public XRefCollection()
         {
-            this.graph = new Graph<ResolvedAddress, XRef>();
+            this.graph = new Graph<Address, XRef>();
         }
 
         /// <summary>
@@ -214,8 +217,8 @@ namespace Disassembler2
             {
                 throw new ArgumentNullException("xref");
             }
-            if (xref.Source == ResolvedAddress.Invalid &&
-                xref.Target == ResolvedAddress.Invalid)
+            if (xref.Source == Address.Invalid &&
+                xref.Target == Address.Invalid)
             {
                 throw new ArgumentException("Source and Target cannot be both Invalid.");
             }
@@ -236,7 +239,7 @@ namespace Disassembler2
         /// <returns></returns>
         public IEnumerable<XRef> GetDynamicReferences()
         {
-            return graph.GetIncomingEdges(ResolvedAddress.Invalid);
+            return graph.GetIncomingEdges(Address.Invalid);
         }
 
         /// <summary>
@@ -245,7 +248,7 @@ namespace Disassembler2
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesTo(ResolvedAddress target)
+        public IEnumerable<XRef> GetReferencesTo(Address target)
         {
             return graph.GetIncomingEdges(target);
         }
@@ -255,7 +258,7 @@ namespace Disassembler2
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesFrom(ResolvedAddress source)
+        public IEnumerable<XRef> GetReferencesFrom(Address source)
         {
             return graph.GetOutgoingEdges(source);
         }
