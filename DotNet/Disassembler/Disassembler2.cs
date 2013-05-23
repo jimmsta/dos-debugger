@@ -140,9 +140,16 @@ namespace Disassembler2
                 // and target location.
                 BasicBlock sourceBlock = program.BasicBlocks.Find(xref.Source);
                 BasicBlock targetBlock = program.BasicBlocks.Find(xref.Target);
+#if true
+                if (sourceBlock == null || targetBlock == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("Cannot find block.");
+                    continue;
+                }
+#else
                 System.Diagnostics.Debug.Assert(sourceBlock != null);
                 System.Diagnostics.Debug.Assert(targetBlock != null);
-
+#endif
                 // Create a directed edge from the source basic block to
                 // the target basic block.
                 program.BasicBlocks.AddControlFlowGraphEdge(

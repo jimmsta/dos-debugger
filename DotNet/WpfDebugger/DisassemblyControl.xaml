@@ -47,7 +47,7 @@
             <ListView.View>
                 <GridView>
 
-                    <GridViewColumn Header="Address" Width="90">
+                    <GridViewColumn Header="Address" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock TextTrimming="CharacterEllipsis" 

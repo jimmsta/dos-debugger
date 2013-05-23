@@ -94,7 +94,14 @@ namespace WpfDebugger
                         new Address(segment.Id, (int)symbol.Offset));
                 }
             }
+
             // Raise request navigate event.
+            if (this.RequestNavigate != null)
+            {
+                AssemblyUri uri = new AssemblyUri(library, segment, 0);
+                var e = new RequestNavigateEventArgs(uri, null);
+                this.RequestNavigate(this, e);
+            }
         }
 
         private void DisassembleSegment(LogicalSegment segment, int offset)
@@ -128,6 +135,7 @@ namespace WpfDebugger
         }
 
         public event EventHandler<RequestPropertyEventArgs> RequestProperty;
+        public event EventHandler<RequestNavigateEventArgs> RequestNavigate;
     }
 
     public class RequestPropertyEventArgs : EventArgs

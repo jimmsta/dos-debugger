@@ -298,5 +298,23 @@ namespace WpfDebugger
         {
             propertiesWindow.SelectedObject = e.SelectedObject;
         }
+
+        private void libraryBrowser_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            //MessageBox.Show("Navigating to " + e.Uri.ToString());
+
+            AssemblyUri uri = e.Uri as AssemblyUri;
+            if (uri == null)
+                return;
+
+            if (uri.Referent is LogicalSegment)
+            {
+                this.disassemblyList.SetView(uri.Referent as LogicalSegment);
+            }
+            else
+            {
+                MessageBox.Show("Not supported");
+            }
+        }
     }
 }

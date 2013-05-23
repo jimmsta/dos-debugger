@@ -57,7 +57,7 @@ namespace Disassembler2
     {
         public string Label
         {
-            get { throw new NotImplementedException(); }
+            get { return base.Name; }
         }
 
         public Address Resolve()

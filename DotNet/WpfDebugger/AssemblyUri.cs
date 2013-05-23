@@ -5,18 +5,18 @@ using Disassembler2;
 namespace WpfDebugger
 {
     /// <summary>
-    /// Represents a custom URI that can be used to address a byte in an
-    /// assembly. See Remarks for details.
+    /// Represents a custom URI used to address a byte in an assembly.
     /// </summary>
     /// <remarks>
     /// An AssemblyUri has the following format:
     ///
-    /// ddd://assembly/segment/offset
+    /// ddd://assembly/type/name/offset
     ///
-    /// All parts are mandatory. Each part is explained below.
+    /// All parts are mandatory except 'offset', which defaults to zero. The
+    /// URI components are explained below.
     /// 
     /// "ddd":
-    ///   Protocal; stands for "_dos _debugger and _decompiler".
+    ///   Protocol; stands for "_dos _debugger and _decompiler".
     ///
     /// assembly:
     ///   Format: "exe" N   or   "lib" N
@@ -31,43 +31,58 @@ namespace WpfDebugger
     ///   within the assembly can be references without explicitly specifying
     ///   the assembly.
     ///   
-    /// segment: 
-    ///   Must be one of the following:
+    /// type & name:
+    ///   Specifies an IAddressReferent object. Supported types and their
+    ///   formats are described below.
     ///   
-    ///   1) decimal number: specifies the zero-based index that uniquely
-    ///      identifies the segment within the assembly.
-    ///   2) module.name: fully qualified name of the segment. Neither module
-    ///      nor name may contain a dot. If multiple matches are found,
-    ///      throws a UriFormatException.
-    ///   3) name: (without dot) if the name is unique within all modules,
-    ///      specifies that segment; otherwise, throws a UriFormatException.
-    ///      
+    ///   'type'='seg' -- segment.
+    ///   'name' must be one of the following:
+    ///     (1) decimal number: specifies the one-based index that uniquely
+    ///         identifies the segment within the assembly.
+    ///     (2) module.name: fully qualified name of the segment. Neither
+    ///         module nor name may contain a dot. If multiple matches are
+    ///         found, throws UriFormatException.
+    ///     (3) name: (without dot) if the name is unique within all modules,
+    ///         specifies that segment; otherwise, throws UriFormatException.
+    ///   'offset' is relative to the beginning of the segment.
+    ///   
+    ///   'type'='sym' -- symbol.
+    ///   'name' specifies the symbol name.
+    ///   'offset' is relative to the location of the symbol.
+    ///    
+    ///   'type'='sub' -- procedure.
+    ///   'name' specifies the name of the procedure.
+    ///   'offset' is relative to the entry point of the procedure.
+    /// 
+    ///   'type'='*' -- wildcard.
+    ///   'name' specifies one of the above names, and the handler tries to
+    ///   resolve it.
+    ///   
     /// offset:
     ///   Hexidecimal offset of the location within the segment. No prefix
     ///   or suffix should be added to indicate that it is hexidecimal. 
-    ///   Leading zeros are not mandatory.
+    ///   Leading zeros are not mandatory. Negative offsets are not supported.
     ///   
     ///   If the offset specifies a position in the middle of an instruction
     ///   or data item, the handler automatically chooses a suitable position
     ///   instead to display the location.
+    ///   
+    /// It is helpful to think of a URI as one would expect to input and get
+    /// a result in a GOTO dialog.
     /// </remarks>
     /// <example>
-    /// ddd://lib1/_ctype._TEXT/0000    _TEXT segment of _ctype module
-    /// ddd://exe1/seg001/0005          address seg001:0005
+    /// ddd://exe1/seg/1/0              first byte of segment 1
+    /// ddd://lib1/seg/_ctype._TEXT/0   first byte of _TEXT segment of _ctype module
+    /// ddd://lib2/sym/_strcpy/0        starting address of symbol '_strcpy'
+    /// ddd://exe2/sub/sub_01234/0      entry point of procedure 'sub_01234'
+    /// ddd://lib3/*/__exit             search for something named __exit
     /// </example>
-    // TODO: we might as well use logical uri, such as
-    // ddd://exe1/ seg/seg001   or   _ctype._TEXT
-    //             sym/_strcpy
-    //             sub/sub17283/7845
-    //             lab/loc12345
-    //             */name-to-search-for
-    //    the three character in between must implement IAddressReferent
-    //    to be precise, change each to #N where N is zero-based decimal
-    // 
-    // i.e. it is the same as one would expect in a goto
-    // 
     public class AssemblyUri : Uri
     {
+        readonly Assembly assembly;
+        readonly IAddressReferent referent;
+        readonly int offset;
+
         public AssemblyUri(string uriString)
             : base(uriString)
         {
@@ -76,11 +91,24 @@ namespace WpfDebugger
         public AssemblyUri(Assembly assembly, IAddressReferent referent, int offset)
             : base(MakeUriString(assembly, referent, offset))
         {
+            this.assembly = assembly;
+            this.referent = referent;
+            this.offset = offset;
         }
 
-        public AssemblyUri(Assembly assembly, Address address)
-            : base(MakeUriString(assembly, address))
+        public Assembly Assembly
         {
+            get { return assembly; }
+        }
+
+        public IAddressReferent Referent
+        {
+            get { return referent; }
+        }
+
+        public int Offset
+        {
+            get { return offset; }
         }
 
         private static string MakeUriString(
@@ -92,38 +120,25 @@ namespace WpfDebugger
             {
                 sb.AppendFormat("ddd://{0}{1}/",
                     assembly is Executable ? "exe" : "lib",
-                    0);
+                    assembly.GetHashCode());
             }
 
-            if (referent != null) // has referent
-            {
-                if (referent is LogicalSegment)
-                {
-                    sb.Append("seg/");
-                }
-                else
-                {
-                    throw new ArgumentException("Unsupported referent type.");
-                }
-            }
-            else
+            if (referent == null) // no referent; must be relative uri
             {
                 if (assembly != null)
                     throw new ArgumentException("Cannot specify assembly without specifying referent.");
             }
+            else if (referent is Segment)
+            {
+                sb.AppendFormat("seg/{0}/", ((Segment)referent).Id);
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported referent type.");
+            }
 
             sb.Append(offset.ToString("X4"));
             return sb.ToString();
-        }
-
-        private static string MakeUriString(Assembly assembly, Address address)
-        {
-            return string.Format(
-                "ddd://{0}{1}/{2}/{3:X4}",
-                assembly is Executable ? "exe" : "lib",
-                0,
-                "unnamed_segment",
-                address.Offset);
         }
     }
 }

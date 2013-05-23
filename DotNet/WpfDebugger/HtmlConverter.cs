@@ -132,7 +132,7 @@ namespace WpfDebugger
                                     foreach (HtmlAttribute attr in tag.Attributes)
                                     {
                                         if (attr.Name == "href")
-                                            hyperlink.NavigateUri = new Uri(attr.Value);
+                                            hyperlink.NavigateUri = new Uri(attr.Value, UriKind.RelativeOrAbsolute);
                                     }
                                 }
                                 element = hyperlink;

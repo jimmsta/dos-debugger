@@ -37,7 +37,10 @@ namespace Disassembler2
 
         public override string ToString()
         {
-            return string.Format("{0}+{1}", Referent.Label, Displacement);
+            if (Displacement == 0)
+                return Referent.Label;
+            else
+                return string.Format("{0}+{1}", Referent.Label, Displacement);
         }
 
 #if false
