@@ -30,10 +30,8 @@ namespace WpfDebugger
         /// </summary>
         private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(IAddressReferent segment)
+        public ListingViewModel(ImageChunk image)
         {
-            ImageChunk image = segment.Resolve().Image;
-
             this.image = image;
 #if false
             // Make a dictionary that maps a location to the error at that location.
@@ -46,7 +44,7 @@ namespace WpfDebugger
 #endif
 
             // Display analyzed code and data.
-            LogicalAddress address = new LogicalAddress(segment, 0);
+            ResolvedAddress address = new ResolvedAddress(image, 0);
             for (int i = 0; i < image.Length; )
             {
                 ImageByte b = image[i];
@@ -98,7 +96,7 @@ namespace WpfDebugger
                     }
                     catch (AddressWrappedException)
                     {
-                        address = LogicalAddress.Invalid;
+                        address = ResolvedAddress.Invalid;
                     }
                     i = j;
                 }
@@ -109,7 +107,7 @@ namespace WpfDebugger
             rowAddresses = new int[rows.Count];
             for (int i = 0; i < rows.Count; i++)
             {
-                rowAddresses[i] = rows[i].Location.ResolvedAddress.Offset;
+                rowAddresses[i] = rows[i].Location.Offset;
             }
 
 #if false
@@ -229,7 +227,7 @@ namespace WpfDebugger
         /// <summary>
         /// Gets the address of the listing row.
         /// </summary>
-        public LogicalAddress Location { get; protected set; }
+        public ResolvedAddress Location { get; protected set; }
 
         /// <summary>
         /// Gets the opcode bytes of this listing row. Must not be null.
@@ -259,7 +257,7 @@ namespace WpfDebugger
             get { return Text; }
         }
 
-        protected ListingRow(int index, LogicalAddress location)
+        protected ListingRow(int index, ResolvedAddress location)
         {
             if (index < 0)
                 throw new ArgumentOutOfRangeException("index");
@@ -297,7 +295,7 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public BlankListingRow(int index, LogicalAddress location, byte[] data)
+        public BlankListingRow(int index, ResolvedAddress location, byte[] data)
             : base(index, location)
         {
             this.data = data;
@@ -329,7 +327,7 @@ namespace WpfDebugger
         private byte[] code;
         private string strInstruction;
 
-        public CodeListingRow(int index, LogicalAddress location, Instruction instruction, byte[] code)
+        public CodeListingRow(int index, ResolvedAddress location, Instruction instruction, byte[] code)
             : base(index, location)
         {
             this.instruction = instruction;
@@ -381,7 +379,7 @@ namespace WpfDebugger
     {
         private byte[] data;
 
-        public DataListingRow(int index, LogicalAddress location, byte[] data)
+        public DataListingRow(int index, ResolvedAddress location, byte[] data)
             : base(index, location)
         {
             this.data = data;
@@ -446,7 +444,7 @@ namespace WpfDebugger
         private BasicBlock block;
 
         public LabelListingRow(int index, BasicBlock block)
-            : base(index, LogicalAddress.Invalid)
+            : base(index, ResolvedAddress.Invalid)
         {
             this.block = block;
         }
@@ -527,5 +525,42 @@ namespace WpfDebugger
         Procedure,
         Segment,
         Executable,
+    }
+
+    public enum SegmentType
+    {
+        /// <summary>
+        /// Indicates a logical segment.
+        /// </summary>
+        /// <remarks>
+        /// A logical segment is not associated with a canonical frame, and
+        /// therefore does not have a frame number. The offset within a
+        /// logical segment is relative to the beginning of the segment,
+        /// and may be changed at run-time; therefore it is not meaningful
+        /// to address an offset relative to the segment; only self-relative
+        /// addressing should be used.
+        /// 
+        /// A logical segment may be combined with other logical segments to
+        /// form a relocatable segment.
+        /// </remarks>
+        Logical,
+
+        /// <summary>
+        /// Indicates a relocatable segment.
+        /// </summary>
+        /// <remarks>
+        /// A relocatable segment is associated with a canonical frame,
+        /// which is the frame with the largest frame number that contains
+        /// the segment. This frame number is meaningful, but it is subject
+        /// to relocation when the image is loaded into memory.
+        /// 
+        /// An offset within a relocatable segment is relative to the
+        /// canonical frame that contains the segment, and NOT relative to
+        /// the beginning of the segment. To avoid confusion, it is convenient
+        /// to think of a relocatable segment as always starting at paragraph
+        /// boundary, though in practice the first few bytes may actually be
+        /// used by a previous segment.
+        /// </remarks>
+        Relocatable,
     }
 }

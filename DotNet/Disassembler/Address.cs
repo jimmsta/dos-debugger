@@ -177,6 +177,35 @@ namespace Disassembler2
     {
     }
 
+    // TODO: try simplify ResolvedAddress to segment:offset, where segment
+    // is a 16-bit segment id, and offset is a 16-bit offset. 
+    // 
+    // For EXE, the segment selector is an actual frame address relative
+    // to the beginning of the load module.
+    //
+    // For LIB, the segment selector is a sequential id assigned to each
+    // logical segment in turn. This will allow at most 65536 segments,
+    // but should be adequate for practical purposes.
+    //
+    // This has the following benefits:
+    // 1 - it simplifies the logic, because segment will have a 1-to-1 
+    //     mapping to ImageChunk
+    // 2 - it enables all addresses to be comparable lexicographically,
+    //     i.e. first by segment selector and then by offset. We can
+    //     then simplify the RangeDictionary into one dictionary i/o
+    //     two levels.
+    // 3 - it unifies EXE and LIB representation, and both can be 
+    //     intuitive.
+    // 4 - it reduces storage by half.
+    // 5 - we can then recover BinaryImage, where it is segmented and
+    //     the storages may or may not be contiguous.
+    //
+    // Drawbacks:
+    // 1 - We need to keep a handle to the containing Assembly in order to
+    //     access such an address.
+    // 2 - the ImageByte property will not work; so coding will be a little
+    //     bit more verbose, but with clearer logic.
+
     /// <summary>
     /// Represents a unique address in an assembly, expressed as an offset
     /// within a specific image chunk. Note that a ResolvedAddress is not
@@ -241,6 +270,48 @@ namespace Disassembler2
         /// Represents an invalid (null) resolved address.
         /// </summary>
         public static readonly ResolvedAddress Invalid = new ResolvedAddress();
+
+        public static int CompareByLexical(ResolvedAddress a, ResolvedAddress b)
+        {
+            int cmp = a.Image.GetHashCode().CompareTo(b.Image.GetHashCode());
+            if (cmp == 0)
+                cmp = a.Offset.CompareTo(b.Offset);
+            return cmp;
+        }
+
+        /// <summary>
+        /// Increments the offset by the given amount, throwing an exception
+        /// if this would cause it to wrap around 0xFFFF or 0.
+        /// </summary>
+        /// <param name="increment">The amount to increment. A negative value
+        /// indicates decrement.</param>
+        /// <returns>
+        /// An address with the same segment selector and incremented offset.
+        /// </returns>
+        /// <exception cref="AddressWrappedException">If adding the increment
+        /// would wrap the offset around 0xFFFF or 0.</exception>
+        public ResolvedAddress Increment(int increment)
+        {
+            if (increment > 0xFFFF - (int)offset ||
+                increment < -(int)offset)
+            {
+                throw new AddressWrappedException();
+            }
+            return this.IncrementWithWrapping(increment);
+        }
+
+        /// <summary>
+        /// Increments the offset by a given amount, wrapping it around 0xFFFF
+        /// if the result is bigger.
+        /// </summary>
+        /// <param name="increment">The amount to increment.</param>
+        /// <returns>
+        /// The incremented (and possibly wrapped) address.
+        /// </returns>
+        public ResolvedAddress IncrementWithWrapping(int increment)
+        {
+            return new ResolvedAddress(image, (UInt16)(offset + increment));
+        }
     }
 
     public struct PhysicalAddress : IAddressReferent

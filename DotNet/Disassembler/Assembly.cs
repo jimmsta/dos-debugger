@@ -338,7 +338,7 @@ namespace Disassembler2
         /// Dictionary that maps the (resolved) entry point address of a
         /// procedure to the corresponding Procedure object.
         /// </summary>
-        private readonly Dictionary<ResolvedAddress, Procedure> procMap
+        readonly Dictionary<ResolvedAddress, Procedure> procMap
             = new Dictionary<ResolvedAddress, Procedure>();
 
         /// <summary>
@@ -370,46 +370,11 @@ namespace Disassembler2
         /// between two procedures and keeping track all (or any) of them
         /// in real time is not really useful.
         /// </remarks>
-        internal XRefCollection callGraph;
+        readonly XRefCollection callGraph = new XRefCollection();
 
         public ProcedureCollection()
         {
-            this.callGraph = new XRefCollection();
-            //assembly.CrossReferences.XRefAdded += CrossReferences_XRefAdded;
         }
-
-#if false
-        /// <summary>
-        /// Raised after the disassembler adds a new xref to the assembly.
-        /// We update our call graph in this handler.
-        /// </summary>
-        private void CrossReferences_XRefAdded(object sender, LogicalXRefAddedEventArgs e)
-        {
-            XRef x = e.XRef;
-            if ((x.Type == XRefType.NearCall || x.Type == XRefType.FarCall) &&
-                (x.Source != LogicalAddress.Invalid && x.Target != LogicalAddress.Invalid))
-            {
-                Procedure caller = x.Source.ImageByte.Procedure;
-                //Procedure callee = Find(entryPoint: x.Target.LinearAddress);
-                Procedure callee = x.Target.ImageByte.Procedure;
-                if (caller == null || callee == null)
-                {
-                    throw new InvalidOperationException(
-                        "A function call cross reference was added, but the functions are not defined.");
-                }
-                System.Diagnostics.Debug.Assert(callee.EntryPoint == x.Target);
-                // TBD: how can we make sure the logical addresses agree?
-
-                XRef xCall = new XRef(
-                    type: x.Type,
-                    source: caller.EntryPoint,
-                    target: x.Target,
-                    dataLocation: x.Source
-                );
-                callGraph.Add(xCall);
-            }
-        }
-#endif
 
         /// <summary>
         /// Finds a procedure at the given entry point.
@@ -426,54 +391,19 @@ namespace Disassembler2
                 return null;
         }
 
-#if false
-        /// <summary>
-        /// Creates a procedure at the given entry point.
-        /// </summary>
-        /// <param name="entryPoint"></param>
-        /// <returns></returns>
-        public Procedure Create(LogicalAddress entryPoint)
-        {
-            ResolvedAddress address = entryPoint.ResolvedAddress;
-            if (procMap.ContainsKey(address))
-            {
-                throw new InvalidOperationException(
-                    "A procedure already exists with the given entry point address.");
-            }
-
-            Procedure proc = new Procedure(entryPoint);
-            procMap.Add(address, proc);
-            return proc;
-        }
-#endif
-
-        public void AddCallGraphEdge(Procedure caller, Procedure callee, XRef xref)
-        {
-            if (caller == null)
-                throw new ArgumentNullException("caller");
-            if (callee == null)
-                throw new ArgumentNullException("callee");
-            if (xref == null)
-                throw new ArgumentNullException("xref");
-
-            // TBD: check that the xref indeed refers to these two
-            // procedures.
-#if false
-            XRef xCall = new XRef(
-                type: xref.Type,
-                source: caller.EntryPoint,
-                target: callee.EntryPoint,
-                dataLocation: xref.Source
-            );
-            callGraph.Add(xCall);
-#endif
-        }
-
         #region ICollection implementation
 
-        public void Add(Procedure item)
+        public void Add(Procedure procedure)
         {
-            throw new NotImplementedException();
+            if (procedure == null)
+                throw new ArgumentNullException("procedure");
+
+            if (procMap.ContainsKey(procedure.EntryPoint))
+            {
+                throw new ArgumentException(
+                    "A procedure already exists with the given entry point address.");
+            }
+            procMap.Add(procedure.EntryPoint, procedure);
         }
 
         public void Clear()
@@ -483,12 +413,15 @@ namespace Disassembler2
 
         public bool Contains(Procedure item)
         {
-            throw new NotImplementedException();
+            if (item == null)
+                return false;
+            else
+                return Find(item.EntryPoint) == item;
         }
 
         public void CopyTo(Procedure[] array, int arrayIndex)
         {
-            throw new NotImplementedException();
+            this.procMap.Values.CopyTo(array, arrayIndex);
         }
 
         public int Count
@@ -498,7 +431,7 @@ namespace Disassembler2
 
         public bool IsReadOnly
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool Remove(Procedure item)
@@ -517,5 +450,28 @@ namespace Disassembler2
         }
 
         #endregion
+
+        public void AddCallGraphEdge(Procedure caller, Procedure callee, XRef xref)
+        {
+            if (caller == null)
+                throw new ArgumentNullException("caller");
+            if (callee == null)
+                throw new ArgumentNullException("callee");
+            if (xref == null)
+                throw new ArgumentNullException("xref");
+
+            System.Diagnostics.Debug.Assert(this.Contains(caller));
+            System.Diagnostics.Debug.Assert(this.Contains(callee));
+
+            // TBD: check that the xref indeed refers to these two
+            // procedures.
+            XRef xCall = new XRef(
+                type: xref.Type,
+                source: caller.EntryPoint,
+                target: callee.EntryPoint,
+                dataLocation: xref.Source
+            );
+            callGraph.Add(xCall);
+        }
     }
 }

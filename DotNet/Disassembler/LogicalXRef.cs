@@ -13,17 +13,17 @@ namespace Disassembler2
     {
         /// <summary>
         /// Gets the target address being referenced. This may be set to
-        /// <code>LogicalAddress.Invalid</code> if the target address cannot
+        /// <code>ResolvedAddress.Invalid</code> if the target address cannot
         /// be determined, such as in a dynamic jump or call.
         /// </summary>
-        public LogicalAddress Target { get; private set; }
+        public ResolvedAddress Target { get; private set; }
 
         /// <summary>
         /// Gets the source address that refers to target. This may be set to
-        /// <code>LogicalAddress.Invalid</code> if the source address cannot
+        /// <code>ResolvedAddress.Invalid</code> if the source address cannot
         /// be determined, such as in the entry routine of a program.
         /// </summary>
-        public LogicalAddress Source { get; private set; }
+        public ResolvedAddress Source { get; private set; }
 
         /// <summary>
         /// Gets the type of this cross-reference.
@@ -35,7 +35,9 @@ namespace Disassembler2
         /// if Type is NearIndexedJump or FarIndexedJump, where DataLocation
         /// contains the address of the jump table entry.
         /// </summary>
-        public LogicalAddress DataLocation { get; private set; }
+        public ResolvedAddress DataLocation { get; private set; }
+
+        public XRefContext Context { get; set; }
 
         /// <summary>
         /// Returns true if this xref is dynamic, i.e. its Target address
@@ -43,14 +45,14 @@ namespace Disassembler2
         /// </summary>
         public bool IsDynamic
         {
-            get { return Target == LogicalAddress.Invalid; }
+            get { return Target == ResolvedAddress.Invalid; }
         }
 
         public XRef()
         {
         }
 
-        public XRef(XRefType type, LogicalAddress source, LogicalAddress target, LogicalAddress dataLocation)
+        public XRef(XRefType type, ResolvedAddress source, ResolvedAddress target, ResolvedAddress dataLocation)
         {
             this.Source = source;
             this.Target = target;
@@ -58,8 +60,8 @@ namespace Disassembler2
             this.DataLocation = dataLocation;
         }
 
-        public XRef(XRefType type, LogicalAddress source, LogicalAddress target)
-            : this(type, source, target, LogicalAddress.Invalid)
+        public XRef(XRefType type, ResolvedAddress source, ResolvedAddress target)
+            : this(type, source, target, ResolvedAddress.Invalid)
         {
         }
 
@@ -92,16 +94,6 @@ namespace Disassembler2
         public static int CompareByPriority(XRef x, XRef y)
         {
             return (int)x.Type - (int)y.Type;
-        }
-
-        ResolvedAddress IGraphEdge<ResolvedAddress>.Source
-        {
-            get { return this.Source.ResolvedAddress; }
-        }
-
-        ResolvedAddress IGraphEdge<ResolvedAddress>.Target
-        {
-            get { return this.Target.ResolvedAddress; }
         }
     }
 
@@ -177,6 +169,14 @@ namespace Disassembler2
     }
 
     /// <summary>
+    /// Provides additional information related to a cross reference.
+    /// </summary>
+    public class XRefContext
+    {
+        public LogicalAddress LogicalTarget;
+    }
+
+    /// <summary>
     /// Maintains a collection of cross references and provides methods to
     /// find xrefs by source or target efficiently.
     /// </summary>
@@ -214,8 +214,8 @@ namespace Disassembler2
             {
                 throw new ArgumentNullException("xref");
             }
-            if (xref.Source == LogicalAddress.Invalid &&
-                xref.Target == LogicalAddress.Invalid)
+            if (xref.Source == ResolvedAddress.Invalid &&
+                xref.Target == ResolvedAddress.Invalid)
             {
                 throw new ArgumentException("Source and Target cannot be both Invalid.");
             }

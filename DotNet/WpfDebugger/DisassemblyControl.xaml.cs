@@ -30,12 +30,11 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(IAddressReferent viewObject)
+        public void SetView(ImageChunk image)
         {
             this.DataContext = null;
 
-
-            this.viewModel = new ListingViewModel(viewObject);
+            this.viewModel = new ListingViewModel(image);
             this.DataContext = viewModel;
         }
 

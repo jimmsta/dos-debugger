@@ -204,8 +204,6 @@ namespace Disassembler2
             if (xref == null)
                 throw new ArgumentNullException("xref");
 
-            throw new NotImplementedException();
-#if false
             // TODO: verify that the basic blocks exist in this collection.
             XRef xFlow = new XRef(
                 type: xref.Type,
@@ -214,7 +212,6 @@ namespace Disassembler2
                 dataLocation: xref.Source
             );
             controlFlowGraph.Add(xFlow);
-#endif
         }
     }
 }

@@ -123,7 +123,7 @@ namespace WpfDebugger
             Disassembler16New dasm = new Disassembler16New(library);
             dasm.Analyze(entryPoint);
 
-            this.disassemblyList.SetView(symbol.BaseSegment);
+            this.disassemblyList.SetView(symbol.BaseSegment.Image);
 
             this.libraryBrowser.Library = library;
         }
