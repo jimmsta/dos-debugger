@@ -44,6 +44,16 @@
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling">
 
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}">
+                    <Setter Property="Foreground">
+                        <Setter.Value>
+                            <SolidColorBrush Color="{Binding Path=ForeColor}"/>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListView.ItemContainerStyle>
+           
             <ListView.View>
                 <GridView>
 
@@ -74,7 +84,7 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     
-                    <GridViewColumn Header="Disassembly" Width="250">
+                    <GridViewColumn Header="Disassembly" Width="500">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <DataTemplate.Resources>

@@ -40,7 +40,7 @@ namespace Disassembler2
             if (Displacement == 0)
                 return Referent.Label;
             else
-                return string.Format("{0}+{1}", Referent.Label, Displacement);
+                return string.Format("{0}+{1:X4}", Referent.Label, Displacement);
         }
 
 #if false

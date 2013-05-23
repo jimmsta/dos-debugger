@@ -138,7 +138,7 @@ namespace Disassembler2
             }
         }
 
-        public string Label
+        public virtual string Label
         {
             get { throw new NotImplementedException(); }
         }

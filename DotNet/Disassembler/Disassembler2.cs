@@ -484,7 +484,7 @@ namespace Disassembler2
                 }
                 catch (BrokenFixupException ex)
                 {
-                    AddError(pos, ErrorCode.BrokenFixup, "Broken fix-up: {0}", ex.Message);
+                    AddError(pos, ErrorCode.BrokenFixup, "Broken fix-up: {0}", ex.Fixup);
                     break;
                 }
                 catch (Exception ex)

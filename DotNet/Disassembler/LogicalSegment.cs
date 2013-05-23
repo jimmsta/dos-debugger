@@ -100,6 +100,11 @@ namespace Disassembler2
         }
 #endif
 
+        public override string Label
+        {
+            get { return Name; }
+        }
+
         public ImageChunk Image { get; internal set; }
 
         public override string ToString()

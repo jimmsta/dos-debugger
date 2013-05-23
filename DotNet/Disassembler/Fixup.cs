@@ -64,6 +64,13 @@ namespace Disassembler2
         /// </summary>
         public FixupFrame Frame { get; internal set; }
 
+        public override string ToString()
+        {
+            return string.Format(
+                "Type={0},Mode={1},Target={2}",
+                LocationType, Mode, Target);
+        }
+
         /// <summary>
         /// Gets the number of bytes to fix up. This is inferred from the
         /// LocationType property.

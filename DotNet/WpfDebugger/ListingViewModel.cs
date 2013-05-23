@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
+using System.Windows.Media;
 using Disassembler2;
 using Util.Data;
 using X86Codec;
@@ -34,21 +36,27 @@ namespace WpfDebugger
         {
             ImageChunk image = segment.Image;
             this.image = image;
-#if false
-            // Make a dictionary that maps a location to the error at that location.
-            // TODO: there may be multiple errors at a single location.
-            Dictionary<LinearPointer, Error> errorMap = new Dictionary<LinearPointer, Error>();
-            foreach (Error error in image.Errors)
-            {
-                errorMap[error.Location.LinearAddress] = error;
-            }
-#endif
+
+            // Make a list of the errors in this segment. Ideally we should
+            // put this logic into ErrorCollection. But for convenience we
+            // leave it here for the moment.
+            List<Error> errors =
+                (from error in assembly.Errors
+                 where error.Location.Segment == segment.Id
+                 orderby error.Location
+                 select error).ToList();
+            int iError = 0;
 
             // Display analyzed code and data.
             Address address = new Address(segment.Id, 0);
             for (int i = 0; i < image.Length; )
             {
                 ImageByte b = image[i];
+
+                while (iError < errors.Count && errors[iError].Location.Offset <= i)
+                {
+                    rows.Add(new ErrorListingRow(assembly, errors[iError++]));
+                }
 
                 if (IsLeadByteOfCode(b))
                 {
@@ -106,6 +114,10 @@ namespace WpfDebugger
                 }
             }
 
+            while (iError < errors.Count)
+            {
+                rows.Add(new ErrorListingRow(assembly, errors[iError++]));
+            }
 
             // Create a sorted array containing the address of each row.
             rowAddresses = new int[rows.Count];
@@ -246,6 +258,11 @@ namespace WpfDebugger
         public Address Location
         {
             get { return location; }
+        }
+
+        public virtual Color ForeColor
+        {
+            get { return Colors.Black; }
         }
 
         /// <summary>
@@ -445,6 +462,11 @@ namespace WpfDebugger
             : base(assembly, error.Location)
         {
             this.error = error;
+        }
+
+        public override Color ForeColor
+        {
+            get { return Colors.Red; }
         }
 
         public override byte[] Opcode
