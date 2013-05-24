@@ -29,7 +29,7 @@ namespace Disassembler2
         /// This name is defined by the LIBMOD subrecord of COMENT.
         /// </remarks>
         [Browsable(true)]
-        public string ObjectName { get; internal set; }
+        public string Name { get; internal set; }
 
         /// <summary>
         /// Gets the source file name of the object module.
@@ -99,10 +99,10 @@ namespace Disassembler2
 
         public override string ToString()
         {
-            if (this.ObjectName == null)
+            if (this.Name == null)
                 return this.SourceName;
             else
-                return string.Format("{0} ({1})", this.ObjectName, this.SourceName);
+                return string.Format("{0} ({1})", this.Name, this.SourceName);
         }
     }
 }

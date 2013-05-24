@@ -67,8 +67,8 @@ namespace Disassembler2
         public override string ToString()
         {
             return string.Format(
-                "Type={0},Mode={1},Target={2}",
-                LocationType, Mode, Target);
+                "[{0:X4},{1:X4}) => {2} of {3}",
+                StartIndex, EndIndex, LocationType, Target);
         }
 
         /// <summary>
@@ -275,18 +275,29 @@ namespace Disassembler2
             int k = BinarySearch(fixup.StartIndex);
             if (k >= 0) // already exists
             {
-                System.Diagnostics.Debug.WriteLine("FixupCollection: Overlaps with an existing fixup.");
+                WarnOverlap(fixups[k], fixup);
                 return;
             }
 
             k = ~k;
-            if (k > 0 && fixups[k - 1].EndIndex > fixup.StartIndex ||
-                k < fixups.Count && fixup.EndIndex > fixups[k].StartIndex)
+            if (k > 0 && fixups[k - 1].EndIndex > fixup.StartIndex)
             {
-                System.Diagnostics.Debug.WriteLine("FixupCollection: Overlaps with an existing fixup.");
+                WarnOverlap(fixups[k - 1], fixup);
+                return;
+            }
+            if (k < fixups.Count && fixup.EndIndex > fixups[k].StartIndex)
+            {
+                WarnOverlap(fixups[k], fixup);
                 return;
             }
             fixups.Insert(k, fixup);
+        }
+
+        private static void WarnOverlap(Fixup existing, Fixup newone)
+        {
+            System.Diagnostics.Debug.WriteLine(string.Format(
+                "FixupCollection: Overlaps with an existing fixup: existing={0}, new={1}.",
+                existing, newone));
         }
 
         public void Clear()

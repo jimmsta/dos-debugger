@@ -254,7 +254,7 @@ namespace Disassembler2.Omf
         internal LIBMODComment(RecordReader reader, RecordContext context)
         {
             this.ModuleName = reader.ReadPrefixedString();
-            context.Module.ObjectName = ModuleName;
+            context.Module.Name = ModuleName;
         }
 
         public override string ToString()

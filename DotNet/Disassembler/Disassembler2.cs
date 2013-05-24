@@ -490,11 +490,13 @@ namespace Disassembler2
                 Instruction insn;
                 try
                 {
-                    insn = image.DecodeInstruction(pos.Offset);
+                    insn = DecodeInstruction(image, pos.Segment, pos.Offset);
                 }
                 catch (BrokenFixupException ex)
                 {
-                    AddError(pos, ErrorCode.BrokenFixup, "Broken fix-up: {0}", ex.Fixup);
+                    AddError(
+                        new Address(pos.Segment, ex.Fixup.StartIndex),
+                        ErrorCode.BrokenFixup, "Broken fix-up: {0}", ex.Fixup);
                     break;
                 }
                 catch (Exception ex)
@@ -772,6 +774,89 @@ namespace Disassembler2
             System.Diagnostics.Debug.WriteLine(string.Format(format, args));
         }
 #endif
+
+        /// <summary>
+        /// Decodes an instruction at the given offset, applying associated
+        /// fix-up information if present.
+        /// </summary>
+        /// <returns>The decoded instruction.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If offset refers to
+        /// a location outside of the image.</exception>
+        public Instruction DecodeInstruction(ImageChunk image, int segment, int offset)
+        {
+            if (offset < 0 || offset >= image.Length)
+                throw new ArgumentOutOfRangeException("offset");
+
+            Instruction instruction = X86Codec.Decoder.Decode(
+                image.Data, offset, CpuMode.RealAddressMode);
+
+            // Find the first fixup that covers the instruction. If no
+            // fix-up covers the instruction, find the closest fix-up
+            // that comes after.
+            int fixupIndex = image.Fixups.BinarySearch(offset);
+            if (fixupIndex < 0)
+                fixupIndex = ~fixupIndex;
+
+            for (int i = 0; i < instruction.Operands.Length; i++)
+            {
+                if (fixupIndex >= image.Fixups.Count) // no more fixups
+                    break;
+
+                Fixup fixup = image.Fixups[fixupIndex];
+                if (fixup.StartIndex >= offset + instruction.EncodedLength) // past end
+                    break;
+
+                Operand operand = instruction.Operands[i];
+                if (operand.FixableLocation.Length > 0)
+                {
+                    int start = offset + operand.FixableLocation.StartOffset;
+                    int end = start + operand.FixableLocation.Length;
+
+                    if (fixup.StartIndex >= end)
+                        continue;
+
+                    if (fixup.StartIndex != start || fixup.EndIndex != end)
+                    {
+                        // throw new BrokenFixupException(fixup);
+                        AddError(new Address(segment, fixup.StartIndex),
+                            ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                        continue;
+                    }
+
+                    instruction.Operands[i].Tag = fixup.Target;
+                    ++fixupIndex;
+                }
+            }
+
+            if (fixupIndex < image.Fixups.Count)
+            {
+                Fixup fixup = image.Fixups[fixupIndex];
+                if (fixup.StartIndex < offset + instruction.EncodedLength)
+                {
+                    AddError(new Address(segment, fixup.StartIndex),
+                        ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                }
+            }
+
+#if true
+            // Run a second pass to replace RelativeOperand with
+            // SourceAwareRelativeOperand.
+            // TODO: make SourceAwareRelativeOperand.Target a dummy
+            // SymbolicTarget, so that we can handle them consistently.
+            for (int i = 0; i < instruction.Operands.Length; i++)
+            {
+                if (instruction.Operands[i] is RelativeOperand &&
+                    instruction.Operands[i].Tag == null)
+                {
+                    instruction.Operands[i] = new SourceAwareRelativeOperand(
+                        (RelativeOperand)instruction.Operands[i],
+                        new Address(0, offset + instruction.EncodedLength));
+                }
+            }
+#endif
+
+            return instruction;
+        }
 
         private void AddError(
             Address location, ErrorCode errorCode,

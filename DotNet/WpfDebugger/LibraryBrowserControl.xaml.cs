@@ -172,7 +172,7 @@ namespace WpfDebugger
                 this.Modules = 
                     new ObservableCollection<ModuleItem>(
                         from ObjectModule module in library.Modules
-                        //orderby module.ObjectName
+                        orderby module.Name
                         select new ModuleItem(module));
             }
 
@@ -201,7 +201,7 @@ namespace WpfDebugger
         {
             [Xceed.Wpf.Toolkit.PropertyGrid.Attributes.ExpandableObject]
             public ObjectModule Module { get; private set; }
-            public string Name { get { return Module.ObjectName; } }
+            public string Name { get { return Module.Name; } }
             public ObservableCollection<ITreeNode> Symbols { get; private set; }
 
             public ModuleItem(ObjectModule module)

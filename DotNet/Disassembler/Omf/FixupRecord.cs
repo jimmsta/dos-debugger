@@ -22,6 +22,10 @@ namespace Disassembler2.Omf
         {
             List<FixupThreadDefinition> threads = new List<FixupThreadDefinition>();
             List<FixupDefinition> fixups = new List<FixupDefinition>();
+            if (context.Module.Name == "87fcall")
+            {
+                int kk = 1;
+            }
             while (!reader.IsEOF)
             {
                 byte b = reader.PeekByte();

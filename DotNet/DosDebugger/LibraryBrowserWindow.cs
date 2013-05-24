@@ -46,7 +46,7 @@ namespace DosDebugger
             root.Tag = library;
             foreach (ObjectModule module in library.Modules)
             {
-                TreeNode nodeModule = root.Nodes.Add(module.ObjectName);
+                TreeNode nodeModule = root.Nodes.Add(module.Name);
                 nodeModule.Tag = module;
                 foreach (DefinedSymbol symbol in module.DefinedNames)
                 {

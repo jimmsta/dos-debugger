@@ -117,6 +117,22 @@ namespace WpfDebugger
             this.assembly = library;
             library.ResolveAllSymbols();
 
+            // Display all unresolved symbols.
+            foreach (string key in library.GetUnresolvedSymbols())
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format(
+                    "Symbol {0} is unresolved.", key));
+            }
+
+            string symbolToFind = "FISRQQ";
+            foreach (var mod in library.Symbols[symbolToFind])
+            {
+                System.Diagnostics.Debug.WriteLine(string.Format(
+                    "Symbol {0} is defined in module {1}",
+                    symbolToFind, mod.Name));
+            }
+            //library.DuplicateSymbols
+
             ObjectModule module = library.FindModule("_ctype");
             DefinedSymbol symbol = module.DefinedNames.Find(x => x.Name == "_isupper");
             Address entryPoint = new Address(

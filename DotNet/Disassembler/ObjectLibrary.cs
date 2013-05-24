@@ -31,11 +31,17 @@ namespace Disassembler2
         public ObjectModule[] Modules { get; internal set; }
 #endif
 
-        public Dictionary<string, List<ObjectModule>> DuplicateSymbols
-            = new Dictionary<string, List<ObjectModule>>();
+        public readonly SortedDictionary<string, List<ObjectModule>> Symbols
+            = new SortedDictionary<string, List<ObjectModule>>();
 
-        public Dictionary<string, List<ObjectModule>> UnresolvedSymbols
-            = new Dictionary<string, List<ObjectModule>>();
+        public IEnumerable<string> GetUnresolvedSymbols()
+        {
+            foreach (var kv in Symbols)
+            {
+                if (kv.Value == null)
+                    yield return kv.Key;
+            }
+        }
 
         public ObjectModule FindModule(string name)
         {
@@ -44,7 +50,7 @@ namespace Disassembler2
 
             foreach (ObjectModule module in Modules)
             {
-                if (module.ObjectName == name)
+                if (module.Name == name)
                     return module;
             }
             return null;
@@ -66,43 +72,30 @@ namespace Disassembler2
 
         public void ResolveAllSymbols()
         {
-            // First, we need to build a map of each public name.
-            var nameDefs = new Dictionary<string, ObjectModule>();
+            // First, build a map of each public name.
             foreach (ObjectModule module in Modules)
             {
                 foreach (var name in module.DefinedNames)
                 {
-                    if (nameDefs.ContainsKey(name.Name))
+                    List<ObjectModule> definitionList;
+                    if (!Symbols.TryGetValue(name.Name, out definitionList))
                     {
-                        var prevDef = nameDefs[name.Name];
+                        definitionList = new List<ObjectModule>(1);
+                        Symbols.Add(name.Name, definitionList);
                     }
-                    nameDefs[name.Name] = module;
+                    definitionList.Add(module);
                 }
             }
 
-            // Create a dummy node for "unresolved external symbols".
-            // ...
-
-            // Next, we create an edge for each external symbol reference.
+            // Next, try to resolve each external symbol.
+            // TODO: check aliases.
             foreach (ObjectModule module in Modules)
             {
                 foreach (var name in module.ExternalNames)
                 {
-                    ObjectModule defModule;
-                    if (nameDefs.TryGetValue(name.Name, out defModule))
+                    if (!Symbols.ContainsKey(name.Name)) // cannot resolve
                     {
-                        // ...
-                    }
-                    else // unresolved external symbol
-                    {
-                        // ...
-                        List<ObjectModule> list;
-                        if (!UnresolvedSymbols.TryGetValue(name.Name, out list))
-                        {
-                            list = new List<ObjectModule>();
-                            UnresolvedSymbols.Add(name.Name, list);
-                        }
-                        list.Add(module);
+                        Symbols.Add(name.Name, null); // indicate that it's not there
                     }
                 }
             }
