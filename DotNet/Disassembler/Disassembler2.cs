@@ -422,6 +422,16 @@ namespace Disassembler2
         {
             Address pos = start.Target;
             ImageChunk image = program.GetSegment(pos.Segment);
+
+            // Check bounds.
+            if (!image.Bounds.Contains(pos.Offset))
+            {
+                AddError(pos, ErrorCode.OutOfImage,
+                    "XRef target is outside of the image (referred from {0})",
+                    start.Source);
+                return null;
+            }
+
             ImageByte b = image[pos.Offset];
 
             // Check if the entry address is already analyzed.
@@ -653,6 +663,20 @@ namespace Disassembler2
                 default:
                     // Not a b/c/j instruction; do nothing.
                     return null;
+            }
+
+            // Handle symbolic instructions.
+            if (instruction.Operands[0].Tag != null)
+            {
+                AddError(start, ErrorCode.UnresolvedTarget,
+                    "Cannot resolve target: {0}.", 
+                    instruction.Operands[0].Tag);
+
+                return new XRef(
+                    type: bcjType,
+                    source: start,
+                    target: Address.Invalid
+                );
             }
 
             // Create a cross-reference depending on the type of operand.

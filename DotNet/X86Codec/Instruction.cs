@@ -8,13 +8,6 @@ namespace X86Codec
     /// </summary>
     public class Instruction
     {
-#if false
-        /// <summary>
-        /// Gets or sets the location (CS:IP) of the instruction.
-        /// </summary>
-        public Pointer Location { get; set; }
-#endif
-
         /// <summary>
         /// Gets or sets the encoded length (in bytes) of the instruction.
         /// </summary>
@@ -35,39 +28,12 @@ namespace X86Codec
         public Operand[] Operands { get; set; }
 
         /// <summary>
-        /// Converts the instruction to a string in Intel syntax.
+        /// Converts the instruction to a string using the default formatter.
         /// </summary>
         /// <returns>The formatted instruction.</returns>
         public override string ToString()
         {
-            StringBuilder s = new StringBuilder();
-
-            // Format group 1 (LOCK/REPZ/REPNZ) prefix.
-            if ((Prefix & Prefixes.Group1) != 0)
-            {
-                s.Append((Prefix & Prefixes.Group1).ToString());
-                s.Append(' ');
-            }
-
-            // Format mnemonic.
-            s.Append(Operation.ToString());
-
-            // Format operands.
-            for (int i = 0; i < Operands.Length; i++)
-            {
-                if (i > 0)
-                {
-                    s.Append(',');
-                }
-                s.Append(' ');
-                s.Append(FormatOperand(Operands[i]));
-            }
-            return s.ToString().ToLowerInvariant();
-        }
-
-        private string FormatOperand(Operand operand)
-        {
-            return operand.ToString();
+            return InstructionFormatter.Default.FormatInstruction(this);
         }
     }
 

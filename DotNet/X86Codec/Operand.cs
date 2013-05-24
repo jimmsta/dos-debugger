@@ -9,29 +9,20 @@ namespace X86Codec
     public abstract class Operand
     {
         /// <summary>
-        /// Converts an unsigned integer to hexidecimal string of the form
-        /// "0f43h" or "5".
+        /// Gets or sets a user-defined token associated with the operand.
+        /// This property is not used by X86Codec assembly.
         /// </summary>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        internal static string FormatImmediate(UInt64 number)
-        {
-            if (number < 10)
-            {
-                return number.ToString();
-            }
-            else
-            {
-                string s = string.Format("0{0:x}h", number);
-                if (s[1] > '9')
-                    return s;
-                else
-                    return s.Substring(1);
-            }
-        }
+        public object Tag { get; set; }
 
         /// <summary>
-        /// Represents the location within an instruction, expressed as an
+        /// Gets the range that is fixable, relative to the beginning of the
+        /// instruction. If this operand does not contain a fixable part,
+        /// returns an empty range.
+        /// </summary>
+        public abstract Location FixableLocation { get; }
+
+        /// <summary>
+        /// Represents a location within an instruction, expressed as an
         /// offset to the beginning of the instruction.
         /// </summary>
         public struct Location
@@ -117,6 +108,11 @@ namespace X86Codec
             this.size = size;
         }
 
+        public override Location FixableLocation
+        {
+            get { return immediate.Location; }
+        }
+
         public override string ToString()
         {
             switch (size)
@@ -136,16 +132,26 @@ namespace X86Codec
     /// </summary>
     public class RegisterOperand : Operand
     {
-        public Register Register { get; private set; }
+        readonly Register register;
+
+        public Register Register
+        {
+            get { return register; }
+        }
 
         public RegisterOperand(Register register)
         {
-            this.Register = register;
+            this.register = register;
+        }
+
+        public override Operand.Location FixableLocation
+        {
+            get { return new Location(); }
         }
 
         public override string ToString()
         {
-            return this.Register.ToString();
+            return register.ToString();
         }
     }
 
@@ -165,70 +171,25 @@ namespace X86Codec
         /// </summary>
         public byte Scaling { get; set; }
 
-        public LocationAware<int> Displacement { get; set; } // sign-extended
+        // sign-extended, but should wrap around 0xFFFF.
+        public LocationAware<int> Displacement { get; set; }
 
         public MemoryOperand()
         {
             this.Scaling = 1;
         }
 
+        public override Operand.Location FixableLocation
+        {
+            get { return this.Displacement.Location; }
+        }
+
         /// <summary>
-        /// Formats a memory operand in the form "dword ptr es:[ax+si*4+10]".
+        /// Converts the operand to a string using the default formatter.
         /// </summary>
-        /// <returns></returns>
         public override string ToString()
         {
-            CpuSize size = Size;
-            string prefix =
-                (size == CpuSize.Use8Bit) ? "BYTE" :
-                (size == CpuSize.Use16Bit) ? "WORD" :
-                (size == CpuSize.Use32Bit) ? "DWORD" :
-                (size == CpuSize.Use64Bit) ? "QWORD" :
-                (size == CpuSize.Use128Bit) ? "DQWORD" : "";
-
-            StringBuilder s = new StringBuilder();
-            if (prefix != "")
-            {
-                s.Append(prefix);
-                s.Append(" PTR ");
-            }
-
-            if (Segment != Register.None)
-            {
-                s.Append(Segment.ToString());
-                s.Append(':');
-            }
-            s.Append('[');
-            if (Base == Register.None) // only displacement
-            {
-                s.Append(FormatImmediate((UInt16)Displacement.Value));
-            }
-            else // base+index*scale+displacement
-            {
-                s.Append(Base.ToString());
-                if (Index != Register.None)
-                {
-                    s.Append('+');
-                    s.Append(Index.ToString());
-                    if (Scaling != 1)
-                    {
-                        s.Append('*');
-                        s.Append(Scaling.ToString());
-                    }
-                }
-                if (Displacement.Value > 0) // e.g. [BX+1]
-                {
-                    s.Append('+');
-                    s.Append(FormatImmediate((uint)Displacement.Value));
-                }
-                else if (Displacement.Value < 0) // e.g. [BP-2]
-                {
-                    s.Append('-');
-                    s.Append(FormatImmediate((uint)(-Displacement.Value)));
-                }
-            }
-            s.Append(']');
-            return s.ToString();
+            return InstructionFormatter.Default.FormatOperand(this);
         }
     }
 
@@ -242,6 +203,11 @@ namespace X86Codec
         public RelativeOperand(LocationAware<int> offset)
         {
             this.Offset = offset;
+        }
+
+        public override Operand.Location FixableLocation
+        {
+            get { return Offset.Location; }
         }
 
         public override string ToString()
@@ -259,6 +225,16 @@ namespace X86Codec
         {
             this.Segment = segment;
             this.Offset = offset;
+        }
+
+        public override Operand.Location FixableLocation
+        {
+            get
+            {
+                return new Location(
+                    Offset.Location.StartOffset,
+                    (byte)(Offset.Location.Length + Segment.Location.Length));
+            }
         }
 
         public override string ToString()

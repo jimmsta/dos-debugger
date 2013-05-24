@@ -68,16 +68,7 @@ namespace Disassembler2
         }
 #endif
     }
-
-    // can move this to X86Codec
-    /// <summary>
-    /// Represents an object of which part may be fixed up.
-    /// </summary>
-    public interface IFixableSource
-    {
-        Operand.Location GetFixableLocation();
-    }
-
+    
     /// <summary>
     /// Represents an object of which part is fixed up.
     /// </summary>
@@ -86,16 +77,18 @@ namespace Disassembler2
         SymbolicTarget GetFixedTarget();
     }
 
+#if false
     /// <summary>
     /// Represents a relative operand (used in branch/call/jump instructions)
     /// where the target is the offset of a symbol (typicaly defined in the
     /// same segment as the instruction).
     /// </summary>
-    public class SymbolicRelativeOperand : Operand
+    public class SymbolicRelativeOperand : RelativeOperand
     {
         public SymbolicTarget Target { get; private set; }
         
         public SymbolicRelativeOperand(SymbolicTarget target)
+            
         {
             this.Target = target;
         }
@@ -111,31 +104,22 @@ namespace Disassembler2
 #endif
         }
     }
+#endif
 
-
-
-    public class SymbolicImmediateOperand : Operand
+#if false
+    public class SymbolicImmediateOperand : ImmediateOperand
     {
         public SymbolicTarget Target { get; private set; }
 
-        public SymbolicImmediateOperand(SymbolicTarget target)
+        public SymbolicImmediateOperand(ImmediateOperand opr, SymbolicTarget target)
+            : base(opr.Immediate, opr.Size)
         {
             this.Target = target;
         }
-
-        public override string ToString()
-        {
-            // We should take an argument to specify whether to return
-            // html.
-#if true
-            return string.Format("<a href=\"somewhere\">{0}</a>", Target.ToString());
-#else
-            return Target.TargetName;
-#endif
-        }
     }
+#endif
 
-    public class SymbolicMemoryOperand : MemoryOperand, IFixableSource, IFixedSource
+    public class SymbolicMemoryOperand : MemoryOperand, IFixedSource
     {
         public SymbolicTarget Target { get; private set; }
 
@@ -151,29 +135,13 @@ namespace Disassembler2
             this.Target = target;
         }
 
-        public override string ToString()
-        {
-            // We should take an argument to specify whether to return
-            // html.
-#if true
-            return string.Format("<a href=\"somewhere\">COMPLEX_MEMORY_OPERAND({0})</a>",
-                Target.ToString());
-#else
-            return Target.TargetName;
-#endif
-        }
-
-        public Operand.Location GetFixableLocation()
-        {
-            return base.Displacement.Location;
-        }
-
         public SymbolicTarget GetFixedTarget()
         {
             return this.Target;
         }
     }
 
+#if false
     public class SymbolicPointerOperand :Operand
     {
         public SymbolicTarget Target { get; private set; }
@@ -192,70 +160,6 @@ namespace Disassembler2
 #else
             return Target.TargetName;
 #endif
-        }
-    }
-
-#if false
-    /// <summary>
-    /// Represents an instruction with some fields replaced with a symbol,
-    /// e.g. 
-    /// CALL _strcpy
-    /// MOV DX, seg DGROUP
-    /// JMP [BX + off Table]
-    /// </summary>
-    public class SymbolicInstruction
-    {
-        public Instruction instruction { get; private set; }
-        public string[] operandText;
-
-        public SymbolicInstruction(Instruction instruction)
-        {
-            this.instruction = instruction;
-            this.operandText = new string[instruction.Operands.Length];
-        }
-
-        /// <summary>
-        /// Converts the instruction to a string in Intel syntax.
-        /// </summary>
-        /// <returns>The formatted instruction.</returns>
-        public override string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-
-            // Write address.
-            //s.Append(instruction.Location.ToString());
-            //s.Append("  ");
-
-            // Format group 1 (LOCK/REPZ/REPNZ) prefix.
-            if ((instruction.Prefix & Prefixes.Group1) != 0)
-            {
-                s.Append((instruction.Prefix & Prefixes.Group1).ToString());
-                s.Append(' ');
-            }
-
-            // Format mnemonic.
-            s.Append(instruction.Operation.ToString());
-
-            // Format operands.
-            for (int i = 0; i < instruction.Operands.Length; i++)
-            {
-                if (i > 0)
-                {
-                    s.Append(',');
-                }
-                s.Append(' ');
-                s.Append(FormatOperand(i));
-            }
-            return s.ToString().ToLowerInvariant();
-        }
-
-        private string FormatOperand(int i)
-        {
-            var operand = instruction.Operands[i];
-            if (operandText[i] != null)
-                return operandText[i];
-
-            return operand.ToString();
         }
     }
 #endif
@@ -293,30 +197,24 @@ namespace Disassembler2
     {
         public override string FormatOperand(Operand operand)
         {
-            // TODO: use a dictionary to speed up the lookup.
             if (operand is SourceAwareRelativeOperand)
                 return FormatOperand((SourceAwareRelativeOperand)operand);
-            else if (operand is SymbolicImmediateOperand)
-                return FormatOperand((SymbolicImmediateOperand)operand);
-            else if (operand is SymbolicRelativeOperand)
-                return FormatOperand((SymbolicRelativeOperand)operand);
-            else if (operand is SymbolicPointerOperand)
-                return FormatOperand((SymbolicPointerOperand)operand);
             else
                 return base.FormatOperand(operand);
         }
 
-        protected override string FormatFixableLocation(Operand operand, Operand.Location location)
+        protected override string FormatFixableLocation(Operand operand)
         {
-            if (operand is SymbolicMemoryOperand)
+            if (operand.FixableLocation.Length > 0 &&
+                operand.Tag is SymbolicTarget)
             {
                 return string.Format(
                     "<a href=\"somewhere\">{0}</a>",
-                    ((SymbolicMemoryOperand)operand).Target);
+                    (SymbolicTarget)operand.Tag);
             }
             else
             {
-                return base.FormatFixableLocation(operand, location);
+                return base.FormatFixableLocation(operand);
             }
         }
 
@@ -325,19 +223,11 @@ namespace Disassembler2
             return string.Format("<a href=\"somewhere\">{0:X4}</a>", operand.Target.Offset);
         }
 
-        public virtual string FormatOperand(SymbolicImmediateOperand operand)
-        {
-            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
-        }
-
-        public virtual string FormatOperand(SymbolicRelativeOperand operand)
-        {
-            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
-        }
-
+#if false
         public virtual string FormatOperand(SymbolicPointerOperand operand)
         {
             return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
         }
+#endif
     }
 }

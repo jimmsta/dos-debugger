@@ -60,6 +60,10 @@ namespace X86Codec
 
         public virtual string FormatOperand(ImmediateOperand operand)
         {
+            string str = FormatFixableLocation(operand);
+            if (str != null)
+                return str;
+
             int value = operand.Immediate.Value;
 
             // Encode in decimal if the value is a single digit.
@@ -81,7 +85,9 @@ namespace X86Codec
 
         public virtual string FormatOperand(RegisterOperand operand)
         {
-            return operand.Register.ToString().ToLowerInvariant();
+            StringBuilder sb = new StringBuilder(10);
+            FormatRegister(sb, operand.Register);
+            return sb.ToString();
         }
 
         public virtual string FormatOperand(MemoryOperand operand)
@@ -107,7 +113,7 @@ namespace X86Codec
                 sb.Append(':');
             }
 
-            string strDisplacement = FormatFixableLocation(operand, operand.Displacement.Location);
+            string strDisplacement = FormatFixableLocation(operand);
             
             sb.Append('[');
             if (operand.Base == Register.None) // only displacement
@@ -157,17 +163,25 @@ namespace X86Codec
 
         public virtual string FormatOperand(RelativeOperand operand)
         {
-            return operand.Offset.Value.ToString("+#;-#");
+            string str = FormatFixableLocation(operand);
+            if (str != null)
+                return str;
+            else
+                return operand.Offset.Value.ToString("+0;-0");
         }
 
         public virtual string FormatOperand(PointerOperand operand)
         {
-            return string.Format("{0:X4}:{1:X4}",
-                operand.Segment.Value,
-                operand.Offset.Value);
+            string str = FormatFixableLocation(operand);
+            if (str != null)
+                return str;
+            else
+                return string.Format("{0:X4}:{1:X4}",
+                    operand.Segment.Value,
+                    operand.Offset.Value);
         }
 
-        protected virtual string FormatFixableLocation(Operand operand, Operand.Location location)
+        protected virtual string FormatFixableLocation(Operand operand)
         {
             return null;
         }

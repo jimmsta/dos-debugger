@@ -142,6 +142,18 @@ namespace Disassembler2
         /// </remarks>
         [ErrorCategory(ErrorCategory.Message)]
         DynamicTarget,
+
+        /// <summary>
+        /// The target of a branch/call/jump instruction refers to a fix-up
+        /// target, but the target cannot be resolved.
+        /// </summary>
+        UnresolvedTarget,
+
+        /// <summary>
+        /// The target of a branch/call/jump instruction refers to a location
+        /// outside of the binary image.
+        /// </summary>
+        OutOfImage,
     }
 
     public class ErrorCollection : List<Error>
