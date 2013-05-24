@@ -139,8 +139,6 @@ namespace X86Codec
         /// as the ADD, SUB, MUL, and DIV instructions.
         /// </summary>
         StatusFlags = CF | PF | AF | ZF | SF | OF,
-
-        StatusFlagsExceptCF = PF | AF | ZF | SF | OF,
     }
 
     [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]

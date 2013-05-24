@@ -81,22 +81,28 @@ namespace X86Codec
             UndefinedFlags = CpuFlags.SF | CpuFlags.ZF | CpuFlags.AF | CpuFlags.PF)]
         IMULW,
 
-        [Description("Unsigned divide AX by operand: AL ← Quotient, AH ← Remainder," +
-            "or, Unsigned divide DX:AX by operand: AX ← Quotient, DX ← Remainder.")]
+        [Description("Unsigned divide AX by byte operand: AL ← Quotient, AH ← Remainder.")]
         [FlagsAffected(UndefinedFlags = CpuFlags.StatusFlags)]
-        DIV,
+        DIVB,
 
-        [Description("Signed divide AX by operand: AL ← Quotient, AH ← Remainder," +
-            "or, Signed divide DX:AX by operand: AX ← Quotient, DX ← Remainder.")]
+        [Description("Unsigned divide DX:AX by word operand: AX ← Quotient, DX ← Remainder.")]
         [FlagsAffected(UndefinedFlags = CpuFlags.StatusFlags)]
-        IDIV,
+        DIVW,
+
+        [Description("Signed divide AX by byte operand: AL ← Quotient, AH ← Remainder.")]
+        [FlagsAffected(UndefinedFlags = CpuFlags.StatusFlags)]
+        IDIVB,
+
+        [Description("Signed divide DX:AX by word operand: AX ← Quotient, DX ← Remainder.")]
+        [FlagsAffected(UndefinedFlags = CpuFlags.StatusFlags)]
+        IDIVW,
 
         [Description("Increments operand by 1.")]
-        [FlagsAffected(CpuFlags.StatusFlagsExceptCF)]
+        [FlagsAffected(CpuFlags.StatusFlags ^ CpuFlags.CF)]
         INC,
 
         [Description("Decrements operand by 1.")]
-        [FlagsAffected(CpuFlags.StatusFlagsExceptCF)]
+        [FlagsAffected(CpuFlags.StatusFlags ^ CpuFlags.CF)]
         DEC,
 
         [Description("Subtracts operand 2 from operand 1 without storing the result.")]
@@ -108,43 +114,119 @@ namespace X86Codec
         NEG,
 
         // Logical instructions
-        [Description("Performs bitwise AND and stores the result in first operand.")]
+        [Description("Performs bitwise AND: DEST ← DEST AND SRC.")]
         [FlagsAffected(
             AffectedFlags = CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF,
             ClearedFlags = CpuFlags.OF | CpuFlags.CF,
             UndefinedFlags = CpuFlags.AF)]
         AND,
 
-        [Description("Performs bitwise OR and stores the result in first operand.")]
+        [Description("Performs bitwise OR: DEST ← DEST OR SRC.")]
         [FlagsAffected(
             AffectedFlags = CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF,
             ClearedFlags = CpuFlags.OF | CpuFlags.CF,
             UndefinedFlags = CpuFlags.AF)]
         OR,
 
-        XOR, NOT,
+        [Description("Performs bitwise XOR: DEST ← DEST XOR SRC.")]
+        [FlagsAffected(
+            AffectedFlags = CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF,
+            ClearedFlags = CpuFlags.OF | CpuFlags.CF,
+            UndefinedFlags = CpuFlags.AF)]
+        XOR,
+
+        [Description("Performs bitwise negation: DEST ← NOT DEST.")]
+        [FlagsAffected(CpuFlags.None)]
+        NOT,
 
         // Decimal instructions
-        DAA, DAS, AAA, AAS, AAM, AAD,
+        [Description("Adjusts the sum of two packed BCD values to create a packed BCD result.")]
+        [FlagsAffected(CpuFlags.StatusFlags^ CpuFlags.OF, UndefinedFlags= CpuFlags.OF)]
+        DAA,
+
+        [Description("Adjusts the result of the subtraction of two packed " +
+                     "BCD values to create a packed BCD result.")]
+        [FlagsAffected(CpuFlags.StatusFlags ^ CpuFlags.OF, UndefinedFlags = CpuFlags.OF)]
+        DAS,
+
+        [Description("Adjusts the sum of two unpacked BCD values to create an unpacked BCD result.")]
+        [FlagsAffected(CpuFlags.AF | CpuFlags.CF,
+            UndefinedFlags = CpuFlags.OF | CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF)]
+        AAA,
+
+        [Description("Adjusts the result of the subtraction of two unpacked BCD values to create an unpacked BCD result.")]
+        [FlagsAffected(CpuFlags.AF | CpuFlags.CF,
+            UndefinedFlags = CpuFlags.OF | CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF)]
+        AAS,
+
+        [Description("Adjusts the result of the multiplication of two unpacked " +
+                     "BCD values to create a pair of unpacked (base 10) BCD values.")]
+        [FlagsAffected(CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF,
+                       UndefinedFlags = CpuFlags.OF | CpuFlags.AF | CpuFlags.CF)]
+        AAM,
+
+        [Description("ASCII Adjust AX Before Division.")]
+        [FlagsAffected(CpuFlags.SF | CpuFlags.ZF | CpuFlags.PF,
+                       UndefinedFlags = CpuFlags.OF | CpuFlags.AF | CpuFlags.CF)]
+        AAD,
 
         // Stack instructions:
-        PUSH, POP,
+        [Description("Decrements SP and then stores operand in SS:[SP].")]
+        [FlagsAffected( CpuFlags.None)]
+        PUSH,
+        
+        [Description("Loads the value from SS:[SP] and then increments SP.")]
+        [FlagsAffected(CpuFlags.None)]
+        POP,
 
         // Type conversion instructions:
-        [Description("Sets DX:AX to sign-extend of AX.")]
-        CWD, // same opcode as CDQ
-        [Description("Sets AX to sign-extend of AL.")]
+        [Description("Converts byte to word: AX ← sign-extend of AL.")]
+        [FlagsAffected(CpuFlags.None)]
         CBW, // same opcode as CWDE
 
+        [Description("Converts word to dword: DX:AX ← sign-extend of AX.")]
+        [FlagsAffected(CpuFlags.None)]
+        CWD, // same opcode as CDQ
+
         // Shift and rotate instructions:
-        SAL, SHL, SHR, SAR, ROL, ROR, RCL, RCR,
+        [Description("Shifts bits left.")]
+        [FlagsAffected(CpuFlags.StatusFlags)] // in a complicated way
+        SHL, // a.k.a SAL
+        
+        [Description("Shifts bits logical right, setting high bits to zero.")]
+        [FlagsAffected(CpuFlags.StatusFlags)] // in a complicated way
+        SHR,
+
+        [Description("Shifts bits arithmetic right, setting high bits to the original sign bit.")]
+        [FlagsAffected(CpuFlags.StatusFlags)] // in a complicated way
+        SAR,
+        
+        [Description("Rotates bits left.")]
+        [FlagsAffected(CpuFlags.CF | CpuFlags.OF)]
+        ROL,
+
+        [Description("Rotates bits right.")]
+        [FlagsAffected(CpuFlags.CF | CpuFlags.OF)]
+        ROR,
+
+        [Description("Rotates bits through carry left.")]
+        [FlagsAffected(CpuFlags.CF | CpuFlags.OF)]
+        RCL,
+
+        [Description("Rotates bits through carry right.")]
+        [FlagsAffected(CpuFlags.CF | CpuFlags.OF)]
+        RCR,
 
         // TEST instruction:
         [Description("Computes bit-wise AND of two operands and sets SF, ZF and PF accordingly.")]
         TEST,
 
         // Control instructions
-        JMP, JMPF,
+        [Description("Near jump.")]
+        JMP, 
+        [Description("Far jump.")]
+        JMPF,
+
         [Description("Jump if CX = 0.")]
         JCXZ,
         [Description("Jump if overflow (OF = 1).")]
@@ -200,6 +282,7 @@ namespace X86Codec
         INT,
         [Description("Raises interrupt 4 if OF = 1.")]
         INTO,
+        [Description("Returns from interrupt handler.")]
         IRET,
 
         // FLAGS control instructions:

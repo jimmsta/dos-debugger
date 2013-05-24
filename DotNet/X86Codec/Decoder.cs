@@ -228,8 +228,8 @@ namespace X86Codec
                                 case 3: x = new Op(Operation.NEG, O.Eb); break;
                                 case 4: x = new Op(Operation.MULB, O.Eb, O.AL); break;
                                 case 5: x = new Op(Operation.IMULB, O.Eb, O.AL); break;
-                                case 6: x = new Op(Operation.DIV, O.Eb, O.AL); break;
-                                case 7: x = new Op(Operation.IDIV, O.Eb, O.AL); break;
+                                case 6: x = new Op(Operation.DIVB, O.Eb, O.AL); break;
+                                case 7: x = new Op(Operation.IDIVB, O.Eb, O.AL); break;
                             }
                         }
                         else if (c == 0xF7)
@@ -242,8 +242,8 @@ namespace X86Codec
                                 case 3: x = new Op(Operation.NEG, O.Ev); break;
                                 case 4: x = new Op(Operation.MULW, O.Ev, O.rAX); break;
                                 case 5: x = new Op(Operation.IMULW, O.Ev, O.rAX); break;
-                                case 6: x = new Op(Operation.DIV, O.Ev, O.rAX); break;
-                                case 7: x = new Op(Operation.IDIV, O.Ev, O.rAX); break;
+                                case 6: x = new Op(Operation.DIVW, O.Ev, O.rAX); break;
+                                case 7: x = new Op(Operation.IDIVW, O.Ev, O.rAX); break;
                             }
                         }
                         break;
