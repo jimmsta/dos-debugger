@@ -377,7 +377,9 @@ namespace WpfDebugger
         {
             this.instruction = instruction;
             this.code = code;
-            this.strInstruction = instruction.ToString();
+            //this.strInstruction = instruction.ToString();
+            this.strInstruction =
+                new SymbolicInstructionFormatter().FormatInstruction(instruction);
         }
 
         public Instruction Instruction
@@ -400,6 +402,7 @@ namespace WpfDebugger
         {
             get
             {
+#if false
                 if (instruction.Operands.Length == 1 &&
                     instruction.Operands[0] is RelativeOperand)
                 {
@@ -413,6 +416,7 @@ namespace WpfDebugger
                     return sb.ToString();
                 }
                 else
+#endif
                 {
                     return Text;
                 }

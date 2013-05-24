@@ -74,6 +74,9 @@
     <Compile Include="Cpu.cs" />
     <Compile Include="Decoder.cs" />
     <Compile Include="Instruction.cs" />
+    <Compile Include="InstructionFormatter.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Operand.cs" />
     <Compile Include="Operation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

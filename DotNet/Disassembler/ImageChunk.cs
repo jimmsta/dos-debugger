@@ -133,6 +133,52 @@ namespace Disassembler2
                     //    (RelativeOperand)instruction.Operands[i],
                     //    address + instruction.EncodedLength);
                 }
+                else if (operand is ImmediateOperand)
+                {
+                    ImmediateOperand opr = (ImmediateOperand)operand;
+                    int start = offset + opr.Immediate.Location.StartOffset;
+                    int end = start + opr.Immediate.Location.Length;
+
+                    if (fixup.StartIndex >= end)
+                        continue;
+
+                    if (fixup.StartIndex != start || fixup.EndIndex != end)
+                        throw new BrokenFixupException(fixup);
+
+                    instruction.Operands[i] = new SymbolicImmediateOperand(fixup.Target);
+                    ++fixupIndex;
+                }
+                else if (operand is MemoryOperand)
+                {
+                    MemoryOperand opr = (MemoryOperand)operand;
+                    int start = offset + opr.Displacement.Location.StartOffset;
+                    int end = start + opr.Displacement.Location.Length;
+
+                    if (fixup.StartIndex >= end)
+                        continue;
+
+                    if (fixup.StartIndex != start || fixup.EndIndex != end)
+                        throw new BrokenFixupException(fixup);
+
+                    instruction.Operands[i] = 
+                        new SymbolicMemoryOperand(opr, fixup.Target);
+                    ++fixupIndex;
+                }
+                else if (operand is PointerOperand)
+                {
+                    PointerOperand opr = (PointerOperand)operand;
+                    int start = offset + opr.Offset.Location.StartOffset;
+                    int end = offset + opr.Segment.Location.StartOffset + opr.Segment.Location.Length;
+
+                    if (fixup.StartIndex >= end)
+                        continue;
+
+                    if (fixup.StartIndex != start || fixup.EndIndex != end)
+                        throw new BrokenFixupException(fixup);
+
+                    instruction.Operands[i] = new SymbolicPointerOperand(fixup.Target);
+                    ++fixupIndex;
+                }
             }
 
             if (fixupIndex < fixups.Count &&
@@ -140,6 +186,19 @@ namespace Disassembler2
             {
                 throw new BrokenFixupException(fixups[fixupIndex]);
             }
+
+            // Run a second pass to replace RelativeOperand with
+            // SourceAwareRelativeOperand.
+            for (int i = 0; i < instruction.Operands.Length; i++)
+            {
+                if (instruction.Operands[i] is RelativeOperand)
+                {
+                    instruction.Operands[i] = new SourceAwareRelativeOperand(
+                        (RelativeOperand)instruction.Operands[i],
+                        new Address(0, offset + instruction.EncodedLength));
+                }
+            }
+
             return instruction;
         }
 

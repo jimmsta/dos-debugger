@@ -69,6 +69,23 @@ namespace Disassembler2
 #endif
     }
 
+    // can move this to X86Codec
+    /// <summary>
+    /// Represents an object of which part may be fixed up.
+    /// </summary>
+    public interface IFixableSource
+    {
+        Operand.Location GetFixableLocation();
+    }
+
+    /// <summary>
+    /// Represents an object of which part is fixed up.
+    /// </summary>
+    public interface IFixedSource
+    {
+        SymbolicTarget GetFixedTarget();
+    }
+
     /// <summary>
     /// Represents a relative operand (used in branch/call/jump instructions)
     /// where the target is the offset of a symbol (typicaly defined in the
@@ -95,9 +112,88 @@ namespace Disassembler2
         }
     }
 
-    public class SymbolicImmediateOperand { }
-    public class SymbolicMemoryOperand { }
-    public class SymbolicPointerOperand { }
+
+
+    public class SymbolicImmediateOperand : Operand
+    {
+        public SymbolicTarget Target { get; private set; }
+
+        public SymbolicImmediateOperand(SymbolicTarget target)
+        {
+            this.Target = target;
+        }
+
+        public override string ToString()
+        {
+            // We should take an argument to specify whether to return
+            // html.
+#if true
+            return string.Format("<a href=\"somewhere\">{0}</a>", Target.ToString());
+#else
+            return Target.TargetName;
+#endif
+        }
+    }
+
+    public class SymbolicMemoryOperand : MemoryOperand, IFixableSource, IFixedSource
+    {
+        public SymbolicTarget Target { get; private set; }
+
+        public SymbolicMemoryOperand(MemoryOperand opr, SymbolicTarget target)
+        {
+            base.Base = opr.Base;
+            base.Displacement = opr.Displacement;
+            base.Index = opr.Index;
+            base.Scaling = opr.Scaling;
+            base.Segment = opr.Segment;
+            base.Size = opr.Size;
+
+            this.Target = target;
+        }
+
+        public override string ToString()
+        {
+            // We should take an argument to specify whether to return
+            // html.
+#if true
+            return string.Format("<a href=\"somewhere\">COMPLEX_MEMORY_OPERAND({0})</a>",
+                Target.ToString());
+#else
+            return Target.TargetName;
+#endif
+        }
+
+        public Operand.Location GetFixableLocation()
+        {
+            return base.Displacement.Location;
+        }
+
+        public SymbolicTarget GetFixedTarget()
+        {
+            return this.Target;
+        }
+    }
+
+    public class SymbolicPointerOperand :Operand
+    {
+        public SymbolicTarget Target { get; private set; }
+
+        public SymbolicPointerOperand(SymbolicTarget target)
+        {
+            this.Target = target;
+        }
+
+        public override string ToString()
+        {
+            // We should take an argument to specify whether to return
+            // html.
+#if true
+            return string.Format("<a href=\"somewhere\">{0}</a>", Target.ToString());
+#else
+            return Target.TargetName;
+#endif
+        }
+    }
 
 #if false
     /// <summary>
@@ -163,4 +259,85 @@ namespace Disassembler2
         }
     }
 #endif
+
+    public class SourceAwareRelativeOperand : RelativeOperand
+    {
+        readonly Address source;
+
+        public Address Source
+        {
+            get { return source; }
+        }
+
+        public Address Target
+        {
+            get
+            {
+                return new Address(source.Segment, (UInt16)(source.Offset + base.Offset.Value));
+            }
+        }
+
+        public SourceAwareRelativeOperand(RelativeOperand opr, Address source)
+            : base(opr.Offset)
+        {
+            this.source = source;
+        }
+
+        public override string ToString()
+        {
+            return Target.Offset.ToString("X4");
+        }
+    }
+
+    public class SymbolicInstructionFormatter : InstructionFormatter
+    {
+        public override string FormatOperand(Operand operand)
+        {
+            // TODO: use a dictionary to speed up the lookup.
+            if (operand is SourceAwareRelativeOperand)
+                return FormatOperand((SourceAwareRelativeOperand)operand);
+            else if (operand is SymbolicImmediateOperand)
+                return FormatOperand((SymbolicImmediateOperand)operand);
+            else if (operand is SymbolicRelativeOperand)
+                return FormatOperand((SymbolicRelativeOperand)operand);
+            else if (operand is SymbolicPointerOperand)
+                return FormatOperand((SymbolicPointerOperand)operand);
+            else
+                return base.FormatOperand(operand);
+        }
+
+        protected override string FormatFixableLocation(Operand operand, Operand.Location location)
+        {
+            if (operand is SymbolicMemoryOperand)
+            {
+                return string.Format(
+                    "<a href=\"somewhere\">{0}</a>",
+                    ((SymbolicMemoryOperand)operand).Target);
+            }
+            else
+            {
+                return base.FormatFixableLocation(operand, location);
+            }
+        }
+
+        public virtual string FormatOperand(SourceAwareRelativeOperand operand)
+        {
+            return string.Format("<a href=\"somewhere\">{0:X4}</a>", operand.Target.Offset);
+        }
+
+        public virtual string FormatOperand(SymbolicImmediateOperand operand)
+        {
+            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
+        }
+
+        public virtual string FormatOperand(SymbolicRelativeOperand operand)
+        {
+            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
+        }
+
+        public virtual string FormatOperand(SymbolicPointerOperand operand)
+        {
+            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
+        }
+    }
 }

@@ -92,37 +92,41 @@ namespace X86Codec
     /// </summary>
     public class ImmediateOperand : Operand
     {
-        public LocationAware<int> Immediate { get; set; }
-        public CpuSize Size;
+        readonly LocationAware<int> immediate;
+        readonly CpuSize size;
+
+        public LocationAware<int> Immediate
+        {
+            get { return immediate; }
+        }
+
+        public CpuSize Size
+        {
+            get { return size; }
+        }
 
         public ImmediateOperand(LocationAware<int> immediate, CpuSize size)
         {
-            this.Immediate = immediate;
-            this.Size = size;
+            this.immediate = immediate;
+            this.size = size;
         }
 
         public ImmediateOperand(int value, CpuSize size)
         {
-            this.Immediate = new LocationAware<int>(value);
-            this.Size = size;
+            this.immediate = new LocationAware<int>(value);
+            this.size = size;
         }
 
-        /// <summary>
-        /// Converts an immediate to a string in Intel syntax.
-        /// </summary>
-        /// <returns>The converted string.</returns>
         public override string ToString()
         {
-            // Encode in decimal if the value is a single digit.
-            if (Immediate.Value > -10 && Immediate.Value < 10)
-                return Immediate.Value.ToString();
-
-            // Encode in hexidecimal format such as 0f34h.
-            switch (Size)
+            switch (size)
             {
-                case CpuSize.Use8Bit: return FormatImmediate((byte)Immediate.Value);
-                case CpuSize.Use16Bit: return FormatImmediate((ushort)Immediate.Value);
-                default: return FormatImmediate((uint)Immediate.Value);
+                case CpuSize.Use8Bit:
+                    return string.Format("0x{0:X2}", (byte)immediate.Value);
+                case CpuSize.Use16Bit:
+                    return string.Format("0x{0:X4}", (ushort)immediate.Value);
+                default:
+                    return string.Format("0x{0:X8}", (uint)immediate.Value);
             }
         }
     }

@@ -39,6 +39,7 @@ namespace Disassembler2
 
         //public XRefContext Context { get; set; }
 
+#if false
         /// <summary>
         /// Returns true if this xref is dynamic, i.e. its Target address
         /// contains <code>LogicalAddress.Invalid</code>.
@@ -47,6 +48,7 @@ namespace Disassembler2
         {
             get { return Target == Address.Invalid; }
         }
+#endif
 
         public XRef()
         {
@@ -73,21 +75,19 @@ namespace Disassembler2
             return string.Format("{0} -> {1} ({2})", Source, Target, Type);
         }
 
-#if false
         /// <summary>
         /// Compares two XRef objects by source, target, and data location,
         /// in descending priority.
         /// </summary>
         public static int CompareByLocation(XRef x, XRef y)
         {
-            int cmp = x.Source.LinearAddress.CompareTo(y.Source.LinearAddress);
+            int cmp = x.Source.CompareTo(y.Source);
             if (cmp == 0)
-                cmp = x.Target.LinearAddress.CompareTo(y.Target.LinearAddress);
+                cmp = x.Target.CompareTo(y.Target);
             if (cmp == 0)
-                cmp = x.DataLocation.LinearAddress.CompareTo(y.DataLocation.LinearAddress);
+                cmp = x.DataLocation.CompareTo(y.DataLocation);
             return cmp;
         }
-#endif
 
         /// <summary>
         /// Compares two XRef objects by priority (precedence). An XRef object

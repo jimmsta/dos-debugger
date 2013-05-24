@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.ComponentModel;
+using Util;
 
 namespace Disassembler2
 {
@@ -10,17 +9,15 @@ namespace Disassembler2
     /// </summary>
     public class Error
     {
-        readonly ErrorCode errorCode;
-        readonly ErrorCategory category;
         readonly Address location;
+        readonly ErrorCode errorCode;
         readonly string message;
 
         public Error(Address location, ErrorCode errorCode, string message)
         {
-            this.category = ErrorCategory.Error;
             this.location = location;
-            this.message = message;
             this.errorCode = errorCode;
+            this.message = message;
         }
 
         public ErrorCode ErrorCode
@@ -30,7 +27,14 @@ namespace Disassembler2
 
         public ErrorCategory Category
         {
-            get { return category; }
+            get
+            {
+                var attribute = errorCode.GetAttribute<ErrorCategoryAttribute>();
+                if (attribute != null)
+                    return attribute.Category;
+                else
+                    return ErrorCategory.Error;
+            }
         }
 
         public Address Location
@@ -43,19 +47,6 @@ namespace Disassembler2
             get { return message; }
         }
 
-#if false
-        public Error(Address location, string message, ErrorCategory category)
-        {
-            this.Category = category;
-            this.Location = location;
-            this.Message = message;
-        }
-
-        public Error(Address location, string message)
-            : this(location, message, ErrorCategory.Error)
-        {
-        }
-#endif
         public static int CompareByLocation(Error x, Error y)
         {
             return x.Location.CompareTo(y.Location);
@@ -78,6 +69,11 @@ namespace Disassembler2
         public ErrorCategoryAttribute(ErrorCategory category)
         {
             this.category = category;
+        }
+
+        public ErrorCategory Category
+        {
+            get { return category; }
         }
     }
 

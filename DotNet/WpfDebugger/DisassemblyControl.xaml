@@ -66,7 +66,7 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
 
-                    <GridViewColumn Header="Opcode" Width="150">
+                    <GridViewColumn Header="Opcode" Width="130">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock TextTrimming="CharacterEllipsis"
@@ -75,7 +75,7 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
 
-                    <GridViewColumn Header="Label" Width="100">
+                    <GridViewColumn Header="Label" Width="120">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock TextTrimming="CharacterEllipsis"
