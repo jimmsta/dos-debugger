@@ -226,8 +226,8 @@ namespace X86Codec
                                 case 1: break;
                                 case 2: x = new Op(Operation.NOT, O.Eb); break;
                                 case 3: x = new Op(Operation.NEG, O.Eb); break;
-                                case 4: x = new Op(Operation.MUL, O.Eb, O.AL); break;
-                                case 5: x = new Op(Operation.IMUL, O.Eb, O.AL); break;
+                                case 4: x = new Op(Operation.MULB, O.Eb, O.AL); break;
+                                case 5: x = new Op(Operation.IMULB, O.Eb, O.AL); break;
                                 case 6: x = new Op(Operation.DIV, O.Eb, O.AL); break;
                                 case 7: x = new Op(Operation.IDIV, O.Eb, O.AL); break;
                             }
@@ -240,8 +240,8 @@ namespace X86Codec
                                 case 1: break;
                                 case 2: x = new Op(Operation.NOT, O.Ev); break;
                                 case 3: x = new Op(Operation.NEG, O.Ev); break;
-                                case 4: x = new Op(Operation.MUL, O.Ev, O.rAX); break;
-                                case 5: x = new Op(Operation.IMUL, O.Ev, O.rAX); break;
+                                case 4: x = new Op(Operation.MULW, O.Ev, O.rAX); break;
+                                case 5: x = new Op(Operation.IMULW, O.Ev, O.rAX); break;
                                 case 6: x = new Op(Operation.DIV, O.Ev, O.rAX); break;
                                 case 7: x = new Op(Operation.IDIV, O.Ev, O.rAX); break;
                             }
@@ -1471,9 +1471,9 @@ namespace X86Codec
             /* 66 */ Op.Empty, /* operand size (prefix) */
             /* 67 */ Op.Empty, /* address size (prefix) */
             /* 68 */ new Op(Operation.PUSH, O.Iz), /* d64 */
-            /* 69 */ new Op(Operation.IMUL, O.Gv, O.Ev, O.Iz),
+            /* 69 */ new Op(Operation.IMUL3, O.Gv, O.Ev, O.Iz),
             /* 6A */ new Op(Operation.PUSH, O.Ib), /* d64 */
-            /* 6B */ new Op(Operation.IMUL, O.Gv, O.Ev, O.Ib),
+            /* 6B */ new Op(Operation.IMUL3, O.Gv, O.Ev, O.Ib),
             /* 6C */ new Op(Operation.INS, O.Yb, O.DX),
             /* 6D */ new Op(Operation.INS, O.Yz, O.DX),
             /* 6E */ new Op(Operation.OUTS, O.DX, O.Xb),
@@ -1538,18 +1538,18 @@ namespace X86Codec
             /* A1 */ new Op(Operation.MOV, O.rAX, O.Ov),
             /* A2 */ new Op(Operation.MOV, O.Ob, O.AL),
             /* A3 */ new Op(Operation.MOV, O.Ov, O.rAX),
-            /* A4 */ new Op(Operation.MOVS, O.Yb, O.Xb), /* MOVS/B */
-            /* A5 */ new Op(Operation.MOVS, O.Yv, O.Xv), /* MOVS/W/D/Q */
-            /* A6 */ new Op(Operation.CMPS, O.Xb, O.Yb), /* CMPS/B */
-            /* A7 */ new Op(Operation.CMPS, O.Xv, O.Yv), /* CMPS/W/D */
+            /* A4 */ new Op(Operation.MOVSB, O.Yb, O.Xb),
+            /* A5 */ new Op(Operation.MOVSW, O.Yv, O.Xv), /* MOVSW/D/Q */
+            /* A6 */ new Op(Operation.CMPSB, O.Xb, O.Yb),
+            /* A7 */ new Op(Operation.CMPSW, O.Xv, O.Yv), /* CMPSW/D/Q */
             /* A8 */ new Op(Operation.TEST, O.AL, O.Ib),
             /* A9 */ new Op(Operation.TEST, O.rAX, O.Iz),
-            /* AA */ new Op(Operation.STOS, O.Yb, O.AL), /* STOS/B */
-            /* AB */ new Op(Operation.STOS, O.Yv, O.rAX), /* STOS/W/D/Q */
-            /* AC */ new Op(Operation.LODS, O.AL, O.Xb), /* LODS/B */
-            /* AD */ new Op(Operation.LODS, O.rAX, O.Xv), /* LODS/W/D/Q */
-            /* AE */ new Op(Operation.SCAS, O.AL, O.Yb), /* SCAS/B */ /* TBD */
-            /* AF */ new Op(Operation.SCAS, O.rAX, O.Xv), /* SCAS/W/D/Q */ /* TBD */
+            /* AA */ new Op(Operation.STOSB, O.Yb, O.AL),
+            /* AB */ new Op(Operation.STOSW, O.Yv, O.rAX), /* STOSW/D/Q */
+            /* AC */ new Op(Operation.LODSB, O.AL, O.Xb),
+            /* AD */ new Op(Operation.LODSW, O.rAX, O.Xv), /* LODSW/D/Q */
+            /* AE */ new Op(Operation.SCASB, O.AL, O.Yb),
+            /* AF */ new Op(Operation.SCASW, O.rAX, O.Xv), /* SCASW/D/Q */
 
             /* B0 */ new Op(Operation.MOV, O.AL, O.Ib),
             /* B1 */ new Op(Operation.MOV, O.CL, O.Ib),
@@ -1592,7 +1592,7 @@ namespace X86Codec
             /* D4 */ new Op(Operation.AAM, O.Ib), /* i64 */
             /* D5 */ new Op(Operation.AAD, O.Ib), /* i64 */
             /* D6 */ Op.Empty,
-            /* D7 */ new Op(Operation.XLAT, O._XLAT), /* a.k.a XLATB */
+            /* D7 */ new Op(Operation.XLATB, O._XLAT),
             /* D8 */ new Op(OpcodeExtension.Fpu),
             /* D9 */ new Op(OpcodeExtension.Fpu),
             /* DA */ new Op(OpcodeExtension.Fpu),
@@ -1606,18 +1606,18 @@ namespace X86Codec
             /* E1 */ new Op(Operation.LOOPZ, O.Jb), /* f64 */
             /* E2 */ new Op(Operation.LOOP, O.Jb), /* f64 */
             /* E3 */ new Op(Operation.JCXZ, O.Jb), /* f64; JrCXZ */
-            /* E4 */ new Op(Operation.IN, O.AL, O.Ib),
-            /* E5 */ new Op(Operation.IN, O.eAX, O.Ib),
-            /* E6 */ new Op(Operation.OUT, O.Ib, O.AL),
-            /* E7 */ new Op(Operation.OUT, O.Ib, O.eAX),
+            /* E4 */ new Op(Operation.INB, O.AL, O.Ib),
+            /* E5 */ new Op(Operation.INW, O.eAX, O.Ib),
+            /* E6 */ new Op(Operation.OUTB, O.Ib, O.AL),
+            /* E7 */ new Op(Operation.OUTW, O.Ib, O.eAX),
             /* E8 */ new Op(Operation.CALL, O.Jz), /* f64 */
             /* E9 */ new Op(Operation.JMP, O.Jz), /* near, O.f64 */
             /* EA */ new Op(Operation.JMPF, O.Ap), /* far, O.i64 */
             /* EB */ new Op(Operation.JMP, O.Jb), /* short, O.f64 */
-            /* EC */ new Op(Operation.IN, O.AL, O.DX),
-            /* ED */ new Op(Operation.IN, O.eAX, O.DX),
-            /* EE */ new Op(Operation.OUT, O.DX, O.AL),
-            /* EF */ new Op(Operation.OUT, O.DX, O.eAX),
+            /* EC */ new Op(Operation.INB, O.AL, O.DX),
+            /* ED */ new Op(Operation.INW, O.eAX, O.DX),
+            /* EE */ new Op(Operation.OUTB, O.DX, O.AL),
+            /* EF */ new Op(Operation.OUTW, O.DX, O.eAX),
 
             /* F0 */ Op.Empty, /* LOCK (prefix) */
             /* F1 */ Op.Empty,
