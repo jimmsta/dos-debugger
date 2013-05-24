@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using Util;
 
 namespace WpfDebugger
 {
@@ -108,7 +109,8 @@ namespace WpfDebugger
                     if (tagName == "/a" && top is Hyperlink ||
                         tagName == "/b" && top is Bold ||
                         tagName == "/i" && top is Italic ||
-                        tagName == "/u" && top is Underline)
+                        tagName == "/u" && top is Underline ||
+                        tagName == "/span" && top is Span) // TBD: might pop top element
                     {
                         elementStack.Pop();
                         top = elementStack.Peek();
@@ -124,6 +126,9 @@ namespace WpfDebugger
                     Inline element = null;
                     switch (tagName)
                     {
+                        case "span":
+                            element = new Span();
+                            break;
                         case "a":
                             {
                                 Hyperlink hyperlink = new Hyperlink();
@@ -153,6 +158,19 @@ namespace WpfDebugger
 
                     if (element != null) // supported element
                     {
+                        // Check global attributes.
+                        if (tag.Attributes != null)
+                        {
+                            foreach (HtmlAttribute attr in tag.Attributes)
+                            {
+                                if (attr.Name == "title")
+                                {
+                                    ToolTipService.SetShowDuration(element, 60000);
+                                    element.ToolTip = attr.Value;
+                                }
+                            }
+                        }
+
                         top.Inlines.Add(element);
                         if (element is Span &&   // not br
                             html[k2 - 1] != '/') // not self-closed tag
@@ -274,7 +292,7 @@ namespace WpfDebugger
                 int k2 = s.IndexOf('"', k1 + 1);
                 if (k2 == -1)
                     return null;
-                attr.Value = s.Substring(k1 + 1, k2 - k1 - 1);
+                attr.Value = s.Substring(k1 + 1, k2 - k1 - 1).UnescapeXml();
 
                 attrs.Add(attr);
                 i = k2 + 1;

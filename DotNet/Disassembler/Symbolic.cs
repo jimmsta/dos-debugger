@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
+using Util;
 using X86Codec;
 
 namespace Disassembler2
@@ -223,11 +225,33 @@ namespace Disassembler2
             return string.Format("<a href=\"somewhere\">{0:X4}</a>", operand.Target.Offset);
         }
 
-#if false
-        public virtual string FormatOperand(SymbolicPointerOperand operand)
+        public override string FormatInstruction(Instruction instruction)
         {
-            return string.Format("<a href=\"somewhere\">{0}</a>", operand.Target);
+            string s = base.FormatInstruction(instruction);
+
+            // Make "interesting" instructions bold.
+            switch (instruction.Operation)
+            {
+                //case Operation.CALL:
+                //case Operation.CALLF:
+                //    return string.Format("<b>{0}</b>", s);
+                default:
+                    return s;
+            }
         }
-#endif
+
+        public override string FormatMnemonic(Operation operation)
+        {
+            var attribute = operation.GetAttribute<DescriptionAttribute>();
+            if (attribute != null)
+            {
+                string description = attribute.Description;
+                return string.Format("<span title=\"{2}: {0}\">{1}</span>",
+                    attribute.Description.EscapeXml(),
+                    operation.ToString().ToLowerInvariant(),
+                    operation);
+            }
+            return base.FormatMnemonic(operation);
+        }
     }
 }

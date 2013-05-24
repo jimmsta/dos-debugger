@@ -20,7 +20,7 @@ namespace X86Codec
             }
 
             // Format mnemonic.
-            sb.Append(instruction.Operation.ToString().ToLowerInvariant());
+            sb.Append(FormatMnemonic(instruction.Operation));
 
             // Format operands.
             for (int i = 0; i < instruction.Operands.Length; i++)
@@ -40,7 +40,10 @@ namespace X86Codec
         //    sb.Append((prefix & Prefixes.Group1).ToString());
         //}
 
-        //protected virtual void FormatMnemonic(StringBuilder sb, 
+        public virtual string FormatMnemonic(Operation operation)
+        {
+            return operation.ToString().ToLowerInvariant();
+        }
 
         public virtual string FormatOperand(Operand operand)
         {

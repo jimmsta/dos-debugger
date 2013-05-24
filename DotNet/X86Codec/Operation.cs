@@ -26,7 +26,7 @@ namespace X86Codec
         LES,
 
         // Arithmetic instructions
-        [Description("Adds second operand to first operand.")]
+        [Description("Adds second operand to first operand. Affects OF, SF, ZF, AF, CF, PF.")]
         ADD,
         [Description("Adds second operand and CF to first operand.")]
         ADC,
@@ -64,23 +64,40 @@ namespace X86Codec
         TEST,
 
         // Control instructions
-        JMP, JMPF, 
+        JMP, JMPF,
+        [Description("Jump if overflow (OF = 1).")]
         JO,
+        [Description("Jump if not overflow (OF = 0).")]
         JNO,
+        [Description("Jump if below (CF = 1).")]
         JB,
+        [Description("Jump if above or equal (CF = 0).")]
         JAE,
+        [Description("Jump if equal (ZF = 1).")]
         JE,
+        [Description("Jump if not equal (ZF = 0).")]
         JNE,
+        [Description("Jump if below or equal (CF = 1 or ZF = 1).")]
         JBE,
+        [Description("Jump if above (CF = 0 and ZF = 0).")]
         JA,
+        [Description("Jump if sign (SF = 1).")]
         JS,
+        [Description("Jump if not sign (SF = 0).")]
         JNS,
+        [Description("Jump if parity (PF = 1).")]
         JP,
+        [Description("Jump if not parity (PF = 0).")]
         JNP,
+        [Description("Jump if less (SF ≠ OF).")]
         JL,
+        [Description("Jump if greater or equal (SF = OF).")]
         JGE,
+        [Description("Jump if less or equal (ZF = 1 or SF ≠ OF).")]
         JLE,
+        [Description("Jump if greater (ZF = 0 and SF = OF).")]
         JG,
+
         [Description("Near call.")]
         CALL, 
         [Description("Far call.")]
@@ -88,12 +105,12 @@ namespace X86Codec
         [Description("Near return.")]
         RET,
         [Description("Far return.")]
-        RETF, 
-        [Description("Decrements CX; then jump if CX<>0.")]
+        RETF,
+        [Description("Decrements CX, and then jump if CX ≠ 0.")]
         LOOP,
-        [Description("Decrements CX; then jump if CX <> 0 and ZF = 1.")]
+        [Description("Decrements CX, and then jump if CX ≠ 0 and ZF = 1.")]
         LOOPZ,
-        [Description("Decrements CX; then jump if CX <> 0 and ZF = 0.")]
+        [Description("Decrements CX, and then jump if CX ≠ 0 and ZF = 0.")]
         LOOPNZ,
 
         // Interrupt instructions
@@ -104,21 +121,21 @@ namespace X86Codec
         IRET,
 
         // FLAGS control instructions:
-        [Description("Sets carry flag (CF = 1).")]
-        STC, 
-        [Description("Clears carry flag (CF = 0).")]
+        [Description("Sets carry flag: CF ← 1.")]
+        STC,
+        [Description("Clears carry flag: CF ← 0.")]
         CLC,
-        [Description("Complements carry flag (CF = !CF).")]
+        [Description("Complements carry flag: CF ← !CF.")]
         CMC,
-        [Description("Sets direction flag (DF = 1).")]
-        STD, 
-        [Description("Clears direction flag (DF = 0).")]
+        [Description("Sets direction flag: DF ← 1.")]
+        STD,
+        [Description("Clears direction flag: DF ← 0.")]
         CLD, 
         [Description("Loads flags into AH: AH ← SF:ZF:0:AF:0:PF:1:CF.")]
         LAHF,
         [Description("Stores AH into flags: SF:ZF:0:AF:0:PF:1:CF ← AH.")]
         SAHF, 
-        [Description("Decrements SP by 2 and pushes FLAGS onto the stack.")]
+        [Description("Pushes FLAGS onto the stack.")]
         PUSHF, 
         [Description("Pops a word from the stack and stores it in FLAGS.")]
         POPF,
@@ -161,8 +178,11 @@ namespace X86Codec
         ENTER,
         LEAVE,
         XLAT,
+        [Description("Jump if CX = 0.")]
         JCXZ,
+        [Description("Clears interrupt flag: IF ← 0.")]
         CLI,
+        [Description("Sets interrupt flag: IF ← 1.")]
         STI,
 
         SLDT,
