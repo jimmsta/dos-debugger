@@ -222,6 +222,11 @@ namespace Disassembler2
         }
 
         /// <summary>
+        /// Gets or sets the name for this fixup collection.
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// Finds the fixup associated with the given position. If no
         /// fixup is found, find the first one that comes after that
         /// position.
@@ -293,11 +298,11 @@ namespace Disassembler2
             fixups.Insert(k, fixup);
         }
 
-        private static void WarnOverlap(Fixup existing, Fixup newone)
+        private void WarnOverlap(Fixup existing, Fixup newone)
         {
             System.Diagnostics.Debug.WriteLine(string.Format(
-                "FixupCollection: Overlaps with an existing fixup: existing={0}, new={1}.",
-                existing, newone));
+                "FixupCollection({2}): Overlaps with an existing fixup: existing={0}, new={1}.",
+                existing, newone, this.Name));
         }
 
         public void Clear()

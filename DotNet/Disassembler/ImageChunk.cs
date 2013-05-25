@@ -23,10 +23,13 @@ namespace Disassembler2
         readonly FixupCollection fixups;
         readonly Dictionary<int, Instruction> instructions;
 
-        //readonly RangeDictionary<int, Procedure> procedureMapping;
+        public ImageChunk(int length, string name)
+            : this(new byte[length], name)
+        {
+        }
 
         public ImageChunk(int length)
-            : this(new byte[length])
+            : this(new byte[length], "")
         {
         }
 
@@ -34,7 +37,7 @@ namespace Disassembler2
         /// Creates an image chunk with the supplied binary data.
         /// </summary>
         /// <param name="image"></param>
-        public ImageChunk(byte[] image)
+        public ImageChunk(byte[] image, string name)
         {
             if (image == null)
                 throw new ArgumentNullException("image");
@@ -42,6 +45,7 @@ namespace Disassembler2
             this.image = image;
             this.attrs = new ByteAttribute[image.Length];
             this.fixups = new FixupCollection();
+            this.fixups.Name = name;
             //this.procedureMapping = new RangeDictionary<int, Procedure>();
             this.instructions = new Dictionary<int, Instruction>();
         }

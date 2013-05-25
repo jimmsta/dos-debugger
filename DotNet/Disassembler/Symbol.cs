@@ -55,6 +55,8 @@ namespace Disassembler2
     /// </summary>
     public class ExternalSymbol : Symbol, IAddressReferent
     {
+        public Address ResolvedAddress { get; set; }
+
         public string Label
         {
             get { return base.Name; }
@@ -62,7 +64,7 @@ namespace Disassembler2
 
         public Address Resolve()
         {
-            throw new NotSupportedException();
+            return ResolvedAddress;
         }
     }
 
@@ -123,6 +125,17 @@ namespace Disassembler2
             else
             {
                 return string.Format("{0} @ {1}+{2:X}h", Name, BaseSegment.Name, Offset);
+            }
+        }
+
+        public Address ResolvedAddress
+        {
+            get
+            {
+                if (BaseSegment == null) // absolute symbol
+                    return Address.Invalid;
+                else
+                    return new Address(BaseSegment.Id, (int)Offset);
             }
         }
     }

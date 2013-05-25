@@ -37,13 +37,6 @@ namespace Disassembler2.Omf
                 segment.AbsoluteFrame = def.Frame; // ignore Offset
             }
 
-            long length = def.RealLength;
-            if (length > Int32.MaxValue)
-            {
-                throw new InvalidDataException("Segment larger than 2GB is not supported.");
-            }
-            segment.Image = new ImageChunk((int)length);
-
             if (def.SegmentNameIndex == 0 ||
                 def.SegmentNameIndex > context.Names.Count)
             {
@@ -57,6 +50,14 @@ namespace Disassembler2.Omf
                 throw new InvalidDataException("ClassNameIndex out of range.");
             }
             segment.Class = context.Names[def.ClassNameIndex - 1];
+
+            long length = def.RealLength;
+            if (length > Int32.MaxValue)
+            {
+                throw new InvalidDataException("Segment larger than 2GB is not supported.");
+            }
+            segment.Image = new ImageChunk((int)length, 
+                context.Module.Name + "." + segment.Name);
 
             this.Segment = segment;
             context.Module.Segments.Add(segment);

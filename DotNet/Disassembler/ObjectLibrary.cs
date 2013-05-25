@@ -72,10 +72,12 @@ namespace Disassembler2
 
         public void ResolveAllSymbols()
         {
+            Dictionary<string, DefinedSymbol> publicNames = new Dictionary<string, DefinedSymbol>();
+
             // First, build a map of each public name.
             foreach (ObjectModule module in Modules)
             {
-                foreach (var name in module.DefinedNames)
+                foreach (DefinedSymbol name in module.DefinedNames)
                 {
                     List<ObjectModule> definitionList;
                     if (!Symbols.TryGetValue(name.Name, out definitionList))
@@ -84,6 +86,7 @@ namespace Disassembler2
                         Symbols.Add(name.Name, definitionList);
                     }
                     definitionList.Add(module);
+                    publicNames[name.Name] = name;
                 }
             }
 
@@ -96,6 +99,10 @@ namespace Disassembler2
                     if (!Symbols.ContainsKey(name.Name)) // cannot resolve
                     {
                         Symbols.Add(name.Name, null); // indicate that it's not there
+                    }
+                    if (publicNames.ContainsKey(name.Name))
+                    {
+                        name.ResolvedAddress = publicNames[name.Name].ResolvedAddress;
                     }
                 }
             }

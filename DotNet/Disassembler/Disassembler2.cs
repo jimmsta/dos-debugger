@@ -576,6 +576,14 @@ namespace Disassembler2
                         break;
                 }
 
+                // If we go out of the image, this is not good...
+                if (pos.Offset >= image.Length)
+                {
+                    AddError(pos, ErrorCode.OutOfImage,
+                        "Analysis going past the end of image.");
+                    break;
+                }
+
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
                 // block, and we are done.
@@ -668,24 +676,36 @@ namespace Disassembler2
             }
 
             // Handle symbolic instructions.
-            if (instruction.Operands[0].Tag != null)
+            SymbolicTarget symbolicTarget = instruction.Operands[0].Tag as SymbolicTarget;
+            Address symbolicAddress = Address.Invalid;
+            if (symbolicTarget != null)
             {
-                AddError(start, ErrorCode.UnresolvedTarget,
-                    "Cannot resolve target: {0}.", 
-                    instruction.Operands[0].Tag);
+                Address referent = symbolicTarget.Referent.Resolve();
+                if (referent == Address.Invalid)
+                {
+                    AddError(start, ErrorCode.UnresolvedTarget,
+                        "Cannot resolve target: {0}.", symbolicTarget);
 
-                return new XRef(
-                    type: bcjType,
-                    source: start,
-                    target: Address.Invalid
-                );
+                    return new XRef(
+                        type: bcjType,
+                        source: start,
+                        target: Address.Invalid
+                    );
+                }
+                symbolicAddress = referent + (int)symbolicTarget.Displacement;
+                if (symbolicAddress.Offset < 0 || symbolicAddress.Offset > 0xFFFF)
+                    throw new NotImplementedException();
             }
 
             // Create a cross-reference depending on the type of operand.
             if (instruction.Operands[0] is RelativeOperand) // near jump/call to relative address
             {
+                // TODO: take into account the original value in Offset.
                 RelativeOperand opr = (RelativeOperand)instruction.Operands[0];
-                Address target = start + instruction.EncodedLength + opr.Offset.Value;
+                Address target =
+                    (symbolicAddress != Address.Invalid) ?
+                    symbolicAddress + opr.Offset.Value :
+                    start + instruction.EncodedLength + opr.Offset.Value;
                 Address wrappedTarget = new Address(target.Segment, (UInt16)target.Offset);
                 return new XRef(
                     type: bcjType,
@@ -707,16 +727,29 @@ namespace Disassembler2
                     target: new Pointer(opr.Segment.Value, (UInt16)opr.Offset.Value)
                 );
 #else
-                return new XRef(
-                    type: bcjType,
-                    source: start,
-                    target: Address.Invalid
-                );
+                // TODO: take into account the original value in Pointer.
+                if (symbolicAddress != Address.Invalid)
+                {
+                    return new XRef(
+                        type: bcjType,
+                        source: start,
+                        target: symbolicAddress
+                    );
+                }
+                else
+                {
+                    return new XRef(
+                        type: bcjType,
+                        source: start,
+                        target: Address.Invalid
+                    );
+                }
 #endif
             }
 
             if (instruction.Operands[0] is MemoryOperand) // indirect jump/call
             {
+                // TODO: handle symbolic target.
                 MemoryOperand opr = (MemoryOperand)instruction.Operands[0];
 
                 // Handle static near jump table. We recognize a jump table 
@@ -756,6 +789,8 @@ namespace Disassembler2
 #endif
                 }
             }
+
+            // TODO: handle other symbolic targets.
 
             // Other jump/call targets that we cannot recognize.
             AddError(start, ErrorCode.DynamicTarget,
