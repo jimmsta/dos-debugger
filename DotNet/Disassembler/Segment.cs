@@ -5,50 +5,85 @@ using X86Codec;
 
 namespace Disassembler
 {
-    public class Segment : ByteBlock
+    /// <summary>
+    /// Represents a relocatable or logical segment in a binary image.
+    /// </summary>
+    /// <remarks>
+    /// A segment is uniquely identified by a non-zero SegmentId within its
+    /// owning assembly.
+    /// </remarks>
+    public abstract class Segment : IAddressReferent
     {
-        private UInt16 segmentAddress;
+        private int id;
 
-        public UInt16 SegmentAddress { get { return segmentAddress; } }
-
-        public Segment(UInt16 segmentAddress)
+        /// <summary>
+        /// Gets or sets the ID of the segment. This ID uniquely identifies
+        /// the segment within its containing assembly. This ID may be set
+        /// only once.
+        /// </summary>
+        public int Id
         {
-            this.segmentAddress = segmentAddress;
+            get { return id; }
+            set
+            {
+                if (id != 0)
+                    throw new InvalidOperationException();
+                id = value;
+            }
         }
 
-        public Segment(UInt16 segmentAddress, LinearPointer start, LinearPointer end)
-            : base(start, end)
+        public abstract ImageChunk Image { get; }
+
+        protected virtual string GetLabel()
         {
-            this.segmentAddress = segmentAddress;
+            throw new NotImplementedException();
         }
 
-#if false
-        public Pointer StartAddress
+        string IAddressReferent.Label
         {
-            get { return new Pointer(segmentAddress, StartAddress); }
-        }
-#endif
-
-        // class Segment : MultiRange
-        // segment.Bounds.Length = ...
-        // segment.Parts = MultiRange (AddRange, RemoveRange, etc.)
-        // segment.Parts .TotalLength = ...
-        // segment.MinimumAddress = SEG:OFF
-        // segment.MaximumAddress = SEG:OFF
-
-        public void Extend(LinearPointer start, LinearPointer end)
-        {
-            base.Extend(new ByteBlock(start, end));
+            get { return GetLabel(); }
         }
 
-        public override string ToString()
+        public virtual Address Resolve()
         {
-            if (Length == 0)
-                return "(empty)";
-
-            Pointer p1 = new Pointer(segmentAddress, StartAddress);
-            Pointer p2 = new Pointer(segmentAddress, EndAddress - 1);
-            return string.Format("[{0}, {1}]", p1, p2);
+            return new Address(this.Id, 0);
         }
+    }
+
+    public enum SegmentType
+    {
+        /// <summary>
+        /// Indicates a logical segment.
+        /// </summary>
+        /// <remarks>
+        /// A logical segment is not associated with a canonical frame, and
+        /// therefore does not have a frame number. The offset within a
+        /// logical segment is relative to the beginning of the segment,
+        /// and may be changed at run-time; therefore it is not meaningful
+        /// to address an offset relative to the segment; only self-relative
+        /// addressing should be used.
+        /// 
+        /// A logical segment may be combined with other logical segments to
+        /// form a relocatable segment.
+        /// </remarks>
+        Logical,
+
+        /// <summary>
+        /// Indicates a relocatable segment.
+        /// </summary>
+        /// <remarks>
+        /// A relocatable segment is associated with a canonical frame,
+        /// which is the frame with the largest frame number that contains
+        /// the segment. This frame number is meaningful, but it is subject
+        /// to relocation when the image is loaded into memory.
+        /// 
+        /// An offset within a relocatable segment is relative to the
+        /// canonical frame that contains the segment, and NOT relative to
+        /// the beginning of the segment. To avoid confusion, it is convenient
+        /// to think of a relocatable segment as always starting at paragraph
+        /// boundary, though in practice the first few bytes may actually be
+        /// used by a previous segment.
+        /// </remarks>
+        Relocatable,
     }
 }

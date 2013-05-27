@@ -6,13 +6,14 @@ using System.ComponentModel;
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a logical segment of code or data, such as one defined in
-    /// an object module by the SEGDEF record. A logical segment does not
-    /// define its physical layout in a binary image.
+    /// Represents a logical segment in an object module.
+    /// </summary>
+    /// <remarks>
+    /// A logical segment is defined by a SEGDEF record.
     /// 
     /// Multiple logical segments are often combined to form a
     /// CombinedSegment.
-    /// </summary>
+    /// </remarks>
     /// <example>
     /// Examples: fopen._TEXT, crt0._DATA, etc.
     /// </example>
@@ -55,14 +56,10 @@ namespace Disassembler
         [Browsable(true)]
         public SegmentCombination Combination { get; internal set; }
 
-#if false
         /// <summary>
-        /// Gets the start address of an absolute segment. This value is only
+        /// Gets the frame number of an absolute segment. This is only
         /// relevant if Alignment is Absolute.
         /// </summary>
-        [Browsable(true)]
-        public Pointer StartAddress { get; internal set; }
-#endif
         public UInt16 AbsoluteFrame { get; internal set; }
 
         /// <summary>
@@ -76,10 +73,6 @@ namespace Disassembler
             get { return Image.Length; }
         }
 
-#if false
-        [Browsable(false)]
-        public bool IsUse32 { get; internal set; }
-#endif
 
 #if false
         /// <summary>
@@ -100,12 +93,22 @@ namespace Disassembler
         }
 #endif
 
-        public override string Label
+        protected override string GetLabel()
         {
-            get { return Name; }
+            return Name;
         }
 
-        public ImageChunk Image { get; internal set; }
+        public override ImageChunk Image
+        {
+            get { return image; }
+        }
+
+        private ImageChunk image;
+
+        internal void SetImage(ImageChunk image)
+        {
+            this.image = image;
+        }
 
         public override string ToString()
         {

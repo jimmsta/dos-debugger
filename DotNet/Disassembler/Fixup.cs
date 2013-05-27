@@ -211,7 +211,7 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Provides methods to access the fixups defined on this image chunk.
+    /// Provides methods to access the fixups defined on an image chunk.
     /// </summary>
     public class FixupCollection : IList<Fixup>
     {

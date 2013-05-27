@@ -1,10 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace X86Codec
 {
     public class Decoder
     {
+        /// <summary>
+        /// Decodes an instruction.
+        /// </summary>
+        /// <param name="code">Code buffer.</param>
+        /// <param name="cpuMode">CPU operating mode.</param>
+        /// <returns>The decoded instruction.</returns>
+        /// <exception cref="InvalidInstructionException">If decoding fails.
+        /// </exception>
+        public static Instruction Decode(ArraySegment<byte> code, CpuMode cpuMode)
+        {
+            if (cpuMode != CpuMode.RealAddressMode)
+                throw new NotSupportedException();
+
+            DecoderContext context = new DecoderContext();
+            context.AddressSize = CpuSize.Use16Bit;
+            context.OperandSize = CpuSize.Use16Bit;
+
+            X86Codec.Decoder decoder = new X86Codec.Decoder();
+            return decoder.Decode(code.Array, code.Offset, code.Count, context);
+        }
+
         /// <summary>
         /// Decodes an instruction.
         /// </summary>
@@ -19,18 +41,9 @@ namespace X86Codec
         public static Instruction Decode(
             byte[] code, 
             int startIndex,
-            //Pointer location,
             CpuMode cpuMode)
         {
-            if (cpuMode != CpuMode.RealAddressMode)
-                throw new NotSupportedException();
-
-            DecoderContext context = new DecoderContext();
-            context.AddressSize = CpuSize.Use16Bit;
-            context.OperandSize = CpuSize.Use16Bit;
-
-            X86Codec.Decoder decoder = new X86Codec.Decoder();
-            return decoder.Decode(code, startIndex, code.Length - startIndex, /*location,*/ context);
+            return Decode(new ArraySegment<byte>(code, startIndex, code.Length - startIndex), cpuMode);
         }
 
         /// <summary>
@@ -47,7 +60,6 @@ namespace X86Codec
             byte[] code, 
             int startIndex,
             int count,
-            //Pointer location, 
             DecoderContext context)
         {
             Instruction instruction = new Instruction();

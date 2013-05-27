@@ -9,7 +9,7 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a loaded DOS MZ executable file (.EXE).
+    /// Contains information of a DOS MZ executable file (.EXE).
     /// </summary>
     public class MZFile
     {
@@ -17,9 +17,15 @@ namespace Disassembler
         private FarPointer[] relocationTable;
         private byte[] image;
 
-        /* Opens a DOS MZ executable file. */
+        /// <summary>
+        /// Loads a DOS MZ executable file from disk.
+        /// </summary>
+        /// <param name="fileName">Name of the file to open.</param>
         public MZFile(string fileName)
         {
+            if (fileName == null)
+                throw new ArgumentNullException("fileName");
+
             using (FileStream stream = new FileStream(fileName,
                 FileMode.Open, FileAccess.Read, FileShare.Read))
             using (BinaryReader reader = new BinaryReader(stream))
@@ -144,7 +150,7 @@ namespace Disassembler
         /// The module loader should add the actual segment to the word at
         /// these locations.
         /// </summary>
-        public FarPointer[] RelocationTable
+        public FarPointer[] RelocatableLocations
         {
             get { return relocationTable; }
         }
@@ -180,7 +186,7 @@ namespace Disassembler
     /// Represents the file header in a DOS MZ executable.
     /// </summary>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public struct MZHeader
+    public class MZHeader
     {
         [Description("File format signature; should be MZ or ZM.")]
         public UInt16 Signature { get; set; }
@@ -224,7 +230,6 @@ namespace Disassembler
         [Description("Overlay number; usually 0.")]
         public UInt16 Overlay;
     }
-
 
     public struct FarPointer
     {

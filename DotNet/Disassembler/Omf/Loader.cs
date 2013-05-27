@@ -147,11 +147,10 @@ namespace Disassembler
                 module.DefinedNames.Add(ConvertPublicNameDefinition(def, objectMap));
             }
 
-            // Convert segment data and fixups.
+            // Convert fixups.
             foreach (SegmentDefinition def in context.Segments)
             {
                 LogicalSegment segment = (LogicalSegment)objectMap[def];
-                Array.Copy(def.Data, segment.Image.Data, def.Data.Length);
                 foreach (FixupDefinition f in def.Fixups)
                 {
                     segment.Image.Fixups.Add(ConvertFixupDefinition(f, objectMap));
@@ -182,8 +181,8 @@ namespace Disassembler
             {
                 throw new InvalidDataException("Segment larger than 2GB is not supported.");
             }
-            segment.Image = new ImageChunk((int)length, 
-                module.Name + "." + segment.Name);
+            segment.SetImage(new ImageChunk(def.Data,
+                module.Name + "." + segment.Name));
 
             return segment;
         }

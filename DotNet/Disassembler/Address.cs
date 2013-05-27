@@ -8,8 +8,7 @@ namespace Disassembler
     /// Represents a logical object that can be used as an address referent
     /// relative to which logical addresses can be defined.
     /// </summary>
-    public interface IAddressReferent   // may rename to ISymbolicReferent
-                                        // or IAddressResolvable
+    public interface IAddressReferent
     {
         /// <summary>
         /// Gets a string representation of the address referent. This label

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using X86Codec;
+using Util;
 using Util.Data;
 
 namespace Disassembler
@@ -823,7 +824,7 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("offset");
 
             Instruction instruction = X86Codec.Decoder.Decode(
-                image.Data, offset, CpuMode.RealAddressMode);
+                image.Data.Slice(offset), CpuMode.RealAddressMode);
 
             // Find the first fixup that covers the instruction. If no
             // fix-up covers the instruction, find the closest fix-up

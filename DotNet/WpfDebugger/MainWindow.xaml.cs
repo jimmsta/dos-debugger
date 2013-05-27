@@ -41,9 +41,13 @@ namespace WpfDebugger
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+#if true
             //string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
-            //DoOpenFile(fileName);
+            string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\HELLO.EXE";
+            DoOpenFile(fileName);
+#else
             mnuHelpTest_Click(null, null);
+#endif
         }
 
         private void Window_Unloaded(object sender, RoutedEventArgs e)
@@ -111,10 +115,10 @@ namespace WpfDebugger
 
         private void DoOpenExeFile(string fileName)
         {
-            MZFile mzFile = new MZFile(fileName);
-            mzFile.Relocate(0x1000); // TODO: currently we don't support loadin
+            //MZFile mzFile = new MZFile(fileName);
+            //mzFile.Relocate(0x1000); // TODO: currently we don't support loadin
             // at segment 0. We should fix this later.
-            Executable executable = new Executable(mzFile);
+            Executable executable = new Executable(fileName);
             ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
             dasm.Analyze(executable.EntryPoint);
 

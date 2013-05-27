@@ -95,7 +95,13 @@
     <Compile Include="Omf\RecordReader.cs" />
     <Compile Include="Omf\Records.cs" />
     <Compile Include="Omf\SEGDEFRecord.cs" />
+    <Compile Include="Procedure.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Segment.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="SegmentGroup.cs" />
     <Compile Include="Symbol.cs" />
     <Compile Include="Symbolic.cs" />
