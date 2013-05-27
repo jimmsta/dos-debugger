@@ -13,8 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Disassembler;
-using Disassembler2;
-using Disassembler2.Omf;
+using Disassembler;
 using AvalonDock.Layout;
 
 namespace WpfDebugger
@@ -38,8 +37,7 @@ namespace WpfDebugger
             }
         }
 
-        BinaryImage image;
-        Assembly assembly;
+        Assembly program;
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -114,22 +112,24 @@ namespace WpfDebugger
         private void DoOpenExeFile(string fileName)
         {
             MZFile mzFile = new MZFile(fileName);
-            mzFile.Relocate(0);
-            Disassembler16 dasm = new Disassembler16(mzFile.Image, mzFile.BaseAddress);
-            dasm.Analyze(mzFile.EntryPoint);
+            mzFile.Relocate(0x1000); // TODO: currently we don't support loadin
+            // at segment 0. We should fix this later.
+            Executable executable = new Executable(mzFile);
+            ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
+            dasm.Analyze(executable.EntryPoint);
 
-            this.image = dasm.Image;
+            this.program = executable;
             //this.disassemblyList.Image = image;
-            this.procedureList.Image = image;
-            this.errorList.Image = image;
-            this.segmentList.Image = image;
-            this.propertiesWindow.Image = image;
+            this.procedureList.Program=program;
+            this.errorList.Program = program;
+            this.segmentList.Program = program;
+            // this.propertiesWindow.Image = image;
         }
 
         private void DoOpenLibFile(string fileName)
         {
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
-            this.assembly = library;
+            this.program = library;
             library.ResolveAllSymbols();
 
             // Display all unresolved symbols.
@@ -308,7 +308,7 @@ namespace WpfDebugger
         {
             //MessageBox.Show(string.Format(
             //    "Navigating to {0} in {1}", e.Uri, e.Target));
-            Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
+            //Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
             //disassemblyList.GoToAddress(address);
         }
 
@@ -350,7 +350,7 @@ namespace WpfDebugger
 
             if (uri.Referent is LogicalSegment)
             {
-                this.disassemblyList.SetView(assembly, uri.Referent as LogicalSegment);
+                this.disassemblyList.SetView(program, uri.Referent as LogicalSegment);
             }
             else
             {

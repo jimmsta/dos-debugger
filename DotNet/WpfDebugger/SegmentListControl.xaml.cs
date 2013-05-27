@@ -26,14 +26,14 @@ namespace WpfDebugger
             InitializeComponent();
         }
 
-        private BinaryImage image;
+        private Assembly program;
 
-        public BinaryImage Image
+        public Assembly Program
         {
-            get { return image; }
+            get { return program; }
             set
             {
-                image = value;
+                program = value;
                 UpdateUI();
             }
         }
@@ -41,13 +41,15 @@ namespace WpfDebugger
         private void UpdateUI()
         {
             lvSegments.ItemsSource = null;
-            if (image == null)
+            if (program == null)
                 return;
 
-            var items = (from segment in image.Segments
+#if false
+            var items = (from segment in program.Segments
                          select new SegmentViewItem(segment)
                          ).ToArray();
             lvSegments.ItemsSource = items;
+#endif
         }
 
 #if false
@@ -76,18 +78,22 @@ namespace WpfDebugger
 
         public string Start
         {
-            get { return FormatAddress(Segment.StartAddress, Segment.SegmentAddress); }
+            get { return "NA"; }
+            //FormatAddress(Segment.StartAddress, Segment.SegmentAddress); }
         }
 
         public string End
         {
-            get { return FormatAddress(Segment.EndAddress - 1, Segment.SegmentAddress); }
+            get { return "NA"; }
+            //FormatAddress(Segment.EndAddress - 1, Segment.SegmentAddress); }
         }
 
+#if false
         private static string FormatAddress(LinearPointer address, UInt16 segment)
         {
             return string.Format(
                 "{0} ({1:X5})", new Pointer(segment, address), address);
         }
+#endif
     }
 }

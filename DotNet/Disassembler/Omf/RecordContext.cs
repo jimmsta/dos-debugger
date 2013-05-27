@@ -52,6 +52,8 @@ namespace Disassembler2.Omf
 
         // Contains the last record.
         public Record LastRecord = null;
+
+        public Record[] Records;
     }
 
     class GroupDefinition

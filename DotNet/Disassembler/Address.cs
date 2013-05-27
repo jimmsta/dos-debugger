@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a logical object that can be used as an address referent

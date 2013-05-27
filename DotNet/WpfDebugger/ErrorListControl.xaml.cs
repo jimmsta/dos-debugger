@@ -12,21 +12,21 @@ namespace WpfDebugger
     /// </summary>
     public partial class ErrorListControl : UserControl
     {
+        private Assembly program;
+
         public ErrorListControl()
         {
             InitializeComponent();
             this.DataContext = new ErrorListViewModel(null);
         }
 
-        private BinaryImage image;
-
-        public BinaryImage Image
+        public Assembly Program
         {
-            get { return image; }
+            get { return program; }
             set
             {
-                image = value;
-                this.DataContext = new ErrorListViewModel(image);
+                program = value;
+                this.DataContext = new ErrorListViewModel(program);
             }
         }
 
@@ -125,31 +125,28 @@ namespace WpfDebugger
             }
         }
 
-        public ErrorListViewModel(BinaryImage image)
+        public ErrorListViewModel(Assembly program)
         {
-            if (image == null)
+            if (program == null)
                 return;
 
             int errorCount = 0;
             int warningCount = 0;
             int messageCount = 0;
 
-            int n = image.Errors.Count;
-            allItems = new ErrorListItem[n];
-            for (int i = 0; i < n; i++)
+            int n = program.Errors.Count;
+            allItems = (from error in program.Errors
+                        select new ErrorListItem(error)).ToArray();
+            foreach (ErrorListItem item in allItems)
             {
-                Error error = image.Errors[i];
-                allItems[i] = new ErrorListItem(error);
-
-                switch (error.Category)
+                switch (item.Error.Category)
                 {
                     case ErrorCategory.Error: errorCount++; break;
                     case ErrorCategory.Warning: warningCount++; break;
                     case ErrorCategory.Message: messageCount++; break;
                 }
             }
-            Array.Sort(allItems,
-                       (x, y) => x.Error.Location.LinearAddress.CompareTo(y.Error.Location.LinearAddress));
+            Array.Sort(allItems, (x, y) => x.Error.Location.CompareTo(y.Error.Location));
 
             //this.Items = items.ToArray();
             this.Items = null; // no item to display initially
@@ -190,7 +187,7 @@ namespace WpfDebugger
                 this.Error = error;
             }
 
-            public Pointer Location
+            public Address Location
             {
                 get { return Error.Location; }
             }

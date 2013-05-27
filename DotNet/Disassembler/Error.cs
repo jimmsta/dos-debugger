@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Util;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Contains information about an error encountered during disassembling.

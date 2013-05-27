@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a logical segment of code or data, such as one defined in

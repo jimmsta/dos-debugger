@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DosDebugger", "DosDebugger\DosDebugger.csproj", "{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "X86Codec", "X86Codec\X86Codec.csproj", "{BD1B05D2-429D-4080-BDDF-981C0F78A192}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Disassembler", "Disassembler\Disassembler.csproj", "{FE4ABC64-1873-4E7D-B930-D50D2E948E1E}"
@@ -25,22 +23,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|x64.ActiveCfg = Debug|x64
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|x64.Build.0 = Debug|x64
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|x86.ActiveCfg = Debug|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Debug|x86.Build.0 = Debug|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|Mixed Platforms.Build.0 = Release|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|x64.ActiveCfg = Release|x64
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|x64.Build.0 = Release|x64
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|x86.ActiveCfg = Release|x86
-		{53F38FFD-B2CD-4477-BDE1-CE62A17B7CC3}.Release|x86.Build.0 = Release|x86
 		{BD1B05D2-429D-4080-BDDF-981C0F78A192}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BD1B05D2-429D-4080-BDDF-981C0F78A192}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD1B05D2-429D-4080-BDDF-981C0F78A192}.Debug|Mixed Platforms.ActiveCfg = Debug|x86

@@ -2,21 +2,32 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Disassembler2
+namespace Disassembler
 {
     public class Executable : Assembly
     {
-        public LoadModule LoadModule { get; set; }
+        private byte[] data;
+        private Address entryPoint;
+        private LoadModule loadModule;
+
+        public Executable(Disassembler.MZFile file)
+        {
+            this.data = file.Image;
+            this.entryPoint = new Address(file.EntryPoint.Segment, file.EntryPoint.Offset);
+            this.loadModule = new LoadModule(new ImageChunk(data, "LoadModule"));
+        }
+
+        public LoadModule LoadModule
+        {
+            get { return LoadModule; }
+        }
 
         /// <summary>
         /// Gets the entry point address of the executable.
         /// </summary>
         public Address EntryPoint
         {
-            get
-            {
-                throw new NotImplementedException();
-            }
+            get { return entryPoint; }
         }
     }
 

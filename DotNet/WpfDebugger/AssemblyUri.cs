@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using Disassembler2;
+using Disassembler;
 
 namespace WpfDebugger
 {

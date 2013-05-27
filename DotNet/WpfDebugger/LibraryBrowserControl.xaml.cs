@@ -15,8 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
-using Disassembler2;
-using Disassembler2.Omf;
+using Disassembler;
 using Util.Windows.Controls;
 
 namespace WpfDebugger
@@ -89,7 +88,7 @@ namespace WpfDebugger
             {
                 if (symbol.BaseSegment == segment)
                 {
-                    Disassembler16New.Disassemble(library,
+                    DisassemblerBase.Disassemble(library,
                         // TODO: replace with segment selector
                         new Address(segment.Id, (int)symbol.Offset));
                 }
@@ -106,7 +105,7 @@ namespace WpfDebugger
 
         private void DisassembleSegment(LogicalSegment segment, int offset)
         {
-            Disassembler16New dasm = new Disassembler16New(library);
+            DisassemblerBase dasm = new DisassemblerBase(library);
             Address entryPoint = new Address(segment.Id, offset);
             dasm.Analyze(entryPoint);
         }

@@ -1,192 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using X86Codec;
 using Util.Data;
+using X86Codec;
 
 namespace Disassembler
 {
     /// <summary>
     /// Provides methods to disassemble and analyze 16-bit x86 binary code.
     /// </summary>
-    public class Disassembler16
+    public class ExecutableDisassembler : DisassemblerBase
     {
-        private BinaryImage image;
+        private Executable executable;
 
-        /// <summary>
-        /// Maintains a queue of pending code entry points to analyze. At the
-        /// beginning, there is only one entry point, which is the program
-        /// entry point specified by the user. As we encounter branch 
-        /// instructions (JMP, CALL, or Jcc) on the way, we push the target 
-        /// addresses to the queue of entry points, so that they can be 
-        /// analyzed later.
-        /// </summary>
-        //private List<XRef> globalXRefs;
-        //private XRefCollection xrefCollection ;
-
-        public Disassembler16(byte[] image, Pointer baseAddress)
+        public ExecutableDisassembler(Executable executable)
+            : base(executable)
         {
-            this.image = new BinaryImage(image, baseAddress);
-            //this.xrefCollection = new XRefCollection(this.image);
         }
 
         /// <summary>
-        /// Gets the executable image being disassembled.
+        /// Gets the executable being disassembled.
         /// </summary>
-        public BinaryImage Image
+        public Executable Executable
         {
-            get { return image; }
+            get { return executable; }
         }
-
+        
 #if false
-        /// <summary>
-        /// Gets a collection of analyzed procedures. The procedures are
-        /// returned in order of their entry point offset.
-        /// </summary>
-        public ICollection<Procedure> Procedures
-        {
-            get { return image.Procedures; }
-        }
-#endif
-
-#if false
-        public Error[] Errors
-        {
-            get { return errors.ToArray(); }
-        }
-#endif
-
-#if false
-        /// <summary>
-        /// Converts a CS:IP pointer to its offset within the executable
-        /// image. Note that different CS:IP pointers may correspond to the
-        /// same offset.
-        /// </summary>
-        /// <param name="location">A pointer to convert.</param>
-        /// <returns>The offset within the executable image.</returns>
-        public int PointerToOffset(Pointer location)
-        {
-            return image.PointerToOffset(location);
-        }
-#endif
-
-        /// <summary>
-        /// Analyzes code starting from the given location. That location
-        /// must be the entry point of a procedure, or otherwise the analysis
-        /// may not work correctly.
-        /// </summary>
-        /// <param name="start">Entry point of a procedure.</param>
-        /// <param name="recursive">Whether to analyze functions called by
-        /// this procedure.</param>
-        public void Analyze(Pointer start)
-        {
-            //List<XRef> xrefs = globalXRefs;
-            PriorityQueue<XRef> xrefQueue =
-                new PriorityQueue<XRef>(XRef.CompareByPriority);
-
-            // Create a a dummy xref entry using the user-supplied starting
-            // address.
-            xrefQueue.Enqueue(new XRef(
-                type: XRefType.FarCall, // should this be UserSpecified?
-                source: Pointer.Invalid,
-                target: start
-            ));
-
-            // Analyze each cross reference in order of their priority.
-            // In particular, if the xref is an indexed jump, we delay its
-            // processing until we have processed all other types of xrefs.
-            // This reduces the chance that we process past the end of a
-            // jump table.
-            while (!xrefQueue.IsEmpty)
-            {
-                XRef entry = xrefQueue.Dequeue();
-
-                // Handle jump table entry (where Target == Invalid).
-                if (entry.Type == XRefType.NearIndexedJump)
-                {
-                    System.Diagnostics.Debug.Assert(entry.Target == Pointer.Invalid);
-
-                    // Fill the Target field to make it a static xref.
-                    entry = ProcessJumpTableEntry(entry, xrefQueue);
-                    if (entry == null) // end of jump table
-                        continue;
-                }
-
-                // Skip other dynamic xrefs.
-                if (entry.Target == Pointer.Invalid)
-                {
-                    image.CrossReferences.Add(entry);
-                    continue;
-                }
-
-                Procedure proc;
-
-                // Handle function call.
-                if (entry.Type == XRefType.NearCall ||
-                    entry.Type == XRefType.FarCall)
-                {
-                    CallType callType = (entry.Type == XRefType.NearCall) ?
-                        CallType.Near : CallType.Far;
-
-                    // If a procedure with that entry point has already been
-                    // defined, perform some sanity checks but no need to
-                    // analyze again.
-                    proc = image.Procedures.Find(entry.Target.LinearAddress);
-                    if (proc != null)
-                    {
-                        if (proc.CallType != callType)
-                        {
-                            AddError(entry.Target, ErrorCategory.Error,
-                                "Procedure {0} has inconsistent call type.",
-                                proc.EntryPoint);
-                        }
-                        image.CrossReferences.Add(entry);
-                        continue;
-                    }
-
-                    // Create a new Procedure object with that entry point.
-                    // TODO: we may be calling into the middle of an already
-                    // defined procedure. This can happen if two procedures
-                    // share a chunk of code. We need to handle this later.
-                    proc = image.Procedures.Create(entry.Target);
-                    proc.CallType = (entry.Type == XRefType.NearCall) ?
-                        CallType.Near : CallType.Far;
-                }
-                else
-                {
-                    proc = image[entry.Source].Procedure;
-                }
-
-                // Process the basic block starting at the target address.
-                BasicBlock block = AnalyzeBasicBlock(entry, xrefQueue);
-                if (block != null)
-                {
-                    //int count = block.Length;
-                    //int baseOffset = PointerToOffset(entry.Target);
-                    //proc.CodeRange.AddInterval(baseOffset, baseOffset + count);
-                    //proc.ByteRange.AddInterval(baseOffset, baseOffset + count);
-                    //for (int j = 0; j < count; j++)
-                    //{
-                    //    image[baseOffset + j].Procedure = proc;
-                    //}
-                    proc.AddBasicBlock(block);
-                }
-
-                image.CrossReferences.Add(entry);
-            }
-
-            // Update the segment statistics.
-            CheckSegmentOverlaps();
-
-#if false
-            /* Sort the XREFs built from the above analyses by target address. 
-             * After this is done, the client can easily list the disassembled
-             * instructions with xrefs sequentially in physical order.
-             */
-            VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
-#endif
-        }
-
         /// <summary>
         /// Checks for segment overlaps and emits error messages for
         /// overlapping segments.
@@ -207,7 +47,9 @@ namespace Disassembler
                 lastSegment = segment;
             }
         }
+#endif
 
+#if false
         /// <summary>
         /// Fills the Target of an IndexedJump xref heuristically by plugging
         /// in the jump target stored in DataLocation and performing various
@@ -306,25 +148,9 @@ namespace Disassembler
                 dataLocation: entry.DataLocation
             );
         }
+#endif
 
-        /// <summary>
-        /// Analyzes a continuous sequence of instructions that form a basic
-        /// block. The termination conditions include end-of-input, analyzed
-        /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT.
-        /// </summary>
-        /// <param name="start">Address to begin analysis.</param>
-        /// <param name="jumps">Jump instructions are added to this list.</param>
-        /// <param name="calls">Call instructions are added to this list.</param>
-        /// <param name="dynamicJumps">Jump instructions with a dynamic target
-        /// are added to this list.</param>
-        /// <returns>
-        /// A new BasicBlock if one was created during the analysis.
-        /// If analysis failed or an existing block was split into two,
-        /// returns null.
-        /// </returns>
-        // TODO: should be roll-back the entire basic block if we 
-        // encounters an error on our way? maybe not.
+#if false
         private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Pointer pos = start.Target;
@@ -460,7 +286,9 @@ namespace Disassembler
             else
                 return null;
         }
+#endif
 
+#if false
         /// <summary>
         /// Analyzes an instruction and returns a xref if the instruction is
         /// one of the branch/call/jump instructions. Note that the 'no-jump'
@@ -598,59 +426,10 @@ namespace Disassembler
                 target: Pointer.Invalid
             );
         }
-
-#if false
-        private static void DebugPrint(string format, params object[] args)
-        {
-            System.Diagnostics.Debug.WriteLine(string.Format(format, args));
-        }
 #endif
 
-        private void AddError(
-            Pointer location, ErrorCategory category,
-            string format, params object[] args)
-        {
-            image.Errors.Add(new Error(location, string.Format(format, args), category));
-        }
-
-        private void AddError(Pointer location, string format, params object[] args)
-        {
-            AddError(location, ErrorCategory.Error, format, args);
-        }
     }
 
-    public class Error
-    {
-        public ErrorCategory Category { get; private set; }
-        public Pointer Location { get; private set; }
-        public string Message { get; private set; }
-
-        public Error(Pointer location, string message, ErrorCategory category)
-        {
-            this.Category = category;
-            this.Location = location;
-            this.Message = message;
-        }
-
-        public Error(Pointer location, string message)
-            : this(location, message, ErrorCategory.Error)
-        {
-        }
-
-        public static int CompareByLocation(Error x, Error y)
-        {
-            return x.Location.LinearAddress.CompareTo(y.Location.LinearAddress);
-        }
-    }
-
-    [Flags]
-    public enum ErrorCategory
-    {
-        None = 0,
-        Error = 1,
-        Warning = 2,
-        Message = 4,
-    }
 }
 
 #if false

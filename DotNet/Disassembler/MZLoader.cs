@@ -14,7 +14,7 @@ namespace Disassembler
     public class MZFile
     {
         private MZHeader header;
-        private Pointer[] relocationTable;
+        private FarPointer[] relocationTable;
         private byte[] image;
 
         /* Opens a DOS MZ executable file. */
@@ -68,13 +68,13 @@ namespace Disassembler
                 }
 
                 // Load relocation table.
-                relocationTable = new Pointer[header.RelocCount];
+                relocationTable = new FarPointer[header.RelocCount];
                 stream.Seek(header.RelocOff, SeekOrigin.Begin);
                 for (int i = 0; i < header.RelocCount; i++)
                 {
                     UInt16 off = reader.ReadUInt16();
                     UInt16 seg = reader.ReadUInt16();
-                    relocationTable[i] = new Pointer(seg, off);
+                    relocationTable[i] = new FarPointer(seg, off);
                 }
 
                 // Load the whole image into memory.
@@ -95,7 +95,7 @@ namespace Disassembler
             header.InitialSS += segment;
             for (int i = 0; i < relocationTable.Length; i++)
             {
-                int address = relocationTable[i].LinearAddress.Address;
+                int address = relocationTable[i].Segment * 16 + relocationTable[i].Offset;
                 if (!(address >= 0 && address + 2 <= image.Length))
                     throw new InvalidDataException("The relocation entry is out-of-range.");
 
@@ -107,9 +107,9 @@ namespace Disassembler
             baseAddress.Segment = segment;
         }
 
-        Pointer baseAddress;
+        FarPointer baseAddress;
 
-        public Pointer BaseAddress
+        public FarPointer BaseAddress
         {
             get { return baseAddress; }
             set
@@ -144,7 +144,7 @@ namespace Disassembler
         /// The module loader should add the actual segment to the word at
         /// these locations.
         /// </summary>
-        public Pointer[] RelocationTable
+        public FarPointer[] RelocationTable
         {
             get { return relocationTable; }
         }
@@ -153,18 +153,18 @@ namespace Disassembler
         /// Gets the address of the first instruction to execute. This address
         /// is relative to the beginning of the executable image.
         /// </summary>
-        public Pointer EntryPoint
+        public FarPointer EntryPoint
         {
-            get { return new Pointer(header.InitialCS, header.InitialIP); }
+            get { return new FarPointer(header.InitialCS, header.InitialIP); }
         }
 
         /// <summary>
         /// Gets the address of the top of the stack. This address is relative
         /// to the beginning of the executable image.
         /// </summary>
-        public Pointer StackTop
+        public FarPointer StackTop
         {
-            get { return new Pointer(header.InitialSS, header.InitialSP); }
+            get { return new FarPointer(header.InitialSS, header.InitialSP); }
         }
 
         /// <summary>
@@ -223,5 +223,19 @@ namespace Disassembler
 
         [Description("Overlay number; usually 0.")]
         public UInt16 Overlay;
+    }
+
+
+    public struct FarPointer
+    {
+        public UInt16 Offset { get; set; }
+        public UInt16 Segment { get; set; }
+
+        public FarPointer(UInt16 segment, UInt16 offset)
+            : this()
+        {
+            this.Segment = segment;
+            this.Offset = offset;
+        }
     }
 }

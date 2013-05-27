@@ -26,30 +26,15 @@ namespace WpfDebugger
             InitializeComponent();
         }
 
-        BinaryImage image;
-
-        public BinaryImage Image
-        {
-            get { return image; }
-            set
-            {
-                image = value;
-                // The PropertyGrid control is extremely slow when
-                // a property has type byte[]. Need to fix this before
-                // we use it at all.
-                //UpdateUI();
-                this.SelectedObject = image;
-            }
-        }
-
 #if false
         public object SelectedObject
         {
             get { return propertyGrid.SelectedObject; }
             set { propertyGrid.SelectedObject = value; }
         }
-#endif
+#else
         public object SelectedObject { get; set; }
+#endif
 
         private int[] testArray;
         public int[] TestArray

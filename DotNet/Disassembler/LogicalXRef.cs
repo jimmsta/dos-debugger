@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Util.Data;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a cross-reference between code and code or code and data.

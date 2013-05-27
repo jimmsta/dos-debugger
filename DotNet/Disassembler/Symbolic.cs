@@ -5,7 +5,7 @@ using System.Text;
 using Util;
 using X86Codec;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a target (typically a jump target) that is a symbol that

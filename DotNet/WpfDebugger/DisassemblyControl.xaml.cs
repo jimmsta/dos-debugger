@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using Disassembler2;
+using Disassembler;
 
 namespace WpfDebugger
 {

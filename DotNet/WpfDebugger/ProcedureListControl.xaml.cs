@@ -14,23 +14,23 @@ namespace WpfDebugger
     /// </summary>
     public partial class ProcedureListControl : UserControl
     {
+        private Assembly program;
+
         public ProcedureListControl()
         {
             InitializeComponent();
         }
 
-        private BinaryImage image;
-
-        public BinaryImage Image
+        public Assembly Program
         {
-            get { return image; }
+            get { return program; }
             set
             {
-                image = value;
-                if (image == null)
+                program = value;
+                if (program == null)
                     this.DataContext = null;
                 else
-                    this.DataContext = new ProcedureListViewModel(image);
+                    this.DataContext = new ProcedureListViewModel(program);
             }
         }
 
@@ -159,10 +159,10 @@ namespace WpfDebugger
     {
         public List<ProcedureItem> Items { get; private set; }
 
-        public ProcedureListViewModel(BinaryImage image)
+        public ProcedureListViewModel(Assembly program)
         {
             this.Items = new List<ProcedureItem>();
-            foreach (Procedure proc in image.Procedures)
+            foreach (Procedure proc in program.Procedures)
             {
                 ProcedureItem viewItem = new ProcedureItem(proc);
                 Items.Add(viewItem);
@@ -171,28 +171,33 @@ namespace WpfDebugger
 
         public class ProcedureItem
         {
+            readonly Procedure procedure;
+
             public ProcedureItem(Procedure procedure)
             {
                 if (procedure == null)
                     throw new ArgumentNullException("procedure");
-                this.Procedure = procedure;
+                this.procedure = procedure;
             }
 
-            public Procedure Procedure { get; private set; }
+            public Procedure Procedure
+            {
+                get { return procedure; }
+            }
 
             public string Name
             {
-                get { return string.Format("sub_{0}", Procedure.EntryPoint.LinearAddress); }
+                get { return procedure.Name; }
             }
 
-            public Pointer EntryPoint
+            public Address EntryPoint
             {
-                get { return Procedure.EntryPoint; }
+                get { return procedure.EntryPoint; }
             }
 
             public int Size
             {
-                get { return Procedure.Size; }
+                get { return -1; /* Procedure.Size; */ }
             }
 
             public Uri Uri

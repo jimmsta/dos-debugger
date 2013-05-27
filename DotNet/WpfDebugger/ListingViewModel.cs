@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 using System.Windows.Media;
-using Disassembler2;
+using Disassembler;
 using Util.Data;
 using X86Codec;
 

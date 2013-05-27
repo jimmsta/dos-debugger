@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents an object module, which contains the binary image as well
@@ -19,8 +19,6 @@ namespace Disassembler2
         readonly List<DefinedSymbol> definedNames = new List<DefinedSymbol>();
         readonly List<ExternalSymbol> externalNames = new List<ExternalSymbol>();
         readonly List<SymbolAlias> aliases = new List<SymbolAlias>();
-
-        public Omf.Record[] Records { get; internal set; }
 
         /// <summary>
         /// Gets the name of the object module in the library.

@@ -16,7 +16,7 @@ namespace Disassembler2.Omf
             // Read the record.
             def.DefinedBy = reader.RecordNumber;
             def.ACBP = reader.ReadByte();
-            if (def.Alignment == Alignment.None) // absolute segment
+            if (def.Alignment == Disassembler.Alignment.None) // absolute segment
             {
                 def.Frame = reader.ReadUInt16();
                 def.Offset = reader.ReadByte();
@@ -103,38 +103,38 @@ namespace Disassembler2.Omf
         public byte[] Data;
         public List<FixupDefinition> Fixups;
 
-        public Alignment Alignment
+        public Disassembler.Alignment Alignment
         {
             get
             {
                 int alignment = ACBP >> 5;
                 switch (alignment)
                 {
-                    case 0: return Alignment.None;
-                    case 1: return Alignment.Byte;
-                    case 2: return Alignment.Word;
-                    case 3: return Alignment.Paragraph;
-                    case 4: return Alignment.Page;
-                    case 5: return Alignment.DWord;
+                    case 0: return Disassembler.Alignment.None;
+                    case 1: return Disassembler.Alignment.Byte;
+                    case 2: return Disassembler.Alignment.Word;
+                    case 3: return Disassembler.Alignment.Paragraph;
+                    case 4: return Disassembler.Alignment.Page;
+                    case 5: return Disassembler.Alignment.DWord;
                     default:
                         throw new InvalidDataException("Unsupported segment alignment: " + alignment);
                 }
             }
         }
 
-        public SegmentCombination Combination
+        public Disassembler.SegmentCombination Combination
         {
             get
             {
                 int combination = (ACBP >> 2) & 7;
                 switch (combination)
                 {
-                    case 0: return SegmentCombination.Private;
+                    case 0: return Disassembler.SegmentCombination.Private;
                     case 2:
                     case 4:
-                    case 7: return SegmentCombination.Public;
-                    case 5: return SegmentCombination.Stack;
-                    case 6: return SegmentCombination.Common;
+                    case 7: return Disassembler.SegmentCombination.Public;
+                    case 5: return Disassembler.SegmentCombination.Stack;
+                    case 6: return Disassembler.SegmentCombination.Common;
                     default:
                         throw new InvalidDataException("Unsupported segment combination: " + combination);
                 }

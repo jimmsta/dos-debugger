@@ -86,7 +86,7 @@ namespace Disassembler2.Omf
             byte b2 = reader.ReadByte();
             UInt16 w = (UInt16)((b1 << 8) | b2); // big endian
 
-            fixup.Mode = (w & 0x4000) != 0 ? FixupMode.SegmentRelative : FixupMode.SelfRelative;
+            fixup.Mode = (w & 0x4000) != 0 ? Disassembler.FixupMode.SegmentRelative : Disassembler.FixupMode.SelfRelative;
             fixup.Location = (FixupLocation)((w >> 10) & 0x0F);
             fixup.DataOffset = (UInt16)(w & 0x03FF);
 
@@ -212,8 +212,8 @@ namespace Disassembler2.Omf
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
 
         public FixupLocation Location { get; internal set; } // indicates what to fix up
-        
-        public FixupMode Mode { get; internal set; }
+
+        public Disassembler.FixupMode Mode { get; internal set; }
         public FixupTarget Target { get; internal set; }
         public FixupFrame Frame { get; internal set; }
 

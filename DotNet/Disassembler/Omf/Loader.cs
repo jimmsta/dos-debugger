@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using Disassembler2.Omf;
 
-namespace Disassembler2.Omf
+namespace Disassembler
 {
     public static class OmfLoader
     {
@@ -93,7 +94,7 @@ namespace Disassembler2.Omf
                     return null;
                 }
             }
-            module.Records = records.ToArray();
+            context.Records = records.ToArray();
 
             Dictionary<object, object> objectMap = 
                 new Dictionary<object, object>();

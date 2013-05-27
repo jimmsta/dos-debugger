@@ -4,16 +4,16 @@ using System.Text;
 using X86Codec;
 using Util.Data;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Provides methods to disassemble and analyze 16-bit x86 binary code.
     /// </summary>
-    public class Disassembler16New
+    public class DisassemblerBase
     {
         readonly Assembly program;
 
-        public Disassembler16New(Assembly program)
+        public DisassemblerBase(Assembly program)
         {
             if (program == null)
                 throw new ArgumentNullException("program");
@@ -418,7 +418,7 @@ namespace Disassembler2
         /// </returns>
         // TODO: should be roll-back the entire basic block if we 
         // encounters an error on our way? maybe not.
-        private BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
+        protected virtual BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Address pos = start.Target;
             ImageChunk image = program.GetSegment(pos.Segment);
@@ -899,25 +899,24 @@ namespace Disassembler2
         {
             program.Errors.Add(new Error(location, errorCode, string.Format(format, args)));
         }
-
-#if false
-        private void AddError(
-            LogicalAddress location, ErrorCategory category,
-            string format, params object[] args)
-        {
-            AddError(location, ErrorCode.GenericError, format, args);
-        }
-
-        private void AddError(LogicalAddress location, string format, params object[] args)
-        {
-            AddError(location, ErrorCategory.Error, format, args);
-        }
-#endif
-
+        
         public static void Disassemble(Assembly assembly, Address entryPoint)
         {
-            Disassembler16New dasm = new Disassembler16New(assembly);
+            DisassemblerBase dasm = new DisassemblerBase(assembly);
             dasm.Analyze(entryPoint);
+        }
+    }
+
+    /// <summary>
+    /// Implements a specialized disassembler to analyze object library.
+    /// An object library contains additional symbol information, which is
+    /// helpful for binary analysis.
+    /// </summary>
+    public class LibraryDisassembler : DisassemblerBase
+    {
+        public LibraryDisassembler(ObjectLibrary library)
+            : base(library)
+        {
         }
     }
 }

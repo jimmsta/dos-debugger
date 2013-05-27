@@ -9,7 +9,7 @@ using X86Codec;
 // This will significantly reduce the complexity of our model.
 // For an executable, we just dynamically adjust the segment
 // boundaries.
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Contains information about a contiguous chunk of bytes in a binary

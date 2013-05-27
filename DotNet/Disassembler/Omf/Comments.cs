@@ -143,7 +143,7 @@ namespace Disassembler2.Omf
     {
         public int InstructionSet { get; private set; } // e.g. 8086, 80286
         public bool Optimized { get; private set; }
-        public MemoryModel MemoryModel { get; private set; }
+        public Disassembler.MemoryModel MemoryModel { get; private set; }
 
         internal MemoryModelComment(RecordReader reader)
         {
@@ -159,11 +159,11 @@ namespace Disassembler2.Omf
 
                     case 'O': Optimized = true; break;
 
-                    case 's': MemoryModel = MemoryModel.Small; break;
-                    case 'm': MemoryModel = MemoryModel.Medium; break;
-                    case 'c': MemoryModel = MemoryModel.Compact; break;
-                    case 'l': MemoryModel = MemoryModel.Large; break;
-                    case 'h': MemoryModel = MemoryModel.Huge; break;
+                    case 's': MemoryModel = Disassembler.MemoryModel.Small; break;
+                    case 'm': MemoryModel = Disassembler.MemoryModel.Medium; break;
+                    case 'c': MemoryModel = Disassembler.MemoryModel.Compact; break;
+                    case 'l': MemoryModel = Disassembler.MemoryModel.Large; break;
+                    case 'h': MemoryModel = Disassembler.MemoryModel.Huge; break;
 
                     case 'A': InstructionSet = 68000; break;
                     case 'B': InstructionSet = 68010; break;
@@ -180,7 +180,7 @@ namespace Disassembler2.Omf
             {
                 sb.Append(InstructionSet);
             }
-            if (MemoryModel != MemoryModel.Unknown)
+            if (MemoryModel != Disassembler.MemoryModel.Unknown)
             {
                 if (sb.Length > 0)
                     sb.Append(',');

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Util.Data;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a basic block of code.

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Disassembler2
+namespace Disassembler
 {
     public enum MemoryModel
     {

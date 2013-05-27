@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler2
+namespace Disassembler
 {
     /// <summary>
     /// Represents a symbol with name and optionally type information.
