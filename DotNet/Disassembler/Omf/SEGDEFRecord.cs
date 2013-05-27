@@ -41,6 +41,9 @@ namespace Disassembler2.Omf
             if (overlayNameIndex > 0)
                 def.OverlayName = context.Names[overlayNameIndex - 1];
 
+            def.Data = new byte[def.RealLength];
+            def.Fixups = new List<FixupDefinition>();
+
             this.Definition = def;
             context.Segments.Add(def);
         }

@@ -124,12 +124,13 @@ namespace Disassembler2.Omf
                 if (!thread.IsDefined)
                     throw new InvalidDataException("Target thread " + targetNumber + " is not defined.");
 
-                FixupTarget spec = new FixupTarget();
-                spec.Method = (FixupTargetMethod)((int)thread.Method & 3);
+                FixupTargetMethod method = (FixupTargetMethod)((int)thread.Method & 3);
                 if (hasTargetDisplacement)
-                    spec.Method = (FixupTargetMethod)((int)spec.Method | 4);
-                spec.IndexOrFrame = thread.IndexOrFrame;
-                if ((int)spec.Method <= 3)
+                    method |= (FixupTargetMethod)4;
+
+                FixupTarget spec = new FixupTarget();
+                spec.Referent = ResolveFixupReferent(context, method, thread.IndexOrFrame);
+                if ((int)method <= 3)
                 {
                     spec.Displacement = reader.ReadUInt16Or32();
                 }
@@ -137,16 +138,39 @@ namespace Disassembler2.Omf
             }
             else
             {
+                FixupTargetMethod method = (FixupTargetMethod)(b & 7);
+                UInt16 indexOrFrame = reader.ReadIndex();
+
                 FixupTarget spec = new FixupTarget();
-                spec.Method = (FixupTargetMethod)(b & 7);
-                spec.IndexOrFrame = reader.ReadIndex();
-                if ((int)spec.Method <= 3)
+                spec.Referent = ResolveFixupReferent(context, method, indexOrFrame);
+                if ((int)method <= 3)
                 {
                     spec.Displacement = reader.ReadUInt16Or32();
                 }
                 fixup.Target = spec;
             }
             return fixup;
+        }
+
+        private static object ResolveFixupReferent(
+            RecordContext context, FixupTargetMethod method, UInt16 indexOrFrame)
+        {
+            switch (method)
+            {
+                case FixupTargetMethod.Absolute:
+                    return indexOrFrame;
+                case FixupTargetMethod.SegmentPlusDisplacement:
+                case FixupTargetMethod.SegmentWithoutDisplacement:
+                    return context.Segments[indexOrFrame - 1];
+                case FixupTargetMethod.GroupPlusDisplacement:
+                case FixupTargetMethod.GroupWithoutDisplacement:
+                    return context.Groups[indexOrFrame - 1];
+                case FixupTargetMethod.ExternalPlusDisplacement:
+                case FixupTargetMethod.ExternalWithoutDisplacement:
+                    return context.ExternalNames[indexOrFrame - 1];
+                default:
+                    throw new InvalidDataException("Invalid fixup target method: " + method);
+            }
         }
     }
 
@@ -181,15 +205,22 @@ namespace Disassembler2.Omf
     [TypeConverter(typeof(ExpandableObjectConverter))]
     class FixupDefinition
     {
+        /// <summary>
+        /// Gets or sets the offset (relative to the beginning of the segment)
+        /// to fix up.
+        /// </summary>
         public UInt16 DataOffset { get; internal set; } // indicates where to fix up
+
         public FixupLocation Location { get; internal set; } // indicates what to fix up
+        
         public FixupMode Mode { get; internal set; }
         public FixupTarget Target { get; internal set; }
         public FixupFrame Frame { get; internal set; }
 
-        public int StartIndex { get { return DataOffset; } }
-        public int EndIndex { get { return StartIndex + Length; } }
+        //public int StartIndex { get { return DataOffset; } }
+        //public int EndIndex { get { return StartIndex + Length; } }
 
+#if false
         /// <summary>
         /// Gets the number of bytes to fix up. This is inferred from the
         /// Location property.
@@ -218,6 +249,7 @@ namespace Disassembler2.Omf
                 }
             }
         }
+#endif
     }
 
     /// <summary>
@@ -263,16 +295,22 @@ namespace Disassembler2.Omf
 
     struct FixupTarget
     {
-        public FixupTargetMethod Method { get; internal set; }
+        /// <summary>
+        /// Gets or sets the REFERENT of TARGET. This must be one of the
+        /// following:
+        /// UInt16 -- stores the frame number of an absolute frame.
+        /// SegmentDefinition -- specifies a segment (SEG).
+        /// GroupDefinition -- specifies a group (GRP).
+        /// ExternalNameDefinition -- specifies an external name (EXT).
+        /// </summary>
+        public object Referent { get; set; }
 
         /// <summary>
-        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
-        /// the referent to find the target. If Method is Absolute, this
-        /// contains the frame number.
+        /// Gets or sets the displacement of TARGET relative to REFERENT.
         /// </summary>
-        public UInt16 IndexOrFrame { get; internal set; }
         public UInt32 Displacement { get; internal set; }
 
+#if false
         public override string ToString()
         {
             switch (Method)
@@ -295,10 +333,12 @@ namespace Disassembler2.Omf
                     return "(invalid)";
             }
         }
+#endif
     }
 
     /// <summary>
-    /// Specifies how to determine the TARGET of a fixup.
+    /// Specifies the format in which a fixup TARGET is stored in a FIXUPP
+    /// record.
     /// </summary>
     enum FixupTargetMethod : byte
     {

@@ -26,7 +26,7 @@ namespace Disassembler2.Omf
         public readonly List<GroupDefinition> Groups =
             new List<GroupDefinition>();
 
-        // Populated by EXTDEF, LEXTDEF, and CEXTDEF records.
+        // Populated by EXTDEF, LEXTDEF, CEXTDEF, COMDEF, and LCOMDEF records.
         public readonly List<ExternalNameDefinition> ExternalNames =
             new List<ExternalNameDefinition>();
 
@@ -34,9 +34,11 @@ namespace Disassembler2.Omf
         public readonly List<PublicNameDefinition> PublicNames =
             new List<PublicNameDefinition>();
 
+#if false
         // Populated by COMDEF and LCOMDEF records.
         public readonly List<CommunalNameDefinition> CommunalNames =
             new List<CommunalNameDefinition>();
+#endif
 
         // Populated by ALIAS records.
         public readonly List<AliasDefinition> Aliases =
@@ -78,7 +80,7 @@ namespace Disassembler2.Omf
         public int Offset;
     }
 
-    class CommunalNameDefinition : NameDefinition
+    class CommunalNameDefinition : ExternalNameDefinition
     {
         public byte DataType;
         public UInt32 ElementCount;

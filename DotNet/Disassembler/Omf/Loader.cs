@@ -92,62 +92,42 @@ namespace Disassembler2.Omf
                 {
                     return null;
                 }
-
-                // Convert OMF record to our format.
-                switch (record.RecordNumber)
-                {
-                    case RecordNumber.THEADR:
-                        module.SourceName = (record as THEADRRecord).Name;
-                        break;
-                    default:
-                        //System.Diagnostics.Debug.WriteLine(string.Format(
-                        //    "Record {0} is not interpreted.",
-                        //    record.RecordNumber));
-                        break;
-                }
             }
             module.Records = records.ToArray();
 
-            // TODO: add dictionary to map SegmentDefinition to Segment.
-            Dictionary<GroupDefinition, SegmentGroup> groupMap;
-            Dictionary<SegmentDefinition, LogicalSegment> segmentMap;
-            Dictionary<ExternalNameDefinition, ExternalSymbol> externalMap;
+            Dictionary<object, object> objectMap = 
+                new Dictionary<object, object>();
 
-            // Convert segment grouops.
+            // Convert meta-data.
+            module.Name = context.ObjectName;
+            module.SourceName = context.SourceName;
+
+            // Convert segments.
+            foreach (SegmentDefinition def in context.Segments)
+            {
+                LogicalSegment segment = ConvertSegmentDefinition(def, objectMap, module);
+                objectMap[def] = segment;
+                module.Segments.Add(segment);
+            }
+
+            // Convert segment groups.
             foreach (GroupDefinition def in context.Groups)
             {
-                module.Groups.Add(new SegmentGroup
-                {
-                    Name = def.Name,
-                    Segments = null // TBD
-                });
+                SegmentGroup group = ConvertGroupDefinition(def, objectMap);
+                module.Groups.Add(group);
+                objectMap[def] = group;
             }
 
             // Convert external names.
             foreach (ExternalNameDefinition def in context.ExternalNames)
             {
-                module.ExternalNames.Add(new ExternalSymbol
+                ExternalSymbol symbol = new ExternalSymbol
                 {
                     Name = def.Name,
                     TypeIndex = def.TypeIndex,
-                });
-            }
-
-            // Convert public names.
-            foreach (PublicNameDefinition def in context.PublicNames)
-            {
-                module.DefinedNames.Add(new DefinedSymbol
-                {
-                    BaseGroup = null,
-                    BaseSegment = null,
-                    BaseFrame = def.BaseFrame,
-                    Name = def.Name,
-                    TypeIndex = def.TypeIndex,
-                    Offset = (uint)def.Offset,
-                    Scope = (def.DefinedBy == RecordNumber.LPUBDEF ||
-                             def.DefinedBy == RecordNumber.LPUBDEF32) ?
-                            SymbolScope.Private : SymbolScope.Public
-                });
+                };
+                module.ExternalNames.Add(symbol);
+                objectMap[def] = symbol;
             }
 
             // Convert aliases.
@@ -160,62 +140,127 @@ namespace Disassembler2.Omf
                 });
             }
 
+            // Convert public names.
+            foreach (PublicNameDefinition def in context.PublicNames)
+            {
+                module.DefinedNames.Add(ConvertPublicNameDefinition(def, objectMap));
+            }
+
+            // Convert segment data and fixups.
+            foreach (SegmentDefinition def in context.Segments)
+            {
+                LogicalSegment segment = (LogicalSegment)objectMap[def];
+                Array.Copy(def.Data, segment.Image.Data, def.Data.Length);
+                foreach (FixupDefinition f in def.Fixups)
+                {
+                    segment.Image.Fixups.Add(ConvertFixupDefinition(f, objectMap));
+                }
+            }
+
             return module;
         }
 
-        private static Fixup ConvertFixupDefinition(
-            FixupDefinition fixup, LEDATARecord r, RecordContext context)
+        private static LogicalSegment ConvertSegmentDefinition(
+            SegmentDefinition def, Dictionary<object, object> objectMap,
+            ObjectModule module)
         {
-            Fixup f = new Fixup();
-            f.StartIndex = fixup.DataOffset + (int)r.DataOffset;
-            switch (fixup.Location)
+            // Convert the record.
+            LogicalSegment segment = new LogicalSegment();
+            if (def.IsUse32)
+                throw new NotSupportedException("Use32 is not supported.");
+
+            //segment.Id = module.Segments.Count + 1;
+            segment.Alignment = def.Alignment;
+            segment.Combination = def.Combination;
+            segment.AbsoluteFrame = def.Frame; // ignore Offset
+            segment.Name = def.SegmentName;
+            segment.Class = def.ClassName; // ignore OverlayName
+
+            long length = def.RealLength;
+            if (length > Int32.MaxValue)
+            {
+                throw new InvalidDataException("Segment larger than 2GB is not supported.");
+            }
+            segment.Image = new ImageChunk((int)length, 
+                module.Name + "." + segment.Name);
+
+            return segment;
+        }
+
+        private static Fixup ConvertFixupDefinition(
+            FixupDefinition def, Dictionary<object, object> objectMap)
+        {
+            Fixup fixup = new Fixup();
+            fixup.StartIndex = def.DataOffset;
+            switch (def.Location)
             {
                 case FixupLocation.LowByte:
-                    f.LocationType = FixupLocationType.LowByte;
+                    fixup.LocationType = FixupLocationType.LowByte;
                     break;
                 case FixupLocation.Offset:
                 case FixupLocation.LoaderResolvedOffset:
-                    f.LocationType = FixupLocationType.Offset;
+                    fixup.LocationType = FixupLocationType.Offset;
                     break;
                 case FixupLocation.Base:
-                    f.LocationType = FixupLocationType.Base;
+                    fixup.LocationType = FixupLocationType.Base;
                     break;
                 case FixupLocation.Pointer:
-                    f.LocationType = FixupLocationType.Pointer;
+                    fixup.LocationType = FixupLocationType.Pointer;
                     break;
                 default:
                     throw new InvalidDataException("The fixup location is not supported.");
             }
-            f.Mode = fixup.Mode;
+            fixup.Mode = def.Mode;
 
             IAddressReferent referent;
-            switch (fixup.Target.Method)
+            if (def.Target.Referent is UInt16)
             {
-                case FixupTargetMethod.SegmentPlusDisplacement:
-                case FixupTargetMethod.SegmentWithoutDisplacement:
-                    referent = context.Module.Segments[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.GroupPlusDisplacement:
-                case FixupTargetMethod.GroupWithoutDisplacement:
-                    referent = context.Module.Groups[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.ExternalPlusDisplacement:
-                case FixupTargetMethod.ExternalWithoutDisplacement:
-                    referent = context.Module.ExternalNames[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.Absolute:
-                    referent = new PhysicalAddress(fixup.Target.IndexOrFrame, 0);
-                    break;
-                default:
-                    throw new InvalidDataException("Unsupported fixup method.");
+                referent = new PhysicalAddress((UInt16)def.Target.Referent, 0);
             }
-            f.Target = new SymbolicTarget
+            else
             {
-                Referent = referent,
-                Displacement = fixup.Target.Displacement
+                referent = (IAddressReferent)objectMap[def.Target.Referent];
+            }
+            fixup.Target = new SymbolicTarget
+            {
+                Referent = (IAddressReferent)referent,
+                Displacement = def.Target.Displacement
             };
             //f.Frame = null;
-            return f;
+            return fixup;
+        }
+
+        private static SegmentGroup ConvertGroupDefinition(
+            GroupDefinition def, Dictionary<object, object> objectMap)
+        {
+            SegmentGroup group = new SegmentGroup();
+            group.Name = def.Name;
+            group.Segments = new LogicalSegment[def.Segments.Count];
+            for (int i = 0; i < group.Segments.Length; i++)
+            {
+                group.Segments[i] = (LogicalSegment)objectMap[def.Segments[i]];
+            }
+            return group;
+        }
+
+        private static DefinedSymbol ConvertPublicNameDefinition(
+            PublicNameDefinition def, Dictionary<object, object> objectMap)
+        {
+            DefinedSymbol symbol = new DefinedSymbol();
+            if (def.BaseGroup != null)
+                symbol.BaseGroup = (SegmentGroup)objectMap[def.BaseGroup];
+            if (def.BaseSegment != null)
+                symbol.BaseSegment = (LogicalSegment)objectMap[def.BaseSegment];
+            symbol.BaseFrame = def.BaseFrame;
+            symbol.Name = def.Name;
+            symbol.TypeIndex = def.TypeIndex;
+            symbol.Offset = (uint)def.Offset;
+            if (def.DefinedBy == RecordNumber.LPUBDEF ||
+                             def.DefinedBy == RecordNumber.LPUBDEF32)
+                symbol.Scope = SymbolScope.Private;
+            else
+                symbol.Scope = SymbolScope.Public;
+            return symbol;
         }
     }
 }

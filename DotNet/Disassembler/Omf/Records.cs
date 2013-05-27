@@ -540,12 +540,12 @@ namespace Disassembler2.Omf
     /// </summary>
     class COMDEFRecord : Record
     {
-        public CommunalNameDefinition[] Definitions { get; private set; }
+        public ExternalNameDefinition[] Definitions { get; private set; }
 
         public COMDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            int startIndex = context.CommunalNames.Count;
+            int startIndex = context.ExternalNames.Count;
             while (!reader.IsEOF)
             {
                 CommunalNameDefinition def = new CommunalNameDefinition();
@@ -558,10 +558,10 @@ namespace Disassembler2.Omf
                     def.ElementSize = ReadEncodedInteger(reader);
                 else
                     def.ElementSize = 1;
-                context.CommunalNames.Add(def);
+                context.ExternalNames.Add(def);
             }
-            int endIndex = context.CommunalNames.Count;
-            this.Definitions = context.CommunalNames.Slice(
+            int endIndex = context.ExternalNames.Count;
+            this.Definitions = context.ExternalNames.Slice(
                 startIndex, endIndex - startIndex);
         }
 
@@ -634,6 +634,8 @@ namespace Disassembler2.Omf
                 }
                 this.Definition.Segments.Add(context.Segments[segmentIndex - 1]);
             }
+
+            context.Groups.Add(Definition);
         }
     }
 
