@@ -907,17 +907,4 @@ namespace Disassembler
             dasm.Analyze(entryPoint);
         }
     }
-
-    /// <summary>
-    /// Implements a specialized disassembler to analyze object library.
-    /// An object library contains additional symbol information, which is
-    /// helpful for binary analysis.
-    /// </summary>
-    public class LibraryDisassembler : DisassemblerBase
-    {
-        public LibraryDisassembler(ObjectLibrary library)
-            : base(library)
-        {
-        }
-    }
 }

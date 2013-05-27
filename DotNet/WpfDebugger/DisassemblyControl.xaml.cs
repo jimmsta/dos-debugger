@@ -15,7 +15,6 @@ namespace WpfDebugger
             InitializeComponent();
         }
 
-        private ImageChunk image;
         private ListingViewModel viewModel;
 
 #if false
