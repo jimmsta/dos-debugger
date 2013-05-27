@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -162,21 +163,29 @@ namespace WpfDebugger
         public ProcedureListViewModel(Assembly program)
         {
             this.Items = new List<ProcedureItem>();
-            foreach (Procedure proc in program.Procedures)
+            var list = from proc in program.Procedures
+                       orderby proc.EntryPoint
+                       select proc;
+            foreach (Procedure proc in list)
             {
-                ProcedureItem viewItem = new ProcedureItem(proc);
+                ProcedureItem viewItem = new ProcedureItem(program, proc);
                 Items.Add(viewItem);
             }
         }
 
         public class ProcedureItem
         {
+            readonly Assembly program;
             readonly Procedure procedure;
 
-            public ProcedureItem(Procedure procedure)
+            public ProcedureItem( Assembly program, Procedure procedure)
             {
+                if (program == null)
+                    throw new ArgumentNullException("program");
                 if (procedure == null)
                     throw new ArgumentNullException("procedure");
+
+                this.program = program;
                 this.procedure = procedure;
             }
 
@@ -204,7 +213,11 @@ namespace WpfDebugger
             {
                 get
                 {
-                    return new Uri(string.Format("ddd://document1#{0}", EntryPoint));
+                    AssemblyUri uri = new AssemblyUri(
+                        program,
+                        program.GetSegment(procedure.EntryPoint.Segment),
+                        procedure.EntryPoint.Offset);
+                    return uri;
                 }
             }
         }

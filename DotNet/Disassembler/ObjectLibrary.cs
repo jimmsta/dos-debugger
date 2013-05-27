@@ -71,7 +71,7 @@ namespace Disassembler
                 {
                     ++id;
                     segment.Id = id;
-                    base.AddSegment(id, segment.Image);
+                    base.AddSegment(id, segment);
                 }
             }
         }

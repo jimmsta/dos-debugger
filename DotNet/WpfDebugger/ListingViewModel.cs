@@ -32,7 +32,7 @@ namespace WpfDebugger
         /// </summary>
         private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(Assembly assembly, LogicalSegment segment)
+        public ListingViewModel(Assembly assembly, Segment segment)
         {
             ImageChunk image = segment.Image;
             this.image = image;

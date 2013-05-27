@@ -422,7 +422,7 @@ namespace Disassembler
         protected virtual BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Address pos = start.Target;
-            ImageChunk image = program.GetSegment(pos.Segment);
+            ImageChunk image = program.GetSegment(pos.Segment).Image;
 
             // Check bounds.
             if (!image.Bounds.Contains(pos.Offset))

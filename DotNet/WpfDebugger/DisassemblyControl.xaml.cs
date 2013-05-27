@@ -30,7 +30,7 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(Assembly assembly, LogicalSegment segment)
+        public void SetView(Assembly assembly, Segment segment)
         {
             this.DataContext = null;
 

@@ -16,6 +16,7 @@ namespace Disassembler
         public ExecutableDisassembler(Executable executable)
             : base(executable)
         {
+            this.executable = executable;
         }
 
         /// <summary>

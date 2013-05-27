@@ -40,7 +40,7 @@ namespace Disassembler
         private readonly ProcedureCollection procedures;
         private readonly ModuleCollection modules;
         private readonly ErrorCollection errors;
-        private readonly Dictionary<int, ImageChunk> segments;
+        private readonly Dictionary<int, Segment> segments;
 
         public Assembly()
         {
@@ -49,7 +49,7 @@ namespace Disassembler
             this.procedures = new ProcedureCollection();
             this.modules = new ModuleCollection();
             this.errors = new ErrorCollection();
-            this.segments = new Dictionary<int, ImageChunk>();
+            this.segments = new Dictionary<int, Segment>();
         }
 
         public XRefCollection CrossReferences
@@ -82,7 +82,7 @@ namespace Disassembler
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        public virtual ImageChunk GetSegment(int segmentSelector)
+        public virtual Segment GetSegment(int segmentSelector)
         {
             return segments[segmentSelector];
         }
@@ -92,9 +92,9 @@ namespace Disassembler
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        public void AddSegment(int segmentSelector, ImageChunk image)
+        public void AddSegment(int segmentSelector, Segment segment)
         {
-            segments.Add(segmentSelector, image);
+            segments.Add(segmentSelector, segment);
         }
     }
 

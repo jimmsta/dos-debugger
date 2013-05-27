@@ -21,6 +21,25 @@ namespace Disassembler
         readonly FixupCollection fixups;
         readonly Dictionary<int, Instruction> instructions;
 
+        public ImageChunk(byte[] bytes, ByteAttribute[] attrs, int startIndex, string name)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            if (attrs == null)
+                throw new ArgumentNullException("attrs");
+            if (bytes.Length != attrs.Length)
+                throw new ArgumentException("bytes and attrs must have the same length.");
+            if (startIndex < 0 || startIndex > bytes.Length)
+                throw new ArgumentOutOfRangeException("startIndex");
+
+            int n = bytes.Length;
+            this.image = new ArraySegment<byte>(bytes, startIndex, n - startIndex);
+            this.attrs = new ArraySegment<ByteAttribute>(attrs, startIndex, n - startIndex);
+            this.fixups = new FixupCollection();
+            this.fixups.Name = name;
+            this.instructions = new Dictionary<int, Instruction>();
+        }
+
         public ImageChunk(int length, string name)
             : this(new byte[length], name)
         {
@@ -36,16 +55,11 @@ namespace Disassembler
         /// </summary>
         /// <param name="image"></param>
         public ImageChunk(byte[] image, string name)
+            : this(image, new ByteAttribute[image.Length], 0, name)
         {
-            if (image == null)
-                throw new ArgumentNullException("image");
-
-            this.image = new ArraySegment<byte>(image);
-            this.attrs = new ArraySegment<ByteAttribute>(new ByteAttribute[image.Length]);
-            this.fixups = new FixupCollection();
-            this.fixups.Name = name;
-            this.instructions = new Dictionary<int, Instruction>();
         }
+
+        // get/set accessible address range
 
         /// <summary>
         /// Gets the binary image data.

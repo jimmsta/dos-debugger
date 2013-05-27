@@ -43,7 +43,7 @@ namespace WpfDebugger
         {
 #if true
             //string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
-            string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\HELLO.EXE";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\NEWHELLO.EXE";
             DoOpenFile(fileName);
 #else
             mnuHelpTest_Click(null, null);
@@ -314,6 +314,19 @@ namespace WpfDebugger
             //    "Navigating to {0} in {1}", e.Uri, e.Target));
             //Pointer address = Pointer.Parse(e.Uri.Fragment.Substring(1)); // skip #
             //disassemblyList.GoToAddress(address);
+
+            AssemblyUri uri = e.Uri as AssemblyUri;
+            if (uri == null)
+                return;
+
+            if (uri.Referent is Segment)
+            {
+                this.disassemblyList.SetView(program, uri.Referent as Segment);
+            }
+            else
+            {
+                MessageBox.Show("Not supported");
+            }
         }
 
         private void FileOpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)

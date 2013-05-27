@@ -12,13 +12,18 @@ namespace Disassembler
         readonly SortedList<UInt16, DummySegment> segments =
             new SortedList<UInt16, DummySegment>();
 
+        byte[] image;
+        ImageChunk.ByteAttribute[] attrs;
+
         public Executable(string fileName)
         {
             MZFile file = new MZFile(fileName);
 
+            this.image = file.Image;
+            this.attrs = new ImageChunk.ByteAttribute[image.Length];
+
             // Each relocation entry provides a hint of the program's
             // segmentation.
-            byte[] image = file.Image;
             foreach (FarPointer location in file.RelocatableLocations)
             {
                 segments[location.Segment] = null;
@@ -27,7 +32,6 @@ namespace Disassembler
                 segments[target] = null;
             }
             segments[file.EntryPoint.Segment] = null;
-            segments[file.StackTop.Segment] = null;
 
             // Create a dummy segment for each of the guessed segments.
             // Initially, we set the ActualSize of each segment to zero,
@@ -36,7 +40,8 @@ namespace Disassembler
             for (int i = 0; i < segments.Count; i++)
             {
                 UInt16 frameNumber = segments.Keys[i];
-                DummySegment segment = new DummySegment(this);
+                ImageChunk chunk = new ImageChunk(image, attrs, frameNumber * 16, "");
+                DummySegment segment = new DummySegment(this, chunk);
                 segment.Frame = frameNumber;
                 segment.Id = segments.Count + 1;
                 segments[frameNumber] = segment;
@@ -47,9 +52,9 @@ namespace Disassembler
             this.loadModule = new LoadModule(new ImageChunk(data, "LoadModule"));
         }
 
-        public override ImageChunk GetSegment(int segmentSelector)
+        public override Segment GetSegment(int segmentSelector)
         {
-            return this.segments[(UInt16)segmentSelector].Image;
+            return this.segments[(UInt16)segmentSelector];
         }
 
         public LoadModule LoadModule
@@ -69,10 +74,12 @@ namespace Disassembler
     public class DummySegment : Segment
     {
         Executable executable;
+        ImageChunk image;
 
-        public DummySegment(Executable executable)
+        public DummySegment(Executable executable, ImageChunk image)
         {
             this.executable = executable;
+            this.image = image;
         }
 
         /// <summary>
@@ -83,7 +90,7 @@ namespace Disassembler
 
         public override ImageChunk Image
         {
-            get { throw new NotImplementedException(); }
+            get { return image; }
         }
     }
 
