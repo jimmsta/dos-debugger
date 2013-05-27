@@ -31,6 +31,12 @@ namespace Disassembler2
         public ObjectModule[] Modules { get; internal set; }
 #endif
 
+        public string FileName { get; set; }
+        public string Name
+        {
+            get { return System.IO.Path.GetFileName(FileName); }
+        }
+
         public readonly SortedDictionary<string, List<ObjectModule>> Symbols
             = new SortedDictionary<string, List<ObjectModule>>();
 

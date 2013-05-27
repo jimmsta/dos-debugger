@@ -156,7 +156,57 @@ namespace Disassembler2
         OutOfImage,
     }
 
-    public class ErrorCollection : List<Error>
+    // Note: errorcollection and fixupcollection actually have similar
+    // data structures, so we should find a way to merge them. However,
+    // a fixup collection doesn't allow multiple errors at the same
+    // location, but we allow them here.
+    public class ErrorCollection : ICollection<Error>
     {
+        readonly List<Error> errors = new List<Error>();
+
+        public void Add(Error error)
+        {
+            errors.Add(error);
+        }
+
+        public void Clear()
+        {
+            errors.Clear();
+        }
+
+        public bool Contains(Error item)
+        {
+            return errors.Contains(item);
+        }
+
+        public void CopyTo(Error[] array, int arrayIndex)
+        {
+            errors.CopyTo(array, arrayIndex);
+        }
+
+        public int Count
+        {
+            get { return errors.Count; }
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        public bool Remove(Error item)
+        {
+            return errors.Remove(item);
+        }
+
+        public IEnumerator<Error> GetEnumerator()
+        {
+            return errors.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

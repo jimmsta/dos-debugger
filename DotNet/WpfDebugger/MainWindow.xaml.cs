@@ -97,6 +97,22 @@ namespace WpfDebugger
 
         private void DoOpenFile(string fileName)
         {
+            if (fileName.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
+            {
+                DoOpenExeFile(fileName);
+            }
+            else if (fileName.EndsWith(".lib", StringComparison.InvariantCultureIgnoreCase))
+            {
+                DoOpenLibFile(fileName);
+            }
+            else
+            {
+                MessageBox.Show("File type is not supported.");
+            }
+        }
+
+        private void DoOpenExeFile(string fileName)
+        {
             MZFile mzFile = new MZFile(fileName);
             mzFile.Relocate(0);
             Disassembler16 dasm = new Disassembler16(mzFile.Image, mzFile.BaseAddress);
@@ -110,9 +126,8 @@ namespace WpfDebugger
             this.propertiesWindow.Image = image;
         }
 
-        private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
+        private void DoOpenLibFile(string fileName)
         {
-            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
             this.assembly = library;
             library.ResolveAllSymbols();
@@ -124,6 +139,9 @@ namespace WpfDebugger
                     "Symbol {0} is unresolved.", key));
             }
 
+            this.libraryBrowser.Library = library;
+
+#if false
             string symbolToFind = "FISRQQ";
             foreach (var mod in library.Symbols[symbolToFind])
             {
@@ -142,8 +160,13 @@ namespace WpfDebugger
             dasm.Analyze(entryPoint);
 
             this.disassemblyList.SetView(library, symbol.BaseSegment);
+#endif
+        }
 
-            this.libraryBrowser.Library = library;
+        private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            DoOpenLibFile(fileName);
         }
 
         private void mnuFileExit_Click(object sender, RoutedEventArgs e)
@@ -297,7 +320,7 @@ namespace WpfDebugger
         private void FileOpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "Executable file|*.exe";
+            dlg.Filter = "Executable file|*.exe|Library file|*.lib";
             dlg.Title = "Select File To Analyze";
 
             if (dlg.ShowDialog(this) == true)

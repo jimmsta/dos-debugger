@@ -14,18 +14,14 @@ namespace Disassembler2.Omf
     /// </summary>
     class FixupRecord : Record
     {
-        internal FixupThreadDefinition[] Threads { get; private set; }
-        internal FixupDefinition[] Fixups { get; private set; }
+        public FixupThreadDefinition[] Threads { get; private set; }
+        public FixupDefinition[] Fixups { get; private set; }
 
-        internal FixupRecord(RecordReader reader, RecordContext context)
+        public FixupRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             List<FixupThreadDefinition> threads = new List<FixupThreadDefinition>();
             List<FixupDefinition> fixups = new List<FixupDefinition>();
-            if (context.Module.Name == "87fcall")
-            {
-                int kk = 1;
-            }
             while (!reader.IsEOF)
             {
                 byte b = reader.PeekByte();
@@ -46,10 +42,10 @@ namespace Disassembler2.Omf
                     if (context.LastRecord is LEDATARecord)
                     {
                         var r = (LEDATARecord)context.LastRecord;
-                        Fixup f = ConvertFixupDefinition(fixup, r, context);
-                        r.Segment.Image.Fixups.Add(f);
+                        fixup.DataOffset += (ushort)r.DataOffset;
+                        r.Segment.Fixups.Add(fixup);
                     }
-                    else if (context.LastRecord is LogicalIteratedDataRecord)
+                    else if (context.LastRecord is LIDATARecord)
                     {
                     }
                     else if (context.LastRecord is COMDATRecord)
@@ -151,61 +147,6 @@ namespace Disassembler2.Omf
                 fixup.Target = spec;
             }
             return fixup;
-        }
-
-        private Fixup ConvertFixupDefinition(
-            FixupDefinition fixup, LEDATARecord r, RecordContext context)
-        {
-            Fixup f = new Fixup();
-            f.StartIndex = fixup.DataOffset + (int)r.DataOffset;
-            switch (fixup.Location)
-            {
-                case FixupLocation.LowByte:
-                    f.LocationType = FixupLocationType.LowByte;
-                    break;
-                case FixupLocation.Offset:
-                case FixupLocation.LoaderResolvedOffset:
-                    f.LocationType = FixupLocationType.Offset;
-                    break;
-                case FixupLocation.Base:
-                    f.LocationType = FixupLocationType.Base;
-                    break;
-                case FixupLocation.Pointer:
-                    f.LocationType = FixupLocationType.Pointer;
-                    break;
-                default:
-                    throw new InvalidDataException("The fixup location is not supported.");
-            }
-            f.Mode = fixup.Mode;
-
-            IAddressReferent referent;
-            switch (fixup.Target.Method)
-            {
-                case FixupTargetMethod.SegmentPlusDisplacement:
-                case FixupTargetMethod.SegmentWithoutDisplacement:
-                    referent = context.Module.Segments[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.GroupPlusDisplacement:
-                case FixupTargetMethod.GroupWithoutDisplacement:
-                    referent = context.Module.Groups[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.ExternalPlusDisplacement:
-                case FixupTargetMethod.ExternalWithoutDisplacement:
-                    referent = context.Module.ExternalNames[fixup.Target.IndexOrFrame - 1];
-                    break;
-                case FixupTargetMethod.Absolute:
-                    referent = new PhysicalAddress(fixup.Target.IndexOrFrame, 0);
-                    break;
-                default:
-                    throw new InvalidDataException("Unsupported fixup method.");
-            }
-            f.Target = new SymbolicTarget
-            {
-                Referent = referent,
-                Displacement = fixup.Target.Displacement
-            };
-            //f.Frame = null;
-            return f;
         }
     }
 

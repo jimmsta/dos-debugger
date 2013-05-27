@@ -247,14 +247,14 @@ namespace Disassembler2.Omf
     /// librarian to preserve the source filename in the THEADR record and
     /// still identify the module names that make up the library.
     /// </summary>
-    public class LIBMODComment : Comment
+    class LIBMODComment : Comment
     {
         public string ModuleName { get; private set; }
 
-        internal LIBMODComment(RecordReader reader, RecordContext context)
+        public LIBMODComment(RecordReader reader, RecordContext context)
         {
             this.ModuleName = reader.ReadPrefixedString();
-            context.Module.Name = ModuleName;
+            context.ObjectName = ModuleName;
         }
 
         public override string ToString()

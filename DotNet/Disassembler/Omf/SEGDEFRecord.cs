@@ -1,18 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Disassembler2.Omf
 {
-    internal class SEGDEFRecord : Record
+    class SEGDEFRecord : Record
     {
-        public LogicalSegment Segment { get; private set; }
+        public SegmentDefinition Definition { get; private set; }
 
-        internal SEGDEFRecord(RecordReader reader, RecordContext context)
+        public SEGDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            // Read the record.
             SegmentDefinition def = new SegmentDefinition();
-            def.IsSEGDEF32 = (reader.RecordNumber == Omf.RecordNumber.SEGDEF32);
+
+            // Read the record.
+            def.DefinedBy = reader.RecordNumber;
             def.ACBP = reader.ReadByte();
             if (def.Alignment == Alignment.None) // absolute segment
             {
@@ -20,16 +22,37 @@ namespace Disassembler2.Omf
                 def.Offset = reader.ReadByte();
             }
             def.Length = reader.ReadUInt16Or32();
-            def.SegmentNameIndex = reader.ReadIndex();
-            def.ClassNameIndex = reader.ReadIndex();
-            def.OverlayNameIndex = reader.ReadIndex();
 
+            UInt16 segmentNameIndex = reader.ReadIndex();
+            if (segmentNameIndex > context.Names.Count)
+                throw new InvalidDataException("SegmentNameIndex is out of range.");
+            if (segmentNameIndex > 0)
+                def.SegmentName = context.Names[segmentNameIndex - 1];
+
+            UInt16 classNameIndex = reader.ReadIndex();
+            if (classNameIndex > context.Names.Count)
+                throw new InvalidDataException("ClassNameIndex is out of range.");
+            if (classNameIndex > 0)
+                def.ClassName = context.Names[classNameIndex - 1];
+
+            UInt16 overlayNameIndex = reader.ReadIndex();
+            if (overlayNameIndex > context.Names.Count)
+                throw new InvalidDataException("OverlayNameIndex is out of range.");
+            if (overlayNameIndex > 0)
+                def.OverlayName = context.Names[overlayNameIndex - 1];
+
+            this.Definition = def;
+            context.Segments.Add(def);
+        }
+
+#if false
+        
             // Convert the record.
             LogicalSegment segment = new LogicalSegment();
             if (def.IsUse32)
                 throw new NotSupportedException("Use32 is not supported.");
 
-            segment.Alignment =  def.Alignment;
+            segment.Alignment = def.Alignment;
             segment.Combination = def.Combination;
 
             if (def.Alignment == Alignment.None) // absolute segment
@@ -56,24 +79,26 @@ namespace Disassembler2.Omf
             {
                 throw new InvalidDataException("Segment larger than 2GB is not supported.");
             }
-            segment.Image = new ImageChunk((int)length, 
+            segment.Image = new ImageChunk((int)length,
                 context.Module.Name + "." + segment.Name);
-
-            this.Segment = segment;
-            context.Module.Segments.Add(segment);
-        }
+#endif
     }
 
     internal class SegmentDefinition
     {
-        public bool IsSEGDEF32 { get; set; }
+        public RecordNumber DefinedBy;
+
         public byte ACBP { get; set; }
         public UInt16 Frame { get; set; }
         public byte Offset { get; set; }
         public UInt32 Length { get; set; }
-        public UInt16 SegmentNameIndex { get; set; }
-        public UInt16 ClassNameIndex { get; set; }
-        public UInt16 OverlayNameIndex { get; set; }
+
+        public string SegmentName;
+        public string ClassName;
+        public string OverlayName;
+
+        public byte[] Data;
+        public List<FixupDefinition> Fixups;
 
         public Alignment Alignment
         {
@@ -129,7 +154,7 @@ namespace Disassembler2.Omf
             {
                 if (IsBig)
                 {
-                    if (IsSEGDEF32)
+                    if (DefinedBy == RecordNumber.SEGDEF32)
                         return 0x100000000L;
                     else
                         return 0x10000;

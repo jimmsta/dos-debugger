@@ -576,8 +576,23 @@ namespace WpfDebugger
 
     enum ListingScope
     {
+        /// <summary>
+        /// Displays only the current procedure. If this procedure crosses
+        /// multiple segments or is not contiguous, display a label to
+        /// indicate the discontinuities.
+        /// </summary>
         Procedure,
+
+        /// <summary>
+        /// Displays only the current segment. If a procedure on this segment
+        /// jumps to another segment, that part is not displayed.
+        /// </summary>
         Segment,
-        Executable,
+
+        /// <summary>
+        /// Displays all segments in the current module, in the order of their
+        /// segment ID.
+        /// </summary>
+        Module,
     }
 }

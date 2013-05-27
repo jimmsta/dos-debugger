@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 using System.IO;
+using Util.Data;
 
 namespace Disassembler2.Omf
 {
@@ -182,30 +183,33 @@ namespace Disassembler2.Omf
                     r = new LibraryEndRecord(reader, context);
                     break;
                 case RecordNumber.ALIAS:
-                    r = new AliasDefinitionRecord(reader, context);
+                    r = new ALIASRecord(reader, context);
                     break;
                 case RecordNumber.CEXTDEF:
-                    r = new COMDATExternalNamesDefinitionRecord(reader, context);
+                    r = new CEXTDEFRecord(reader, context);
                     break;
                 case RecordNumber.COMDAT:
                 case RecordNumber.COMDAT32:
                     r = new COMDATRecord(reader, context);
                     break;
                 case RecordNumber.COMDEF:
-                    r = new CommunalNamesDefinitionRecord(reader, context);
+                    r = new COMDEFRecord(reader, context);
                     break;
                 case RecordNumber.COMENT:
                     r = new CommentRecord(reader, context);
                     break;
                 case RecordNumber.EXTDEF:
-                    r = new ExternalNamesDefinitionRecord(reader, context);
+                    r = new EXTDEFRecord(reader, context);
                     break;
                 case RecordNumber.FIXUPP:
                 case RecordNumber.FIXUPP32:
                     r = new FixupRecord(reader, context);
                     break;
                 case RecordNumber.GRPDEF:
-                    r = new GroupDefinitionRecord(reader, context);
+                    r = new GRPDEFRecord(reader, context);
+                    break;
+                case RecordNumber.LCOMDEF:
+                    r = new LCOMDEFRecord(reader, context);
                     break;
                 case RecordNumber.LEDATA:
                 case RecordNumber.LEDATA32:
@@ -213,35 +217,35 @@ namespace Disassembler2.Omf
                     break;
                 case RecordNumber.LEXTDEF:
                 case RecordNumber.LEXTDEF32:
-                    r = new LocalExternalNamesDefinitionRecord(reader, context);
+                    r = new LEXTDEFRecord(reader, context);
                     break;
                 case RecordNumber.LHEADR:
-                    r = new LibraryModuleHeaderRecord(reader, context);
+                    r = new LHEADRRecord(reader, context);
                     break;
                 case RecordNumber.LIDATA:
                 case RecordNumber.LIDATA32:
-                    r = new LogicalIteratedDataRecord(reader, context);
+                    r = new LIDATARecord(reader, context);
                     break;
                 case RecordNumber.LNAMES:
                     r = new ListOfNamesRecord(reader, context);
                     break;
                 case RecordNumber.LPUBDEF:
                 case RecordNumber.LPUBDEF32:
-                    r = new LocalPublicNameDefinitionRecord(reader, context);
+                    r = new LPUBDEFRecord(reader, context);
                     break;
                 case RecordNumber.MODEND:
-                    r = new ModuleEndRecord(reader, context);
+                    r = new MODENDRecord(reader, context);
                     break;
                 case RecordNumber.PUBDEF:
                 case RecordNumber.PUBDEF32:
-                    r = new PublicNamesDefinitionRecord(reader, context);
+                    r = new PUBDEFRecord(reader, context);
                     break;
                 case RecordNumber.SEGDEF:
                 case RecordNumber.SEGDEF32:
                     r = new SEGDEFRecord(reader, context);
                     break;
                 case RecordNumber.THEADR:
-                    r = new TranslatorHeaderRecord(reader, context);
+                    r = new THEADRRecord(reader, context);
                     break;
                 default:
                     r = new UnknownRecord(reader, context);
@@ -267,11 +271,14 @@ namespace Disassembler2.Omf
         }
     }
 
-    public class UnknownRecord : Record
+    /// <summary>
+    /// Represents a record with an unknown record number.
+    /// </summary>
+    class UnknownRecord : Record
     {
         public byte[] Data { get; private set; }
 
-        internal UnknownRecord(RecordReader reader, RecordContext context)
+        public UnknownRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             this.Data = reader.Data;
@@ -283,11 +290,16 @@ namespace Disassembler2.Omf
         }
     }
 
-    public class LibraryHeaderRecord : Record
+    class LibraryHeaderRecord : Record
     {
+        /// <summary>
+        /// Gets the size, in bytes, of a page in the library file. Each
+        /// object module in the library file must be aligned on page
+        /// boundary.
+        /// </summary>
         public int PageSize { get; private set; }
 
-        internal LibraryHeaderRecord(RecordReader reader, RecordContext context)
+        public LibraryHeaderRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             this.PageSize = reader.Data.Length + 4;
@@ -298,9 +310,9 @@ namespace Disassembler2.Omf
         }
     }
 
-    public class LibraryEndRecord : Record
+    class LibraryEndRecord : Record
     {
-        internal LibraryEndRecord(RecordReader reader, RecordContext context)
+        public LibraryEndRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             // Record data serves as padding to align the dictionary that
@@ -309,28 +321,32 @@ namespace Disassembler2.Omf
     }
 
     /// <summary>
-    /// Contains the name of the object module.
+    /// Translator Header Record -- contains the name of the source file that
+    /// defines this object module. Mutliple THEADR records may be present in
+    /// an object module (e.g. if the object is compiled from multiple source
+    /// files).
     /// </summary>
-    public class TranslatorHeaderRecord : Record
+    class THEADRRecord : Record
     {
         public string Name { get; private set; }
 
-        internal TranslatorHeaderRecord(RecordReader reader, RecordContext context)
+        public THEADRRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             this.Name = reader.ReadPrefixedString();
-            context.Module.SourceName = Name;
+            context.SourceName = Name;
         }
     }
 
     /// <summary>
-    /// Contains the name of a module within a library file.
+    /// Library Module Header Record -- contains the name of a module within
+    /// a library file. This record is not used by MS LINK.
     /// </summary>
-    public class LibraryModuleHeaderRecord : Record
+    class LHEADRRecord : Record
     {
         public string Name { get; private set; }
 
-        internal LibraryModuleHeaderRecord(RecordReader reader, RecordContext context)
+        public LHEADRRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             this.Name = reader.ReadPrefixedString();
@@ -338,95 +354,202 @@ namespace Disassembler2.Omf
     }
 
     /// <summary>
-    /// Denotes the end of an object module.
+    /// Module End Record -- denotes the end of an object module.
     /// </summary>
-    public class ModuleEndRecord : Record
+    class MODENDRecord : Record
     {
         public bool IsMainModule { get; private set; }
-        public bool HasStartAddress { get; private set; }
+        public bool IsStartAddressPresent { get; private set; }
         public bool IsStartAddressRelocatable { get; private set; }
 
-        internal ModuleEndRecord(RecordReader reader, RecordContext context)
+        public MODENDRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             byte type = reader.ReadByte();
             this.IsMainModule = (type & 0x80) != 0;
-            this.HasStartAddress = (type & 0x40) != 0;
+            this.IsStartAddressPresent = (type & 0x40) != 0;
             this.IsStartAddressRelocatable = (type & 0x01) != 0;
 
-            // TODO: other fields...
+            // TODO: read the start address field...
         }
     }
 
     #region External Name Related Records
 
     /// <summary>
-    /// Contains a list of symbolic external references, i.e. references to
-    /// symbols defined in other object modules.
+    /// External Names Definition Record -- contains a list of symbolic
+    /// external references, i.e. references to symbols defined in other
+    /// object modules.
     /// </summary>
     /// <remarks>
     /// EXTDEF names are ordered by occurrence jointly with the COMDEF and
     /// LEXTDEF records, and referenced by an index in FIXUPP records.
+    /// 
+    /// The linker resolves external references by matching the symbols
+    /// declared in EXTDEF records with symbols declared in PUBDEF records.
     /// </remarks>
-    public class ExternalNamesDefinitionRecord : Record
+    class EXTDEFRecord : Record
     {
-        public ExternalSymbol[] Symbols { get; private set; }
+        public ExternalNameDefinition[] Definitions { get; private set; }
 
-        internal ExternalNamesDefinitionRecord(RecordReader reader, RecordContext context)
+        public EXTDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<ExternalSymbol> symbols = new List<ExternalSymbol>();
+            int startIndex = context.ExternalNames.Count;
             while (!reader.IsEOF)
             {
-                ExternalSymbol symbol = new ExternalSymbol();
-                symbol.Name = reader.ReadPrefixedString();
-                symbol.TypeIndex = reader.ReadIndex();
-                symbols.Add(symbol);
+                ExternalNameDefinition def = new ExternalNameDefinition();
+                def.Name = reader.ReadPrefixedString();
+                def.TypeIndex = reader.ReadIndex();
+                def.DefinedBy = reader.RecordNumber;
+                context.ExternalNames.Add(def);
             }
-            this.Symbols = symbols.ToArray();
-
-            context.Module.ExternalNames.AddRange(Symbols);
+            int endIndex = context.ExternalNames.Count;
+            this.Definitions = context.ExternalNames.Slice(
+                startIndex, endIndex - startIndex);
         }
     }
 
     /// <summary>
-    /// 
+    /// Local External Names Definition Record -- identical to EXTDEF records
+    /// except that the names defined in LEXTDEF records are visible only in
+    /// the module where they are defined.
     /// </summary>
     /// <remarks>
     /// LEXTDEF records are associated with LPUBDEF and LCOMDEF records and
     /// ordered with EXTDEF and COMDEF records by occurrence, so that they
     /// may be referenced by an external name index for fixups.
     /// </remarks>
-    public class LocalExternalNamesDefinitionRecord : ExternalNamesDefinitionRecord
+    class LEXTDEFRecord : EXTDEFRecord
     {
-        internal LocalExternalNamesDefinitionRecord(
-            RecordReader reader, RecordContext context)
+        public LEXTDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
         }
     }
 
     /// <summary>
-    /// Declares a list of communal variables (uninitialized static data or
-    /// data that may match initialized static data in another compilation
-    /// unit).
+    /// COMDAT External Names Definition Record -- serves the same purpose as
+    /// the EXTDEF record, except that the name referenced are defined in
+    /// COMDAT records.
     /// </summary>
     /// <remarks>
-    /// COMDEF records are ordered by occurrence, together with the items
-    /// named in EXTDEF and LEXTDEF records, for reference in FIXUP records.
+    /// A CEXTDEF can precede the COMDAT to which it will be resolved. In this
+    /// case, the location of the COMDAT is not known at the time the CEXTDEF
+    /// is seen.
+    /// 
+    /// This record is produced when a FIXUPP record refers to a COMDAT
+    /// symbol.
     /// </remarks>
-    public class CommunalNamesDefinitionRecord : Record
+    class CEXTDEFRecord : Record
+    {
+        public ExternalNameDefinition[] Definitions { get; private set; }
+
+        public CEXTDEFRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            int startIndex = context.ExternalNames.Count;
+            while (!reader.IsEOF)
+            {
+                UInt16 nameIndex = reader.ReadIndex();
+                if (nameIndex == 0 || nameIndex > context.Names.Count)
+                {
+                    throw new InvalidDataException("LogicalNameIndex is out of range.");
+                }
+                UInt16 typeIndex = reader.ReadIndex();
+
+                ExternalNameDefinition def = new ExternalNameDefinition();
+
+                def.Name = context.Names[nameIndex - 1];
+                def.TypeIndex = typeIndex;
+                def.DefinedBy = reader.RecordNumber;
+                context.ExternalNames.Add(def);
+            }
+            int endIndex = context.ExternalNames.Count;
+            this.Definitions = context.ExternalNames.Slice(
+                startIndex, endIndex - startIndex);
+        }
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Public Names Definition Record -- defines public symbols in this
+    /// object module. The symbols are also available for export if so
+    /// indicated in an EXPDEF comment record.
+    /// </summary>
+    /// <remarks>
+    /// All defined functions and initialized global variables generate
+    /// PUBDEF records in most compilers.
+    /// </remarks>
+    class PUBDEFRecord : Record
+    {
+        public SegmentDefinition BaseSegment { get; private set; }
+        public GroupDefinition BaseGroup { get; private set; }
+        public UInt16 BaseFrame { get; private set; }
+        public PublicNameDefinition[] Definitions { get; private set; }
+
+        public PUBDEFRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+            int baseGroupIndex = reader.ReadIndex();
+            if (baseGroupIndex > context.Groups.Count)
+                throw new InvalidDataException("GroupIndex is out of range.");
+            if (baseGroupIndex > 0)
+                this.BaseGroup = context.Groups[baseGroupIndex - 1];
+
+            int baseSegmentIndex = reader.ReadIndex();
+            if (baseSegmentIndex > context.Segments.Count)
+                throw new InvalidDataException("SegmentIndex is out of range.");
+            if (baseSegmentIndex == 0)
+                this.BaseFrame = reader.ReadUInt16();
+            else
+                this.BaseSegment = context.Segments[baseSegmentIndex - 1];
+
+            int startIndex = context.PublicNames.Count;
+            while (!reader.IsEOF)
+            {
+                PublicNameDefinition def = new PublicNameDefinition();
+                def.DefinedBy = reader.RecordNumber;
+                def.BaseGroup = BaseGroup;
+                def.BaseSegment = BaseSegment;
+                def.BaseFrame = BaseFrame;
+                def.Name = reader.ReadPrefixedString();
+                def.Offset = (int)reader.ReadUInt16Or32();
+                def.TypeIndex = reader.ReadIndex();
+                context.PublicNames.Add(def);
+            }
+            int endIndex = context.PublicNames.Count;
+            this.Definitions = context.PublicNames.Slice(
+                startIndex, endIndex - startIndex);
+        }
+    }
+
+    class LPUBDEFRecord : PUBDEFRecord
+    {
+        public LPUBDEFRecord(RecordReader reader, RecordContext context)
+            : base(reader, context)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Communal Names Definition Record -- declares a list of communal
+    /// variables (uninitialized static data or data that may match
+    /// initialized static data in another compilation unit).
+    /// </summary>
+    class COMDEFRecord : Record
     {
         public CommunalNameDefinition[] Definitions { get; private set; }
 
-        internal CommunalNamesDefinitionRecord(
-            RecordReader reader, RecordContext context)
+        public COMDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            var defs = new List<CommunalNameDefinition>();
+            int startIndex = context.CommunalNames.Count;
             while (!reader.IsEOF)
             {
-                var def = new CommunalNameDefinition();
+                CommunalNameDefinition def = new CommunalNameDefinition();
+                def.DefinedBy = reader.RecordNumber;
                 def.Name = reader.ReadPrefixedString();
                 def.TypeIndex = reader.ReadIndex();
                 def.DataType = reader.ReadByte();
@@ -435,11 +558,11 @@ namespace Disassembler2.Omf
                     def.ElementSize = ReadEncodedInteger(reader);
                 else
                     def.ElementSize = 1;
-                defs.Add(def);
+                context.CommunalNames.Add(def);
             }
-            this.Definitions = defs.ToArray();
-
-            context.Module.ExternalNames.AddRange(this.Definitions);
+            int endIndex = context.CommunalNames.Count;
+            this.Definitions = context.CommunalNames.Slice(
+                startIndex, endIndex - startIndex);
         }
 
         private static UInt32 ReadEncodedInteger(RecordReader reader)
@@ -456,105 +579,10 @@ namespace Disassembler2.Omf
         }
     }
 
-    /// <summary>
-    /// Serves the same purpose as the EXTDEF record. The difference is that
-    /// the symbol named is referred to through a Logical Name Index field,
-    /// which is defined through an LNAMES or LLNAMES record.
-    /// </summary>
-    /// <remarks>
-    /// This record is produced when a FIXUPP record refers to a COMDAT
-    /// symbol.
-    /// </remarks>
-    public class COMDATExternalNamesDefinitionRecord : Record
+    class LCOMDEFRecord : COMDEFRecord
     {
-        public ExternalSymbol[] Symbols { get; private set; }
-
-        internal COMDATExternalNamesDefinitionRecord(
-            RecordReader reader, RecordContext context)
+        public LCOMDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
-        {
-            List<ExternalSymbol> symbols = new List<ExternalSymbol>();
-            while (!reader.IsEOF)
-            {
-                UInt16 nameIndex = reader.ReadIndex();
-                if (nameIndex == 0 || nameIndex > context.Names.Count)
-                    throw new InvalidDataException("LogicalNameIndex is out of range.");
-
-                UInt16 typeIndex = reader.ReadIndex();
-                ExternalSymbol symbol = new ExternalSymbol();
-                symbol.Name = context.Names[nameIndex - 1];
-                symbol.TypeIndex = typeIndex;
-                symbols.Add(symbol);
-            }
-            this.Symbols = symbols.ToArray();
-            context.Module.ExternalNames.AddRange(Symbols);
-        }
-    }
-
-    #endregion
-
-    /// <summary>
-    /// Defines public symbols in this object module. The symbols are also
-    /// available for export if so indicated in an EXPDEF comment record.
-    /// </summary>
-    /// <remarks>
-    /// All defined functions and initialized global variables generate
-    /// PUBDEF records in most compilers.
-    /// </remarks>
-    public class PublicNamesDefinitionRecord : Record
-    {
-        public LogicalSegment BaseSegment { get; private set; }
-        public SegmentGroup BaseGroup { get; private set; }
-        public UInt16 BaseFrame { get; private set; }
-        public DefinedSymbol[] Symbols { get; private set; }
-
-        internal PublicNamesDefinitionRecord(RecordReader reader, RecordContext context)
-            : this(reader, context, SymbolScope.Public)
-        {
-        }
-
-        internal PublicNamesDefinitionRecord(
-            RecordReader reader, RecordContext context, SymbolScope scope)
-            : base(reader, context)
-        {
-            int baseGroupIndex = reader.ReadIndex();
-            if (baseGroupIndex > context.Module.Groups.Count)
-                throw new InvalidDataException("Group index out of range.");
-            if (baseGroupIndex > 0)
-                this.BaseGroup = context.Module.Groups[baseGroupIndex - 1];
-
-            int baseSegmentIndex = reader.ReadIndex();
-            if (baseSegmentIndex > context.Module.Segments.Count)
-                throw new InvalidDataException("Segment index out of range.");
-            if (baseSegmentIndex == 0)
-                this.BaseFrame = reader.ReadUInt16();
-            else
-                this.BaseSegment = context.Module.Segments[baseSegmentIndex - 1];
-
-            List<DefinedSymbol> symbols = new List<DefinedSymbol>();
-            while (!reader.IsEOF)
-            {
-                DefinedSymbol symbol = new DefinedSymbol();
-                symbol.Name = reader.ReadPrefixedString();
-                symbol.Offset = reader.ReadUInt16Or32();
-                symbol.TypeIndex = reader.ReadIndex();
-                symbol.BaseSegment = BaseSegment;
-                symbol.BaseGroup = BaseGroup;
-                symbol.BaseFrame = BaseFrame;
-                symbol.Scope = scope;
-                symbols.Add(symbol);
-            }
-            this.Symbols = symbols.ToArray();
-            
-            context.Module.DefinedNames.AddRange(Symbols);
-        }
-    }
-
-    public class LocalPublicNameDefinitionRecord : PublicNamesDefinitionRecord
-    {
-        internal LocalPublicNameDefinitionRecord(
-            RecordReader reader, RecordContext context)
-            : base(reader, context, SymbolScope.Private)
         {
         }
     }
@@ -580,37 +608,32 @@ namespace Disassembler2.Omf
         }
     }
 
-    public class GroupDefinitionRecord : Record
+    class GRPDEFRecord : Record
     {
-        public SegmentGroup Definition { get; private set; }
+        public GroupDefinition Definition { get; private set; }
 
-        internal GroupDefinitionRecord(RecordReader reader, RecordContext context)
+        public GRPDEFRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            SegmentGroup def = new SegmentGroup();
+            this.Definition = new GroupDefinition();
 
             UInt16 groupNameIndex = reader.ReadIndex();
             if (groupNameIndex == 0 || groupNameIndex > context.Names.Count)
             {
                 throw new InvalidDataException("GroupNameIndex is out of range.");
             }
-            def.Name = context.Names[groupNameIndex - 1];
+            this.Definition.Name = context.Names[groupNameIndex - 1];
 
-            List<LogicalSegment> segments = new List<LogicalSegment>();
             while (!reader.IsEOF)
             {
                 reader.ReadByte(); // 'type' ignored
                 UInt16 segmentIndex = reader.ReadIndex();
-                if (segmentIndex == 0 || segmentIndex > context.Module.Segments.Count)
+                if (segmentIndex == 0 || segmentIndex > context.Segments.Count)
                 {
                     throw new InvalidDataException("SegmentIndex is out of range.");
                 }
-                segments.Add(context.Module.Segments[segmentIndex - 1]);
+                this.Definition.Segments.Add(context.Segments[segmentIndex - 1]);
             }
-            def.Segments = segments.ToArray();
-
-            this.Definition = def;
-            context.Module.Groups.Add(def);
         }
     }
 
@@ -618,21 +641,21 @@ namespace Disassembler2.Omf
     /// Contains contiguous binary data to be copied into the program's
     /// executable binary image.
     /// </summary>
-    public class LEDATARecord : Record
+    class LEDATARecord : Record
     {
-        public LogicalSegment Segment { get; private set; }
+        public SegmentDefinition Segment { get; private set; }
         public UInt32 DataOffset { get; private set; }
         public byte[] Data { get; private set; }
 
-        internal LEDATARecord(RecordReader reader, RecordContext context)
+        public LEDATARecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             UInt16 segmentIndex = reader.ReadIndex();
-            if (segmentIndex == 0 || segmentIndex > context.Module.Segments.Count)
+            if (segmentIndex == 0 || segmentIndex > context.Segments.Count)
             {
                 throw new InvalidDataException("SegmentIndex is out of range.");
             }
-            this.Segment = context.Module.Segments[segmentIndex - 1];
+            this.Segment = context.Segments[segmentIndex - 1];
 
             this.DataOffset = reader.ReadUInt16Or32();
             this.Data = reader.ReadToEnd(); // TBD: this can be optimized to
@@ -642,7 +665,7 @@ namespace Disassembler2.Omf
             if (Data.Length + DataOffset > Segment.Length)
                 throw new InvalidDataException("The LEDATA overflows the segment.");
 
-            Array.Copy(Data, 0, Segment.Image.Data, DataOffset, Data.Length);
+            Array.Copy(Data, 0, Segment.Data, DataOffset, Data.Length);
         }
     }
 
@@ -650,17 +673,17 @@ namespace Disassembler2.Omf
     /// Contains contiguous binary data to be copied into the program's
     /// executable binary image. The data is stored as a repeating pattern.
     /// </summary>
-    public class LogicalIteratedDataRecord : Record
+    class LIDATARecord : Record
     {
         public UInt16 SegmentIndex { get; private set; }
         public UInt32 DataOffset { get; private set; }
         public byte[] Data { get; private set; }
 
-        internal LogicalIteratedDataRecord(RecordReader reader, RecordContext context)
+        public LIDATARecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             this.SegmentIndex = reader.ReadIndex();
-            if (SegmentIndex == 0 || SegmentIndex > context.Module.Segments.Count)
+            if (SegmentIndex == 0 || SegmentIndex > context.Segments.Count)
                 throw new InvalidDataException("SegmentIndex is out of range.");
 
             this.DataOffset = reader.ReadUInt16Or32();
@@ -670,33 +693,32 @@ namespace Disassembler2.Omf
         }
     }
 
-    public class COMDATRecord : Record
+    class COMDATRecord : Record
     {
-        internal COMDATRecord(
-            RecordReader reader, RecordContext context)
+        public COMDATRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
             // TODO: parse contents.
         }
     }
 
-    public class AliasDefinitionRecord : Record
+    class ALIASRecord : Record
     {
-        public SymbolAlias[] Aliases { get; private set; }
+        public AliasDefinition[] Definitions { get; private set; }
 
-        internal AliasDefinitionRecord(RecordReader reader, RecordContext context)
+        public ALIASRecord(RecordReader reader, RecordContext context)
             : base(reader, context)
         {
-            List<SymbolAlias> aliases = new List<SymbolAlias>();
+            int startIndex = context.Aliases.Count;
             while (!reader.IsEOF)
             {
-                SymbolAlias alias = new SymbolAlias();
-                alias.AliasName = reader.ReadPrefixedString();
-                alias.SubstituteName = reader.ReadPrefixedString();
-                aliases.Add(alias);
-                context.Module.Aliases.Add(alias);
+                AliasDefinition def = new AliasDefinition();
+                def.AliasName = reader.ReadPrefixedString();
+                def.SubstituteName = reader.ReadPrefixedString();
+                context.Aliases.Add(def);
             }
-            this.Aliases = aliases.ToArray();
+            int endIndex = context.Aliases.Count;
+            this.Definitions = context.Aliases.Slice(startIndex, endIndex - startIndex);
         }
     }
 }
