@@ -160,6 +160,14 @@ namespace Disassembler
         /// error.
         /// </summary>
         BrokenBasicBlock,
+
+        /// <summary>
+        /// Indicates that a fixup is intentionally discarded because it
+        /// might not suit the purpose of the analysis. This is currently
+        /// used only with floating point emulator fix-ups.
+        /// </summary>
+        [ErrorCategory(ErrorCategory.Warning)]
+        FixupDiscarded,
     }
 
     // Note: errorcollection and fixupcollection actually have similar

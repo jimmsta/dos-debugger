@@ -92,8 +92,17 @@ namespace Disassembler
                     if (fixup.StartIndex != start || fixup.EndIndex != end)
                     {
                         // throw new BrokenFixupException(fixup);
-                        AddError(new Address(address.Segment, fixup.StartIndex),
-                            ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                        if (IsFloatingPointEmulatorFixup(fixup))
+                        {
+                            AddError(new Address(address.Segment, fixup.StartIndex),
+                                ErrorCode.FixupDiscarded,
+                                "Floating point emulator fix-up discarded: {0}", fixup);
+                        }
+                        else
+                        {
+                            AddError(new Address(address.Segment, fixup.StartIndex),
+                                ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                        }
                         continue;
                     }
 
@@ -107,11 +116,43 @@ namespace Disassembler
                 Fixup fixup = image.Fixups[fixupIndex];
                 if (fixup.StartIndex < address.Offset + instruction.EncodedLength)
                 {
-                    AddError(new Address(address.Segment, fixup.StartIndex),
-                        ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                    if (IsFloatingPointEmulatorFixup(fixup))
+                    {
+                        AddError(new Address(address.Segment, fixup.StartIndex),
+                            ErrorCode.FixupDiscarded,
+                            "Floating point emulator fix-up discarded: {0}", fixup);
+                    }
+                    else
+                    {
+                        AddError(new Address(address.Segment, fixup.StartIndex),
+                            ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
+                    }
                 }
             }
             return instruction;
+        }
+
+        private bool IsFloatingPointEmulatorFixup(Fixup fixup)
+        {
+            ExternalSymbol symbol = fixup.Target.Referent as ExternalSymbol;
+            if (symbol == null)
+                return false;
+
+            switch (symbol.Name)
+            {
+                case "FIARQQ":
+                case "FICRQQ":
+                case "FIDRQQ":
+                case "FIERQQ":
+                case "FISRQQ":
+                case "FIWRQQ":
+                case "FJARQQ":
+                case "FJCRQQ":
+                case "FJSRQQ":
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private Address ResolveSymbolicTarget(SymbolicTarget symbolicTarget)
@@ -167,6 +208,12 @@ namespace Disassembler
 
                     // TODO: do not disassemble if the symbol is obviously
                     // a data item.
+                    int iFixup = symbol.BaseSegment.Image.Fixups.BinarySearch((int)symbol.Offset);
+                    if (iFixup >= 0 && symbol.BaseSegment.Image.Fixups[iFixup].StartIndex
+                        == (int)symbol.Offset) // likely a data item
+                    {
+                        continue;
+                    }
 
                     Address entryPoint = new Address(
                         symbol.BaseSegment.Id, (int)symbol.Offset);

@@ -158,7 +158,8 @@
                     <avalonDock:LayoutAnchorSide>
                         <avalonDock:LayoutAnchorGroup>
                             <avalonDock:LayoutAnchorable ContentId="errorList" Title="Error List">
-                                <my:ErrorListControl x:Name="errorList"/>
+                                <my:ErrorListControl x:Name="errorList"
+                                                     RequestNavigate="OnRequestNavigate"/>
                             </avalonDock:LayoutAnchorable>
                             <avalonDock:LayoutAnchorable ContentId="segmentList" Title="Segments">
                                 <my:SegmentListControl x:Name="segmentList"/>

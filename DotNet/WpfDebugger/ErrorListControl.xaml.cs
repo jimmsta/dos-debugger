@@ -1,8 +1,9 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.ComponentModel;
+using System.Windows.Navigation;
 using Disassembler;
 
 namespace WpfDebugger
@@ -40,16 +41,23 @@ namespace WpfDebugger
             }
         }
 
-#if false
-        private void lvErrors_DoubleClick(object sender, EventArgs e)
+        private void lvErrors_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (lvErrors.SelectedIndices.Count == 1)
+            var item = lvErrors.SelectedItem as ErrorListViewModel.ErrorListItem;
+            if (item == null)
+                return;
+
+            if (RequestNavigate != null)
             {
-                Error error = (Error)lvErrors.SelectedItems[0].Tag;
-                document.Navigator.SetLocation(error.Location, this);
+                Error error = item.Error;
+                Segment segment = program.GetSegment(error.Location.Segment);
+                AssemblyUri uri = new AssemblyUri(program, segment, error.Location.Offset);
+                RequestNavigateEventArgs args = new RequestNavigateEventArgs(uri, null);
+                RequestNavigate(this, args);
             }
         }
-#endif
+
+        public event EventHandler<RequestNavigateEventArgs> RequestNavigate;
     }
 
     // Note: while we might be able to use the supplied WPF Filtering

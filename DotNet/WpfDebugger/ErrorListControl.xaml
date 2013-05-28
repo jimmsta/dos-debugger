@@ -53,7 +53,8 @@
                   itenso:ListViewLayoutManager.Enabled="true"
                   VirtualizingPanel.IsContainerVirtualizable="True"
                   VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling">
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  SelectionChanged="lvErrors_SelectionChanged">
             <ListView.View>
                 <GridView>
                     <GridViewColumn Header="Location" Width="100"

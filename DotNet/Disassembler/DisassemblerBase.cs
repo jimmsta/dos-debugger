@@ -606,7 +606,8 @@ namespace Disassembler
                     System.Diagnostics.Debug.Assert(image[ip.Offset].IsLeadByte);
 
                     // TBD: create fall-through xref.
-                    CreateFallThroughXRef(instructionStart, instructionEnd);
+                    XRef xref = CreateFallThroughXRef(instructionStart, instructionEnd);
+                    xrefs.Add(xref);
                     blockType = BasicBlockType.FallThrough;
                     break;
                 }
