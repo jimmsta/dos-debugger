@@ -96,7 +96,8 @@ namespace Disassembler
         /// </summary>
         public static int CompareByPriority(XRef x, XRef y)
         {
-            return (int)x.Type - (int)y.Type;
+            int cmp = (int)x.Type - (int)y.Type;
+            return cmp;
         }
     }
 

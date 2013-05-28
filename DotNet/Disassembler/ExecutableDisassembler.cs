@@ -40,6 +40,17 @@ namespace Disassembler
                 return null;
         }
 
+        protected override Instruction DecodeInstruction(ImageChunk image, Address address)
+        {
+            // Check if the address is relocatable. If it is, it
+            // cannot be an instruction ah...
+            int offset = address.Segment * 16 + address.Offset;
+            if (Array.BinarySearch(executable.RelocatableLocations, offset) >= 0)
+                return null;
+
+            return base.DecodeInstruction(image, address);
+        }
+
         protected override Address ResolveFlowInstructionTarget(PointerOperand operand)
         {
             // TBD: need to perform mapping from segment address to segment id.

@@ -84,6 +84,11 @@ namespace Disassembler
         {
             get { return new Range<Address>(location, location + length); }
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0} ({1})", Bounds, Type);
+        }
     }
 
     /// <summary>

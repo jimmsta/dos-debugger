@@ -154,6 +154,12 @@ namespace Disassembler
         /// outside of the binary image.
         /// </summary>
         OutOfImage,
+
+        /// <summary>
+        /// Indicates that a basic block ended prematurally due to an anlysis
+        /// error.
+        /// </summary>
+        BrokenBasicBlock,
     }
 
     // Note: errorcollection and fixupcollection actually have similar

@@ -9,6 +9,7 @@ namespace Disassembler
         private byte[] data;
         private Address entryPoint;
         private LoadModule loadModule;
+        private int[] relocatableLocations;
 
         // Maps a segment number (before relocation) to a dummy segment.
         readonly SortedList<UInt16, DummySegment> segments =
@@ -26,11 +27,13 @@ namespace Disassembler
 
             // Each relocation entry provides a hint of the program's
             // segmentation.
+            List<int> relocs = new List<int>();
             foreach (FarPointer location in file.RelocatableLocations)
             {
                 int index = location.LinearAddress;
                 if (index >= 0 && index < image.Length - 1)
                 {
+                    relocs.Add(index);
                     segments[location.Segment] = null;
                     UInt16 target = BitConverter.ToUInt16(image, index);
                     segments[target] = null;
@@ -54,6 +57,9 @@ namespace Disassembler
                 segment.Id = frameNumber;
                 segments[frameNumber] = segment;
             }
+
+            relocs.Sort();
+            relocatableLocations = relocs.ToArray();
 
             this.data = file.Image;
             this.entryPoint = new Address(file.EntryPoint.Segment, file.EntryPoint.Offset);
@@ -80,6 +86,11 @@ namespace Disassembler
         public Address EntryPoint
         {
             get { return entryPoint; }
+        }
+
+        public int[] RelocatableLocations
+        {
+            get { return relocatableLocations; }
         }
     }
 
