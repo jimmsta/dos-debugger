@@ -213,11 +213,11 @@ namespace WpfDebugger
             {
                 get
                 {
-                    AssemblyUri uri = new AssemblyUri(
-                        program,
-                        program.GetSegment(procedure.EntryPoint.Segment),
-                        procedure.EntryPoint.Offset);
-                    return uri;
+                    var segment = program.GetSegment(procedure.EntryPoint.Segment);
+                    if (segment != null)
+                        return new AssemblyUri(program, segment, procedure.EntryPoint.Offset);
+                    else
+                        return null;
                 }
             }
         }

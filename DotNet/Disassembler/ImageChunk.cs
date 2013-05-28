@@ -60,6 +60,7 @@ namespace Disassembler
         }
 
         // get/set accessible address range
+        
 
         /// <summary>
         /// Gets the binary image data.

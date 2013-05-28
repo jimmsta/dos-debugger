@@ -31,14 +31,21 @@ namespace Disassembler
             get { return executable; }
         }
 
-        protected override bool ResolveAddress(Address address, out ImageChunk image, out int offset)
+        protected override ImageChunk ResolveSegment(int segmentId)
         {
-            image = executable.GetSegment(address.Segment).Image;
-            offset = address.Offset;
-            if (offset >= 0 && offset < image.Length)
-                return true;
+            var segment = executable.GetSegment(segmentId);
+            if (segment != null)
+                return segment.Image;
             else
-                return false;
+                return null;
+        }
+
+        protected override Address ResolveFlowInstructionTarget(PointerOperand operand)
+        {
+            // TBD: need to perform mapping from segment address to segment id.
+            //int segmentId = executable.GetSegment((int)operand.Segment.Value);
+            //return new Address(segmentId, (int)operand.Offset.Value);
+            return new Address(operand.Segment.Value, (int)operand.Offset.Value);
         }
 
 #if false

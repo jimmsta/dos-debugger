@@ -9,6 +9,8 @@ namespace Disassembler
         private byte[] data;
         private Address entryPoint;
         private LoadModule loadModule;
+
+        // Maps a segment number (before relocation) to a dummy segment.
         readonly SortedList<UInt16, DummySegment> segments =
             new SortedList<UInt16, DummySegment>();
 
@@ -26,12 +28,18 @@ namespace Disassembler
             // segmentation.
             foreach (FarPointer location in file.RelocatableLocations)
             {
-                segments[location.Segment] = null;
-                int index = location.Segment * 16 + location.Offset;
-                UInt16 target = BitConverter.ToUInt16(image, index);
-                segments[target] = null;
+                int index = location.LinearAddress;
+                if (index >= 0 && index < image.Length - 1)
+                {
+                    segments[location.Segment] = null;
+                    UInt16 target = BitConverter.ToUInt16(image, index);
+                    segments[target] = null;
+                }
             }
-            segments[file.EntryPoint.Segment] = null;
+            if (file.EntryPoint.LinearAddress < image.Length)
+            {
+                segments[file.EntryPoint.Segment] = null;
+            }
 
             // Create a dummy segment for each of the guessed segments.
             // Initially, we set the ActualSize of each segment to zero,
@@ -43,7 +51,7 @@ namespace Disassembler
                 ImageChunk chunk = new ImageChunk(image, attrs, frameNumber * 16, "");
                 DummySegment segment = new DummySegment(this, chunk);
                 segment.Frame = frameNumber;
-                segment.Id = segments.Count + 1;
+                segment.Id = frameNumber;
                 segments[frameNumber] = segment;
             }
 
@@ -54,7 +62,11 @@ namespace Disassembler
 
         public override Segment GetSegment(int segmentSelector)
         {
-            return this.segments[(UInt16)segmentSelector];
+            DummySegment segment;
+            if (segments.TryGetValue((UInt16)segmentSelector, out segment))
+                return segment;
+            else
+                return null;
         }
 
         public LoadModule LoadModule

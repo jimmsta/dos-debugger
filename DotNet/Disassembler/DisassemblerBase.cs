@@ -378,8 +378,13 @@ namespace Disassembler
 #endif
         }
 
-        protected abstract bool ResolveAddress(
-            Address address, out ImageChunk image, out int offset);
+        /// <summary>
+        /// Gets the image associated with the segment specified by its id.
+        /// </summary>
+        /// <param name="segmentId">Id of the segment to resolve.</param>
+        /// <returns>The image associated with the given segment, or null if
+        /// the segment id is invalid.</returns>
+        protected abstract ImageChunk ResolveSegment(int segmentId);
 
         /// <summary>
         /// Analyzes a contiguous sequence of instructions that form a basic
@@ -398,19 +403,18 @@ namespace Disassembler
         protected virtual BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Address pos = start.Target;
-            ImageChunk image;
-            int offset;
+            ImageChunk image = ResolveSegment(pos.Segment);
 
-            // Try resolve address.
-            if (!ResolveAddress(pos, out image, out offset))
+            if (image == null ||
+                pos.Offset < 0 || pos.Offset >= image.Length)
             {
                 AddError(pos, ErrorCode.OutOfImage,
-                    "XRef target is outside of the image (referred from {0})",
-                    start.Source);
+                   "XRef target is outside of the image (referred from {0})",
+                   start.Source);
                 return null;
             }
 
-            ImageByte b = image[offset];
+            ImageByte b = image[pos.Offset];
 
             // Check if the entry address is already analyzed.
             if (b.Type != ByteType.Unknown)
@@ -468,7 +472,7 @@ namespace Disassembler
                 Instruction insn;
                 try
                 {
-                    insn = DecodeInstruction(image, pos.Segment, pos.Offset); // TBD
+                    insn = DecodeInstruction(image, pos);
                 }
                 catch (BrokenFixupException ex)
                 {
@@ -484,7 +488,7 @@ namespace Disassembler
                 }
 
                 // Create a code piece for this instruction.
-                if (!image.CheckByteType(offset, insn.EncodedLength, ByteType.Unknown))
+                if (!image.CheckByteType(pos.Offset, insn.EncodedLength, ByteType.Unknown))
                 {
                     AddError(pos, ErrorCode.OverlappingInstruction,
                         "Ran into the middle of code when processing block {0} referred from {1}",
@@ -497,11 +501,10 @@ namespace Disassembler
                 try
                 {
                     image.UpdateByteType(
-                        offset, insn.EncodedLength, ByteType.Code);
-                    image.Instructions.Add(offset, insn);
+                        pos.Offset, insn.EncodedLength, ByteType.Code);
+                    image.Instructions.Add(pos.Offset, insn);
                     //pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
                     pos += insn.EncodedLength;
-                    offset += insn.EncodedLength;
                     if (pos.Offset > 0xFFFF)
                     {
                         pos -= insn.EncodedLength;
@@ -557,7 +560,7 @@ namespace Disassembler
 
                 // If we go out of the image, this is not good...
                 // TBD: what if the image is actually larger than the segment?
-                if (offset >= image.Length)
+                if (pos.Offset >= image.Length)
                 {
                     AddError(pos, ErrorCode.OutOfImage,
                         "Analysis going past the end of image.");
@@ -567,15 +570,14 @@ namespace Disassembler
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
                 // block, and we are done.
-                if (image[offset].Type == ByteType.Code)
+                if (image[pos.Offset].Type == ByteType.Code)
                 {
-                    System.Diagnostics.Debug.Assert(image[offset].IsLeadByte);
+                    System.Diagnostics.Debug.Assert(image[pos.Offset].IsLeadByte);
                     break;
                 }
             }
 
             // Create a basic block unless we failed on the first instruction.
-            // TBD: need to fix this
             if (pos.Offset > start.Target.Offset)
             {
                 BasicBlock block = new BasicBlock(start.Target, pos);
@@ -596,10 +598,11 @@ namespace Disassembler
         /// TBD: address wrapping if IP is above 0xFFFF is not handled. It should be.
         private XRef AnalyzeFlowInstruction(Address start, Instruction instruction)
         {
-            Operation op = instruction.Operation;
-
             // Find the type of branch/call/jump instruction being processed.
-            //
+            XRefType bcjType = GetFlowInstructionType(instruction.Operation);
+            if (bcjType == XRefType.None)
+                return null;
+            
             // Note: If the instruction is a conditional jump, we assume that
             // the condition may be true or false, so that both "jump" and 
             // "no jump" is a reachable branch. If the code is malformed such
@@ -609,125 +612,12 @@ namespace Disassembler
             // Note: If the instruction is a function call, we assume that the
             // subroutine being called will return. If the subroutine never
             // returns the analysis may not work correctly.
-            XRefType bcjType;
-            switch (op)
-            {
-                case Operation.JO:
-                case Operation.JNO:
-                case Operation.JB:
-                case Operation.JAE:
-                case Operation.JE:
-                case Operation.JNE:
-                case Operation.JBE:
-                case Operation.JA:
-                case Operation.JS:
-                case Operation.JNS:
-                case Operation.JP:
-                case Operation.JNP:
-                case Operation.JL:
-                case Operation.JGE:
-                case Operation.JLE:
-                case Operation.JG:
-                case Operation.JCXZ:
-                case Operation.LOOP:
-                case Operation.LOOPZ:
-                case Operation.LOOPNZ:
-                    bcjType = XRefType.ConditionalJump;
-                    break;
-
-                case Operation.JMP:
-                    bcjType = XRefType.NearJump;
-                    break;
-
-                case Operation.JMPF:
-                    bcjType = XRefType.FarJump;
-                    break;
-
-                case Operation.CALL:
-                    bcjType = XRefType.NearCall;
-                    break;
-
-                case Operation.CALLF:
-                    bcjType = XRefType.FarCall;
-                    break;
-
-                default:
-                    // Not a b/c/j instruction; do nothing.
-                    return null;
-            }
-
-            // Handle symbolic instructions.
-            SymbolicTarget symbolicTarget = instruction.Operands[0].Tag as SymbolicTarget;
-            Address symbolicAddress = Address.Invalid;
-            if (symbolicTarget != null)
-            {
-                Address referent = symbolicTarget.Referent.Resolve();
-                if (referent == Address.Invalid)
-                {
-                    AddError(start, ErrorCode.UnresolvedTarget,
-                        "Cannot resolve target: {0}.", symbolicTarget);
-
-                    return new XRef(
-                        type: bcjType,
-                        source: start,
-                        target: Address.Invalid
-                    );
-                }
-                symbolicAddress = referent + (int)symbolicTarget.Displacement;
-                if (symbolicAddress.Offset < 0 || symbolicAddress.Offset > 0xFFFF)
-                    throw new NotImplementedException();
-            }
 
             // Create a cross-reference depending on the type of operand.
-            if (instruction.Operands[0] is RelativeOperand) // near jump/call to relative address
-            {
-                // TODO: take into account the original value in Offset.
-                RelativeOperand opr = (RelativeOperand)instruction.Operands[0];
-                Address target =
-                    (symbolicAddress != Address.Invalid) ?
-                    symbolicAddress + opr.Offset.Value :
-                    start + instruction.EncodedLength + opr.Offset.Value;
-                Address wrappedTarget = new Address(target.Segment, (UInt16)target.Offset);
-                return new XRef(
-                    type: bcjType,
-                    source: start,
-                    target: wrappedTarget
-                );
-            }
+            Address target = ResolveFlowInstructionTarget(instruction.Operands[0]);
 
-            if (instruction.Operands[0] is PointerOperand) // far jump/call to absolute address
-            {
-                // The story is very different when we take into account
-                // fix-up information. If the target is an absolute address,
-                // we indeed cannot process further.
-                PointerOperand opr = (PointerOperand)instruction.Operands[0];
 #if false
-                return new XRef(
-                    type: bcjType,
-                    source: start,
-                    target: new Pointer(opr.Segment.Value, (UInt16)opr.Offset.Value)
-                );
-#else
-                // TODO: take into account the original value in Pointer.
-                if (symbolicAddress != Address.Invalid)
-                {
-                    return new XRef(
-                        type: bcjType,
-                        source: start,
-                        target: symbolicAddress
-                    );
-                }
-                else
-                {
-                    return new XRef(
-                        type: bcjType,
-                        source: start,
-                        target: Address.Invalid
-                    );
-                }
-#endif
-            }
-
+            // Handle jump table later.
             if (instruction.Operands[0] is MemoryOperand) // indirect jump/call
             {
                 // TODO: handle symbolic target.
@@ -748,7 +638,7 @@ namespace Disassembler
                 // not conforming to the above rules, or create a non-jump 
                 // table that conforms to the above rules. We do not deal with
                 // these cases for the moment.
-                if (op == Operation.JMP &&
+                if (instruction.Operation == Operation.JMP &&
                     opr.Size == CpuSize.Use16Bit &&
                     opr.Segment == Register.CS &&
                     opr.Base != Register.None &&
@@ -770,26 +660,93 @@ namespace Disassembler
 #endif
                 }
             }
+#endif
 
             // TODO: handle other symbolic targets.
 
-            // Other jump/call targets that we cannot recognize.
-            AddError(start, ErrorCode.DynamicTarget,
-                "Cannot determine target of {0} instruction.", op);
-
+            // Report warning if the target cannot be resolved.
+            if (target == Address.Invalid)
+            {
+                AddError(start, ErrorCode.DynamicTarget,
+                    "Cannot determine the target of {0} instruction.", instruction.Operation);
+            }
             return new XRef(
                 type: bcjType,
                 source: start,
-                target: Address.Invalid
+                target: target
             );
         }
 
-#if false
-        private static void DebugPrint(string format, params object[] args)
+        /// <summary>
+        /// Gets the type of a branch/call/jump instruction.
+        /// </summary>
+        /// <param name="operation"></param>
+        /// <returns></returns>
+        protected static XRefType GetFlowInstructionType(Operation operation)
         {
-            System.Diagnostics.Debug.WriteLine(string.Format(format, args));
+            switch (operation)
+            {
+                case Operation.JO:
+                case Operation.JNO:
+                case Operation.JB:
+                case Operation.JAE:
+                case Operation.JE:
+                case Operation.JNE:
+                case Operation.JBE:
+                case Operation.JA:
+                case Operation.JS:
+                case Operation.JNS:
+                case Operation.JP:
+                case Operation.JNP:
+                case Operation.JL:
+                case Operation.JGE:
+                case Operation.JLE:
+                case Operation.JG:
+                case Operation.JCXZ:
+                case Operation.LOOP:
+                case Operation.LOOPZ:
+                case Operation.LOOPNZ:
+                    return XRefType.ConditionalJump;
+
+                case Operation.JMP:
+                    return XRefType.NearJump;
+
+                case Operation.JMPF:
+                    return XRefType.FarJump;
+
+                case Operation.CALL:
+                    return XRefType.NearCall;
+
+                case Operation.CALLF:
+                    return XRefType.FarCall;
+
+                default:
+                    return XRefType.None;
+            }
         }
-#endif
+
+        // TODO: add CurrentInstruction, CurrentLocation member variables
+        // to be used by derived classes.
+        protected virtual Address ResolveFlowInstructionTarget(Operand operand)
+        {
+            if (operand is RelativeOperand) // near jump/call to relative address
+                return ResolveFlowInstructionTarget((RelativeOperand)operand);
+            if (operand is PointerOperand) // far jump/call to absolute address
+                return ResolveFlowInstructionTarget((PointerOperand)operand);
+            return Address.Invalid;
+        }
+
+        protected virtual Address ResolveFlowInstructionTarget(RelativeOperand operand)
+        {
+            return ((SourceAwareRelativeOperand)operand).Target;
+        }
+
+        protected virtual Address ResolveFlowInstructionTarget(PointerOperand operand)
+        {
+            // Since there's no mapping from absolute frame number to
+            // a segment, the base implementation always returns Invalid.
+            return Address.Invalid;
+        }
 
         /// <summary>
         /// Decodes an instruction at the given offset, applying associated
@@ -798,15 +755,15 @@ namespace Disassembler
         /// <returns>The decoded instruction.</returns>
         /// <exception cref="ArgumentOutOfRangeException">If offset refers to
         /// a location outside of the image.</exception>
-        protected virtual Instruction DecodeInstruction(ImageChunk image, int segment, int offset)
+        protected virtual Instruction DecodeInstruction(ImageChunk image, Address address)
         {
-            if (offset < 0 || offset >= image.Length)
+            if (!image.Bounds.Contains(address.Offset))
                 throw new ArgumentOutOfRangeException("offset");
 
             Instruction instruction = X86Codec.Decoder.Decode(
-                image.Data.Slice(offset), CpuMode.RealAddressMode);
+                image.Data.Slice(address.Offset), CpuMode.RealAddressMode);
 
-            MakeRelativeOperandSourceAware(instruction, new Address(segment, offset));
+            MakeRelativeOperandSourceAware(instruction, address);
 
             return instruction;
         }

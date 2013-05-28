@@ -242,5 +242,10 @@ namespace Disassembler
             this.Segment = segment;
             this.Offset = offset;
         }
+
+        public int LinearAddress
+        {
+            get { return Segment * 16 + Offset; }
+        }
     }
 }

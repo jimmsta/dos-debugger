@@ -111,12 +111,10 @@ namespace Disassembler
         /// </summary>
         None = 0,
 
-#if false
         /// <summary>
-        /// User specified entry point (such as program start).
+        /// User specified entry point (such as program start or symbol).
         /// </summary>
         UserSpecified,
-#endif
         
         /// <summary>
         /// A JMPN instruction refers to this location.
@@ -169,6 +167,32 @@ namespace Disassembler
         /// entry is stored in the DataLocation field of the XRef object.
         /// </summary>
         /* FarIndexedJump, */
+
+        /// <summary>
+        /// An INT xx or INTO instruction. The Source is the location of the
+        /// instruction, and Target.Offset is the interrupt number.
+        /// </summary>
+        Interrupt,
+
+        /// <summary>
+        /// An IRET instruction.
+        /// </summary>
+        InterruptReturn,
+
+        /// <summary>
+        /// A RET instruction.
+        /// </summary>
+        NearReturn,
+
+        /// <summary>
+        /// A RETF instruction.
+        /// </summary>
+        FarReturn,
+
+        /// <summary>
+        /// A HLT instruction.
+        /// </summary>
+        Halt,
     }
 
     /// <summary>
