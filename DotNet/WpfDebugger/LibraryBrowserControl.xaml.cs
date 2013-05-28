@@ -88,7 +88,7 @@ namespace WpfDebugger
             {
                 if (symbol.BaseSegment == segment)
                 {
-                    DisassemblerBase.Disassemble(library,
+                    LibraryDisassembler.Disassemble(library,
                         // TODO: replace with segment selector
                         new Address(segment.Id, (int)symbol.Offset));
                 }
@@ -105,7 +105,7 @@ namespace WpfDebugger
 
         private void DisassembleSegment(LogicalSegment segment, int offset)
         {
-            DisassemblerBase dasm = new DisassemblerBase(library);
+            LibraryDisassembler dasm = new LibraryDisassembler(library);
             Address entryPoint = new Address(segment.Id, offset);
             dasm.Analyze(entryPoint);
         }

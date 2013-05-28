@@ -35,21 +35,16 @@ namespace Disassembler
     /// </remarks>
     public class Assembly
     {
-        private readonly XRefCollection crossReferences;
-        private readonly BasicBlockCollection basicBlocks;
-        private readonly ProcedureCollection procedures;
-        private readonly ModuleCollection modules;
-        private readonly ErrorCollection errors;
-        private readonly Dictionary<int, Segment> segments;
+        readonly XRefCollection crossReferences = new XRefCollection();
+        readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
+        readonly ProcedureCollection procedures = new ProcedureCollection();
+        readonly ErrorCollection errors = new ErrorCollection();
+
+        readonly ModuleCollection modules = new ModuleCollection();
+        readonly Dictionary<int, Segment> segments = new Dictionary<int, Segment>();
 
         public Assembly()
         {
-            this.crossReferences = new XRefCollection();
-            this.basicBlocks = new BasicBlockCollection();
-            this.procedures = new ProcedureCollection();
-            this.modules = new ModuleCollection();
-            this.errors = new ErrorCollection();
-            this.segments = new Dictionary<int, Segment>();
         }
 
         public XRefCollection CrossReferences
@@ -67,14 +62,14 @@ namespace Disassembler
             get { return procedures; }
         }
 
-        public ModuleCollection Modules
-        {
-            get { return modules; }
-        }
-
         public ErrorCollection Errors
         {
             get { return errors; }
+        }
+
+        public ModuleCollection Modules
+        {
+            get { return modules; }
         }
 
         /// <summary>

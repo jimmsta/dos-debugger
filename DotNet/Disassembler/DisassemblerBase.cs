@@ -9,17 +9,40 @@ namespace Disassembler
 {
     /// <summary>
     /// Provides methods to disassemble and analyze 16-bit x86 binary code.
+    /// The class is trying to be decoupled from how the binary code is 
+    /// stored; therefore, it must be subclassed to provide implementation
+    /// of important methods.
     /// </summary>
-    public class DisassemblerBase
+    public abstract class DisassemblerBase
     {
-        readonly Assembly program;
-
-        public DisassemblerBase(Assembly program)
+        protected DisassemblerBase()
         {
-            if (program == null)
-                throw new ArgumentNullException("program");
+        }
 
-            this.program = program;
+        /// <summary>
+        /// Gets the assembly being analyzed. This property must be overriden
+        /// by a derived class.
+        /// </summary>
+        public abstract Assembly Assembly { get; }
+
+        protected XRefCollection CrossReferences
+        {
+            get { return Assembly.CrossReferences; }
+        }
+
+        protected BasicBlockCollection BasicBlocks
+        {
+            get { return Assembly.BasicBlocks; }
+        }
+
+        protected ProcedureCollection Procedures
+        {
+            get { return Assembly.Procedures; }
+        }
+
+        protected ErrorCollection Errors
+        {
+            get { return Assembly.Errors; }
         }
 
         /// <summary>
@@ -36,15 +59,6 @@ namespace Disassembler
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
             GenerateProcedures();
-            CheckSegmentOverlaps();
-
-#if false
-            /* Sort the XREFs built from the above analyses by target address. 
-             * After this is done, the client can easily list the disassembled
-             * instructions with xrefs sequentially in physical order.
-             */
-            VECTOR_QSORT(d->entry_points, compare_xrefs_by_target_and_source);
-#endif
         }
 
         /// <summary>
@@ -99,7 +113,7 @@ namespace Disassembler
                 // Skip other dynamic xrefs.
                 if (entry.Target == Address.Invalid)
                 {
-                    program.CrossReferences.Add(entry);
+                    CrossReferences.Add(entry);
                     continue;
                 }
 
@@ -120,7 +134,7 @@ namespace Disassembler
 #endif
                 }
 
-                program.CrossReferences.Add(entry);
+                CrossReferences.Add(entry);
             }
         }
 
@@ -129,7 +143,7 @@ namespace Disassembler
         /// </summary>
         private void GenerateControlFlowGraph()
         {
-            foreach (XRef xref in program.CrossReferences)
+            foreach (XRef xref in CrossReferences)
             {
                 // Skip xrefs with unknown source (e.g. user-specified entry
                 // point) or target (e.g. dynamic call or jump).
@@ -139,8 +153,8 @@ namespace Disassembler
 
                 // Find the basic blocks that owns the source location
                 // and target location.
-                BasicBlock sourceBlock = program.BasicBlocks.Find(xref.Source);
-                BasicBlock targetBlock = program.BasicBlocks.Find(xref.Target);
+                BasicBlock sourceBlock = BasicBlocks.Find(xref.Source);
+                BasicBlock targetBlock = BasicBlocks.Find(xref.Target);
 #if true
                 if (sourceBlock == null || targetBlock == null)
                 {
@@ -153,14 +167,14 @@ namespace Disassembler
 #endif
                 // Create a directed edge from the source basic block to
                 // the target basic block.
-                program.BasicBlocks.AddControlFlowGraphEdge(
+                BasicBlocks.AddControlFlowGraphEdge(
                     sourceBlock, targetBlock, xref);
             }
         }
 
-        private void GenerateProcedures()
+        protected virtual void GenerateProcedures()
         {
-            foreach (XRef xref in program.CrossReferences)
+            foreach (XRef xref in CrossReferences)
             {
                 Address entryPoint = xref.Target;
                 CallType callType = 
@@ -172,7 +186,7 @@ namespace Disassembler
                 // TBD: should check and emit a message if two procedures
                 // are defined at the same ResolvedAddress but with different
                 // logical address.
-                Procedure proc = program.Procedures.Find(entryPoint);
+                Procedure proc = Procedures.Find(entryPoint);
                 if (proc != null)
                 {
                     if (proc.CallType != callType)
@@ -194,25 +208,7 @@ namespace Disassembler
                 //proc.Name = "TBD";
                 proc.CallType = callType;
 
-                program.Procedures.Add(proc);
-            }
-
-            // Enumerate the defined names, and assign names to the procedures.
-            foreach (ObjectModule module in program.Modules)
-            {
-                if (module == null)
-                    continue;
-
-                foreach (DefinedSymbol symbol in module.DefinedNames)
-                {
-                    if (symbol.BaseSegment != null)
-                    {
-                        Address address = new Address(symbol.BaseSegment.Id, (int)symbol.Offset);
-                        Procedure proc = program.Procedures.Find(address);
-                        if (proc != null)
-                            proc.Name = symbol.Name;
-                    }
-                }
+                Procedures.Add(proc);
             }
         }
 
@@ -276,29 +272,6 @@ namespace Disassembler
             // TODO: we need to make BasicBlock dependent on ResolvedAddress
             BasicBlock block = address.Image.BasicBlocks.GetValueOrDefault(address.Offset);
 
-#endif
-        }
-
-        /// <summary>
-        /// Checks for segment overlaps and emits error messages for
-        /// overlapping segments.
-        /// </summary>
-        private void CheckSegmentOverlaps()
-        {
-#if false
-            // Check for segment overlaps.
-            Segment lastSegment = null;
-            foreach (Segment segment in image.Segments)
-            {
-                if (lastSegment != null && segment.StartAddress < lastSegment.EndAddress)
-                {
-                    AddError(segment.StartAddress.ToFarPointer(segment.SegmentAddress),
-                        ErrorCategory.Error,
-                        "Segment {0:X4} overlaps with segment {1:X4}.",
-                        lastSegment.SegmentAddress, segment.SegmentAddress);
-                }
-                lastSegment = segment;
-            }
 #endif
         }
 
@@ -405,6 +378,9 @@ namespace Disassembler
 #endif
         }
 
+        protected abstract bool ResolveAddress(
+            Address address, out ImageChunk image, out int offset);
+
         /// <summary>
         /// Analyzes a contiguous sequence of instructions that form a basic
         /// block. The termination conditions include end-of-input, analyzed
@@ -422,10 +398,11 @@ namespace Disassembler
         protected virtual BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Address pos = start.Target;
-            ImageChunk image = program.GetSegment(pos.Segment).Image;
+            ImageChunk image;
+            int offset;
 
-            // Check bounds.
-            if (!image.Bounds.Contains(pos.Offset))
+            // Try resolve address.
+            if (!ResolveAddress(pos, out image, out offset))
             {
                 AddError(pos, ErrorCode.OutOfImage,
                     "XRef target is outside of the image (referred from {0})",
@@ -433,7 +410,7 @@ namespace Disassembler
                 return null;
             }
 
-            ImageByte b = image[pos.Offset];
+            ImageByte b = image[offset];
 
             // Check if the entry address is already analyzed.
             if (b.Type != ByteType.Unknown)
@@ -449,7 +426,7 @@ namespace Disassembler
 
                 // Now the byte was previously analyzed as code. We must have
                 // already created a basic block.
-                BasicBlock block = program.BasicBlocks.Find(pos);
+                BasicBlock block = BasicBlocks.Find(pos);
                 System.Diagnostics.Debug.Assert(block != null);
                 
                 // If the block starts at this address, we're done.
@@ -478,7 +455,7 @@ namespace Disassembler
                         start.Source);
                     return null;
                 }
-                program.BasicBlocks.SplitBasicBlock(block, pos);
+                BasicBlocks.SplitBasicBlock(block, pos);
                 return null;
             }
 
@@ -491,7 +468,7 @@ namespace Disassembler
                 Instruction insn;
                 try
                 {
-                    insn = DecodeInstruction(image, pos.Segment, pos.Offset);
+                    insn = DecodeInstruction(image, pos.Segment, pos.Offset); // TBD
                 }
                 catch (BrokenFixupException ex)
                 {
@@ -507,7 +484,7 @@ namespace Disassembler
                 }
 
                 // Create a code piece for this instruction.
-                if (!image.CheckByteType(pos.Offset, insn.EncodedLength, ByteType.Unknown))
+                if (!image.CheckByteType(offset, insn.EncodedLength, ByteType.Unknown))
                 {
                     AddError(pos, ErrorCode.OverlappingInstruction,
                         "Ran into the middle of code when processing block {0} referred from {1}",
@@ -520,10 +497,11 @@ namespace Disassembler
                 try
                 {
                     image.UpdateByteType(
-                        pos.Offset, insn.EncodedLength, ByteType.Code);
-                    image.Instructions.Add(pos.Offset, insn);
+                        offset, insn.EncodedLength, ByteType.Code);
+                    image.Instructions.Add(offset, insn);
                     //pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
                     pos += insn.EncodedLength;
+                    offset += insn.EncodedLength;
                     if (pos.Offset > 0xFFFF)
                     {
                         pos -= insn.EncodedLength;
@@ -578,7 +556,8 @@ namespace Disassembler
                 }
 
                 // If we go out of the image, this is not good...
-                if (pos.Offset >= image.Length)
+                // TBD: what if the image is actually larger than the segment?
+                if (offset >= image.Length)
                 {
                     AddError(pos, ErrorCode.OutOfImage,
                         "Analysis going past the end of image.");
@@ -588,18 +567,19 @@ namespace Disassembler
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
                 // block, and we are done.
-                if (image[pos.Offset].Type == ByteType.Code)
+                if (image[offset].Type == ByteType.Code)
                 {
-                    System.Diagnostics.Debug.Assert(image[pos.Offset].IsLeadByte);
+                    System.Diagnostics.Debug.Assert(image[offset].IsLeadByte);
                     break;
                 }
             }
 
             // Create a basic block unless we failed on the first instruction.
+            // TBD: need to fix this
             if (pos.Offset > start.Target.Offset)
             {
                 BasicBlock block = new BasicBlock(start.Target, pos);
-                program.BasicBlocks.Add(block);
+                BasicBlocks.Add(block);
             }
             return null;
         }
@@ -818,7 +798,7 @@ namespace Disassembler
         /// <returns>The decoded instruction.</returns>
         /// <exception cref="ArgumentOutOfRangeException">If offset refers to
         /// a location outside of the image.</exception>
-        public Instruction DecodeInstruction(ImageChunk image, int segment, int offset)
+        protected virtual Instruction DecodeInstruction(ImageChunk image, int segment, int offset)
         {
             if (offset < 0 || offset >= image.Length)
                 throw new ArgumentOutOfRangeException("offset");
@@ -826,59 +806,20 @@ namespace Disassembler
             Instruction instruction = X86Codec.Decoder.Decode(
                 image.Data.Slice(offset), CpuMode.RealAddressMode);
 
-            // Find the first fixup that covers the instruction. If no
-            // fix-up covers the instruction, find the closest fix-up
-            // that comes after.
-            int fixupIndex = image.Fixups.BinarySearch(offset);
-            if (fixupIndex < 0)
-                fixupIndex = ~fixupIndex;
+            MakeRelativeOperandSourceAware(instruction, new Address(segment, offset));
 
-            for (int i = 0; i < instruction.Operands.Length; i++)
-            {
-                if (fixupIndex >= image.Fixups.Count) // no more fixups
-                    break;
+            return instruction;
+        }
 
-                Fixup fixup = image.Fixups[fixupIndex];
-                if (fixup.StartIndex >= offset + instruction.EncodedLength) // past end
-                    break;
-
-                Operand operand = instruction.Operands[i];
-                if (operand.FixableLocation.Length > 0)
-                {
-                    int start = offset + operand.FixableLocation.StartOffset;
-                    int end = start + operand.FixableLocation.Length;
-
-                    if (fixup.StartIndex >= end)
-                        continue;
-
-                    if (fixup.StartIndex != start || fixup.EndIndex != end)
-                    {
-                        // throw new BrokenFixupException(fixup);
-                        AddError(new Address(segment, fixup.StartIndex),
-                            ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
-                        continue;
-                    }
-
-                    instruction.Operands[i].Tag = fixup.Target;
-                    ++fixupIndex;
-                }
-            }
-
-            if (fixupIndex < image.Fixups.Count)
-            {
-                Fixup fixup = image.Fixups[fixupIndex];
-                if (fixup.StartIndex < offset + instruction.EncodedLength)
-                {
-                    AddError(new Address(segment, fixup.StartIndex),
-                        ErrorCode.BrokenFixup, "Broken fix-up: {0}", fixup);
-                }
-            }
-
-#if true
-            // Run a second pass to replace RelativeOperand with
-            // SourceAwareRelativeOperand.
-            // TODO: make SourceAwareRelativeOperand.Target a dummy
-            // SymbolicTarget, so that we can handle them consistently.
+        /// <summary>
+        /// Replaces any RelativeOperand with SourceAwareRelativeOperand.
+        /// </summary>
+        /// <param name="instruction"></param>
+        // TODO: make SourceAwareRelativeOperand.Target a dummy
+        // SymbolicTarget, so that we can handle them consistently.
+        protected static void MakeRelativeOperandSourceAware(
+            Instruction instruction, Address instructionStart)
+        {
             for (int i = 0; i < instruction.Operands.Length; i++)
             {
                 if (instruction.Operands[i] is RelativeOperand &&
@@ -886,25 +827,16 @@ namespace Disassembler
                 {
                     instruction.Operands[i] = new SourceAwareRelativeOperand(
                         (RelativeOperand)instruction.Operands[i],
-                        new Address(0, offset + instruction.EncodedLength));
+                        instructionStart + instruction.EncodedLength);
                 }
             }
-#endif
-
-            return instruction;
         }
 
-        private void AddError(
+        protected void AddError(
             Address location, ErrorCode errorCode,
             string format, params object[] args)
         {
-            program.Errors.Add(new Error(location, errorCode, string.Format(format, args)));
-        }
-        
-        public static void Disassemble(Assembly assembly, Address entryPoint)
-        {
-            DisassemblerBase dasm = new DisassemblerBase(assembly);
-            dasm.Analyze(entryPoint);
+            Errors.Add(new Error(location, errorCode, string.Format(format, args)));
         }
     }
 }

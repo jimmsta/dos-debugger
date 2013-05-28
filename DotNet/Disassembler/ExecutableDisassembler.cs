@@ -11,12 +11,16 @@ namespace Disassembler
     /// </summary>
     public class ExecutableDisassembler : DisassemblerBase
     {
-        private Executable executable;
+        readonly Executable executable;
 
         public ExecutableDisassembler(Executable executable)
-            : base(executable)
         {
             this.executable = executable;
+        }
+
+        public override Assembly Assembly
+        {
+            get { return executable; }
         }
 
         /// <summary>
@@ -26,7 +30,17 @@ namespace Disassembler
         {
             get { return executable; }
         }
-        
+
+        protected override bool ResolveAddress(Address address, out ImageChunk image, out int offset)
+        {
+            image = executable.GetSegment(address.Segment).Image;
+            offset = address.Offset;
+            if (offset >= 0 && offset < image.Length)
+                return true;
+            else
+                return false;
+        }
+
 #if false
         /// <summary>
         /// Checks for segment overlaps and emits error messages for
@@ -429,6 +443,11 @@ namespace Disassembler
         }
 #endif
 
+        public static void Disassemble(Executable executable, Address entryPoint)
+        {
+            ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
+            dasm.Analyze(entryPoint);
+        }
     }
 
 }
