@@ -134,10 +134,6 @@ namespace Disassembler
                     proc.AddBasicBlock(block);
 #endif
                 }
-                if (entry.Source.Offset == 0x0B44)
-                {
-                    int kk = 1;
-                }
                 CrossReferences.Add(entry);
             }
         }
@@ -192,35 +188,78 @@ namespace Disassembler
                 if (callType == CallType.Unknown)
                     continue;
 
-                // If there is already a procedure defined at the given
-                // entry point, perform some sanity checks.
-                // TBD: should check and emit a message if two procedures
-                // are defined at the same ResolvedAddress but with different
-                // logical address.
+                // Create a procedure at this entry point if none exists.
                 Procedure proc = Procedures.Find(entryPoint);
-                if (proc != null)
+                if (proc == null)
                 {
-                    if (proc.CallType != callType)
-                    {
-                        AddError(entryPoint, ErrorCode.InconsistentCall,
-                            "Procedure at entry point {0} has inconsistent call type.",
-                            entryPoint);
-                    }
-                    // add call graph
-                    continue;
+                    proc = CreateProcedure(entryPoint);
+                    Procedures.Add(proc);
                 }
 
-                // Create a procedure at the entry point. The entry point must
-                // be the first byte of a basic block, or otherwise some flow
-                // analysis error must have occurred. On the other hand, note
-                // that multiple procedures may share one or more basic blocks
-                // as part of their implementation.
-                proc = new Procedure(entryPoint);
-                //proc.Name = "TBD";
-                proc.CallType = callType;
-
-                Procedures.Add(proc);
+                // Check the calling type against the procedure's signature.
+                if (callType != proc.CallType)
+                {
+                    AddError(entryPoint, ErrorCode.InconsistentCall,
+                        "Procedure at entry point {0} has inconsistent call type.",
+                        entryPoint);
+                }
             }
+        }
+
+        /// <summary>
+        /// Creates a procedure with the given entry point.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual Procedure CreateProcedure(Address entryPoint)
+        {
+            // If there is already a procedure defined at the given entry
+            // point, return that procedure.
+            Procedure proc = Procedures.Find(entryPoint);
+            if (proc != null)
+                return proc;
+
+            // Create a procedure at the entry point. The entry point must be
+            // be the first byte of a basic block, or otherwise some flow
+            // analysis error must have occurred. On the other hand, note
+            // that multiple procedures may share one or more basic blocks
+            // as part of their implementation.
+            proc = new Procedure(entryPoint);
+            AddBasicBlocksToProcedure(proc);
+            //proc.Name = "TBD";
+
+            // To determine the call type of the procedure, examine the 
+            // features of the basic blocks.
+            CodeFeatures features = CodeFeatures.None;
+            foreach (BasicBlock block in proc.BasicBlocks)
+            {
+                features |= block.Features;
+            }
+
+            CodeFeatures callFeatures = features & (
+                CodeFeatures.HasRETN | CodeFeatures.HasRETF | CodeFeatures.HasIRET);
+            switch (callFeatures)
+            {
+                case CodeFeatures.HasRETN:
+                    proc.CallType = CallType.Near;
+                    break;
+                case CodeFeatures.HasRETF:
+                    proc.CallType = CallType.Far;
+                    break;
+                case CodeFeatures.HasIRET:
+                    proc.CallType = CallType.Interrupt;
+                    break;
+                case CodeFeatures.None:
+                    AddError(entryPoint, ErrorCode.InconsistentCall,
+                        "Procedure at entry point {0} does not contain a RET/RETF/IRET instruction.",
+                        entryPoint);
+                    break;
+                default:
+                    AddError(entryPoint, ErrorCode.InconsistentCall,
+                        "Procedure at entry point {0} contains inconsistent return instructions: {1}.",
+                        entryPoint, callFeatures);
+                    break;
+            }
+            return proc;
         }
 
         private void GenerateCallGraph()
@@ -504,7 +543,7 @@ namespace Disassembler
                         start.Source);
                     return null;
                 }
-                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip);
+                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip, image);
 
                 // Create a xref from the previous block to this block.
                 XRef xref = CreateFallThroughXRef(GetLastInstructionInBasicBlock(subBlocks[0]), ip);
@@ -581,7 +620,7 @@ namespace Disassembler
             // Create a basic block unless we failed on the first instruction.
             if (ip.Offset > start.Target.Offset)
             {
-                BasicBlock block = new BasicBlock(start.Target, ip, blockType);
+                BasicBlock block = new BasicBlock(start.Target, ip, blockType, image);
                 BasicBlocks.Add(block);
             }
             return null;

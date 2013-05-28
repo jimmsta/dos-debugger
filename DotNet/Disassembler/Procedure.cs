@@ -254,6 +254,7 @@ namespace Disassembler
         Unknown = 0,
         Near = 1,
         Far = 2,
+        Interrupt = 3,
     }
 
     /// <summary>
@@ -261,11 +262,14 @@ namespace Disassembler
     /// informational purpose, and should not be taken too seriously.
     /// </summary>
     [Flags]
-    public enum ProcedureFeatures
+    public enum CodeFeatures
     {
         None = 0,
         HasInterrupt = 1,
         HasFpu = 2,
+        HasRETN = 4,
+        HasRETF = 8,
+        HasIRET = 0x10,
     }
 
     /// <summary>

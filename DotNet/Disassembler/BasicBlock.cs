@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Util.Data;
+using X86Codec;
 
 namespace Disassembler
 {
@@ -33,7 +34,8 @@ namespace Disassembler
         readonly Address location;
         readonly int length;
         readonly BasicBlockType type;
-        
+        readonly CodeFeatures features;
+
 #if false
         internal BasicBlock(ImageChunk image, Range<int> range)
         {
@@ -47,22 +49,14 @@ namespace Disassembler
         }
 #endif
 
-#if false
-        public BasicBlock(Address location, int length, BasicBlockType type)
-        {
-            this.location = location;
-            this.length = length;
-            this.type = type;
-        }
-#endif
-
-        public BasicBlock(Address begin, Address end, BasicBlockType type)
+        public BasicBlock(Address begin, Address end, BasicBlockType type, ImageChunk image)
         {
             if (begin.Segment != end.Segment)
                 throw new ArgumentException("Basic block must be on the same segment.");
             this.location = begin;
             this.length = end.Offset - begin.Offset;
             this.type = type;
+            this.features = ComputeFeatures(image, begin.Offset, end.Offset);
         }
 
         public Address Location
@@ -88,6 +82,43 @@ namespace Disassembler
         public override string ToString()
         {
             return string.Format("{0} ({1})", Bounds, Type);
+        }
+
+        public CodeFeatures Features
+        {
+            get { return features; }
+        }
+
+        private static CodeFeatures ComputeFeatures(ImageChunk image, int startIndex, int endIndex)
+        {
+            CodeFeatures features = CodeFeatures.None;
+            for (int i = startIndex; i < endIndex; )
+            {
+                Instruction instruction = image[i].Instruction;
+
+                switch (instruction.Operation)
+                {
+                    case Operation.INT:
+                    case Operation.INTO:
+                        features |= CodeFeatures.HasInterrupt;
+                        break;
+                    case Operation.RET:
+                        features |= CodeFeatures.HasRETN;
+                        break;
+                    case Operation.RETF:
+                        features |= CodeFeatures.HasRETF;
+                        break;
+                    case Operation.IRET:
+                        features |= CodeFeatures.HasIRET;
+                        break;
+                    case Operation.FCLEX:
+                        features |= CodeFeatures.HasFpu;
+                        break;
+                }
+
+                i += instruction.EncodedLength;
+            }
+            return features;
         }
     }
 
@@ -179,7 +210,7 @@ namespace Disassembler
         /// be in the collection.
         /// </summary>
         /// <param name="block"></param>
-        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff)
+        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, ImageChunk image)
         {
             if (block == null)
                 throw new ArgumentNullException("block");
@@ -194,8 +225,8 @@ namespace Disassembler
 
             // Create two blocks.
             var range = block.Bounds;
-            BasicBlock block1 = new BasicBlock(range.Begin, cutoff, BasicBlockType.FallThrough);
-            BasicBlock block2 = new BasicBlock(cutoff, range.End, block.Type);
+            BasicBlock block1 = new BasicBlock(range.Begin, cutoff, BasicBlockType.FallThrough, image);
+            BasicBlock block2 = new BasicBlock(cutoff, range.End, block.Type, image);
 
             // Replace the big block from this collection and add the newly
             // created smaller blocks.

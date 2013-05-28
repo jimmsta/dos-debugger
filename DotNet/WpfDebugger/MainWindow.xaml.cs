@@ -40,12 +40,14 @@ namespace WpfDebugger
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-#if true
+#if false
             //string fileName = @"E:\Dev\Projects\DosDebugger\Test\H.EXE";
             string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\NEWHELLO.EXE";
             DoOpenFile(fileName);
 #else
-            mnuHelpTest_Click(null, null);
+            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            //mnuHelpTest_Click(null, null);
+            DoOpenFile(fileName);
 #endif
         }
 

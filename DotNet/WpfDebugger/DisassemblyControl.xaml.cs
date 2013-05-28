@@ -42,6 +42,8 @@ namespace WpfDebugger
         public void GoToAddress(int offset)
         {
             int index = viewModel.FindRowIndex(offset);
+            if (index < 0 || index >= viewModel.Rows.Count)
+                return;
 
             // Scroll to the bottom first so that the actual item will be
             // on the top when we scroll again.
