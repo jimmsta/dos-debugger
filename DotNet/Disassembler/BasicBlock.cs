@@ -32,7 +32,8 @@ namespace Disassembler
     {
         readonly Address location;
         readonly int length;
-
+        readonly BasicBlockType type;
+        
 #if false
         internal BasicBlock(ImageChunk image, Range<int> range)
         {
@@ -46,18 +47,22 @@ namespace Disassembler
         }
 #endif
 
-        public BasicBlock(Address location, int length)
+#if false
+        public BasicBlock(Address location, int length, BasicBlockType type)
         {
             this.location = location;
             this.length = length;
+            this.type = type;
         }
+#endif
 
-        public BasicBlock(Address begin, Address end)
+        public BasicBlock(Address begin, Address end, BasicBlockType type)
         {
             if (begin.Segment != end.Segment)
                 throw new ArgumentException("Basic block must be on the same segment.");
             this.location = begin;
             this.length = end.Offset - begin.Offset;
+            this.type = type;
         }
 
         public Address Location
@@ -70,10 +75,64 @@ namespace Disassembler
             get { return length; }
         }
 
+        public BasicBlockType Type
+        {
+            get { return type; }
+        }
+
         public Range<Address> Bounds
         {
             get { return new Range<Address>(location, location + length); }
         }
+    }
+
+    /// <summary>
+    /// Specifies the type of a basic block.
+    /// </summary>
+    public enum BasicBlockType
+    {
+        Unknown = 0,
+
+        /// <summary>
+        /// Indicates that the basic block ends prematurally because of an
+        /// error encountered during analysis.
+        /// </summary>
+        Broken,
+
+        /// <summary>
+        /// Indicates that the basic block ends because the instruction
+        /// following it is some jump target and hence starts another block.
+        /// </summary>
+        FallThrough,
+
+        /// <summary>
+        /// Indicates that the basic block ends because of an unconditional
+        /// JMP/JMPF instruction.
+        /// </summary>
+        Jump,
+
+        /// <summary>
+        /// Indicates that the basic block ends because of a branch
+        /// instruction, such as Jcc, LOOPZ, etc.
+        /// </summary>
+        Branch,
+
+        /// <summary>
+        /// Indicates that the basic block ends because of a CALL/CALLF/INT
+        /// instruction.
+        /// </summary>
+        Call,
+
+        /// <summary>
+        /// Indicates that the basic block ends because of a RET/RETF/IRET
+        /// instruction.
+        /// </summary>
+        Return,
+
+        /// <summary>
+        /// Indicates that the basic block ends becuase of a HLT instruction.
+        /// </summary>
+        Halt,
     }
 
     public class BasicBlockCollection : ICollection<BasicBlock>
@@ -130,8 +189,8 @@ namespace Disassembler
 
             // Create two blocks.
             var range = block.Bounds;
-            BasicBlock block1 = new BasicBlock(range.Begin, cutoff);
-            BasicBlock block2 = new BasicBlock(cutoff, range.End);
+            BasicBlock block1 = new BasicBlock(range.Begin, cutoff, BasicBlockType.FallThrough);
+            BasicBlock block2 = new BasicBlock(cutoff, range.End, block.Type);
 
             // Replace the big block from this collection and add the newly
             // created smaller blocks.

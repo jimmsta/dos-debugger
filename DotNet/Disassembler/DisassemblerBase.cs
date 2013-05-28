@@ -388,15 +388,18 @@ namespace Disassembler
 
         /// <summary>
         /// Analyzes a contiguous sequence of instructions that form a basic
-        /// block. The termination conditions include end-of-input, analyzed
-        /// code/data, or any of the following instructions: RET, IRET, JMP,
-        /// HLT.
+        /// block. A basic block terminates as soon as any of the following
+        /// conditions is true:
+        /// - An analysis error occurs
+        /// - An block terminating instructions: RET, RETF, IRET, HLT.
+        /// - A b/c/j instruction: Jcc, JMP, JMPF, LOOPcc.
         /// </summary>
         /// <param name="start">Address to begin analysis.</param>
+        /// <param name="xrefs">Collection to add xrefs to.</param>
         /// <returns>
         /// A new BasicBlock if one was created during the analysis.
-        /// If analysis failed or an existing block was split into two,
-        /// returns null.
+        /// If no new BasicBlocks are created, or if an existing block was
+        /// split into two, returns null.
         /// </returns>
         // TODO: should be roll-back the entire basic block if we 
         // encounters an error on our way? maybe not.
@@ -405,8 +408,7 @@ namespace Disassembler
             Address pos = start.Target;
             ImageChunk image = ResolveSegment(pos.Segment);
 
-            if (image == null ||
-                pos.Offset < 0 || pos.Offset >= image.Length)
+            if (image == null || !image.Bounds.Contains(pos.Offset))
             {
                 AddError(pos, ErrorCode.OutOfImage,
                    "XRef target is outside of the image (referred from {0})",
@@ -414,9 +416,8 @@ namespace Disassembler
                 return null;
             }
 
-            ImageByte b = image[pos.Offset];
-
             // Check if the entry address is already analyzed.
+            ImageByte b = image[pos.Offset];
             if (b.Type != ByteType.Unknown)
             {
                 // Fail if we ran into data or padding while expecting code.
@@ -429,11 +430,11 @@ namespace Disassembler
                 }
 
                 // Now the byte was previously analyzed as code. We must have
-                // already created a basic block.
+                // already created a basic block that contains this byte.
                 BasicBlock block = BasicBlocks.Find(pos);
                 System.Diagnostics.Debug.Assert(block != null);
                 
-                // If the block starts at this address, we're done.
+                // If the existing block starts at this address, we're done.
                 if (block.Location == pos)
                     return null;
 
@@ -451,7 +452,7 @@ namespace Disassembler
 #endif
 
                 // Now split the existing basic block into two. This requires
-                // that the cut-off point is instruction boundary.
+                // that the cut-off point is at instruction boundary.
                 if (!b.IsLeadByte)
                 {
                     AddError(pos, ErrorCode.RanIntoCode,
@@ -462,110 +463,88 @@ namespace Disassembler
                 BasicBlocks.SplitBasicBlock(block, pos);
                 return null;
             }
+            // TODO: Move the above into a separate procedure.
+
 
             // Analyze each instruction in sequence until we encounter
             // analyzed code, flow instruction, or an error condition.
+            BasicBlockType blockType = BasicBlockType.Unknown;
             while (true)
             {
                 // Decode an instruction at this location.
-                Address insnPos = pos;
-                Instruction insn;
-                try
+                Address instructionStart = pos;
+                Instruction insn = DecodeInstruction(image, pos);
+                if (insn == null)
                 {
-                    insn = DecodeInstruction(image, pos);
-                }
-                catch (BrokenFixupException ex)
-                {
-                    AddError(
-                        new Address(pos.Segment, ex.Fixup.StartIndex),
-                        ErrorCode.BrokenFixup, "Broken fix-up: {0}", ex.Fixup);
+                    blockType = BasicBlockType.Broken;
                     break;
                 }
-                catch (Exception ex)
-                {
-                    AddError(pos, ErrorCode.InvalidInstruction, "Bad instruction: {0}", ex.Message);
-                    break;
-                }
+                Address instructionEnd = pos + insn.EncodedLength;
+                bool addressWrapped = instructionEnd.Offset > 0xFFFF;
 
-                // Create a code piece for this instruction.
+                // Check that the byte range covered by the instruction is
+                // unanalyzed.
                 if (!image.CheckByteType(pos.Offset, insn.EncodedLength, ByteType.Unknown))
                 {
                     AddError(pos, ErrorCode.OverlappingInstruction,
                         "Ran into the middle of code when processing block {0} referred from {1}",
                         start.Target, start.Source);
+                    blockType = BasicBlockType.Broken;
                     break;
                 }
 
-                // Advance the byte pointer. Note: the IP may wrap around 0xFFFF 
-                // if pos.off + count > 0xFFFF. This is probably not intended.
-                try
+                // Create a code piece for this instruction.
+                image.AssociateInstruction(pos.Offset, insn);
+
+                // Advance the code pointer to just past the instruction.
+                // Note: if address wrapping occurs, the new IP will be 0.
+                pos += insn.EncodedLength;
+#if false
+                if (pos.Offset > 0xFFFF)
                 {
-                    image.UpdateByteType(
-                        pos.Offset, insn.EncodedLength, ByteType.Code);
-                    image.Instructions.Add(pos.Offset, insn);
-                    //pos = pos.Increment(insn.EncodedLength); // TODO: check address wrapping
-                    pos += insn.EncodedLength;
-                    if (pos.Offset > 0xFFFF)
-                    {
-                        pos -= insn.EncodedLength;
-                        AddError(pos, ErrorCode.AddressWrapped,
-                            "CS:IP wrapped when processing block {1} referred from {2}",
-                            start.Target, start.Source);
-                        break;
-                    }
-                }
-                //catch (AddressWrappedException)
-                catch (Exception)
-                {
+                    pos -= insn.EncodedLength;
                     AddError(pos, ErrorCode.AddressWrapped,
                         "CS:IP wrapped when processing block {1} referred from {2}",
                         start.Target, start.Source);
                     break;
                 }
+#endif
 
-                // Check if this instruction terminates the block.
-                if (insn.Operation == Operation.RET ||
-                    insn.Operation == Operation.RETF ||
-                    insn.Operation == Operation.HLT)
-                    break;
+                // Determine whether this instruction affects control flow.
+                XRefType flowType = GetFlowInstructionType(insn.Operation);
 
-                // Analyze BCJ (branch, jump, call) instructions. Such an
-                // instruction will create a cross reference.
-                XRef xref = AnalyzeFlowInstruction(insnPos, insn);
-                if (xref != null)
+                if (flowType != XRefType.None)
                 {
-                    xrefs.Add(xref);
-
-                    // If the instruction is a conditional jump, add xref to
-                    // the 'no-jump' branch.
-                    // TODO: adding a no-jump xref causes confusion when we
-                    // browse xrefs in the disassembly listing window. Is it
-                    // truely necessary to add these xrefs?
-                    if (xref.Type == XRefType.ConditionalJump)
+                    // Creates an active cross reference if necessary.
+                    if (NeedsActiveXRef(flowType))
                     {
-                        xrefs.Add(new XRef(
-                            type: XRefType.ConditionalJump,
-                            source: insnPos,
-                            target: pos
-                        ));
+                        XRef xref = CreateFlowXRef(flowType, instructionStart, insn);
+                        if (xref != null)
+                            xrefs.Add(xref);
                     }
 
-                    // Finish basic block unless this is a CALL instruction.
-                    if (xref.Type == XRefType.ConditionalJump ||
-                        xref.Type == XRefType.NearJump ||
-                        xref.Type == XRefType.FarJump ||
-                        xref.Type == XRefType.NearIndexedJump)
-                        break;
-                }
+                    // Creates a fall-through cross reference if necessary.
+                    if (CanFallThrough(flowType))
+                    {
+                        if (addressWrapped) // wrapped
+                        {
+                            // TODO: issue warning
+                        }
+                        XRef xref = CreateFallThroughXRef(instructionStart, instructionEnd);
+                        xrefs.Add(xref);
+                    }
 
-                // If we go out of the image, this is not good...
-                // TBD: what if the image is actually larger than the segment?
-                if (pos.Offset >= image.Length)
-                {
-                    AddError(pos, ErrorCode.OutOfImage,
-                        "Analysis going past the end of image.");
+                    // Terminate the block.
+                    blockType = GetBasicBlockType(flowType);
                     break;
                 }
+
+                if (addressWrapped)
+                {
+                    AddError(pos, ErrorCode.AddressWrapped, "Address wrapped");
+                    blockType = BasicBlockType.Broken;
+                }
+                pos = instructionEnd;
 
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
@@ -573,6 +552,10 @@ namespace Disassembler
                 if (image[pos.Offset].Type == ByteType.Code)
                 {
                     System.Diagnostics.Debug.Assert(image[pos.Offset].IsLeadByte);
+
+                    // TBD: create fall-through xref.
+                    CreateFallThroughXRef(instructionStart, instructionEnd);
+                    blockType = BasicBlockType.FallThrough;
                     break;
                 }
             }
@@ -580,12 +563,47 @@ namespace Disassembler
             // Create a basic block unless we failed on the first instruction.
             if (pos.Offset > start.Target.Offset)
             {
-                BasicBlock block = new BasicBlock(start.Target, pos);
+                BasicBlock block = new BasicBlock(start.Target, pos, blockType);
                 BasicBlocks.Add(block);
             }
             return null;
         }
 
+#if false
+        /// <summary>
+        /// Creates a fall-through cross reference from the last instruction
+        /// in a block to the first instruction that follows it, according to
+        /// the block type.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual XRef CreateFallThroughXRef(BasicBlock block)
+        {
+            if (block.Type == BasicBlockType.Branch ||
+                block.Type == BasicBlockType.Call ||
+                block.Type == BasicBlockType.FallThrough)
+            {
+
+            }
+            return null;
+
+
+            // If the instruction is a conditional jump, add xref to
+            // the 'no-jump' branch.
+            // TODO: adding a no-jump xref causes confusion when we
+            // browse xrefs in the disassembly listing window. Is it
+            // truely necessary to add these xrefs?
+            if (xref.Type == XRefType.ConditionalJump)
+            {
+                xrefs.Add(new XRef(
+                    type: XRefType.ConditionalJump,
+                    source: insnPos,
+                    target: pos
+                ));
+            }
+        }
+#endif
+
+#if false
         /// <summary>
         /// Analyzes an instruction and returns a xref if the instruction is
         /// one of the branch/call/jump instructions. Note that the 'no-jump'
@@ -676,13 +694,15 @@ namespace Disassembler
                 target: target
             );
         }
+#endif
 
         /// <summary>
-        /// Gets the type of a branch/call/jump instruction.
+        /// Gets the type of a control-flow affecting instruction. If the
+        /// instruction does not affects control flow, returns None.
         /// </summary>
-        /// <param name="operation"></param>
+        /// <param name="operation">The operation to examine.</param>
         /// <returns></returns>
-        protected static XRefType GetFlowInstructionType(Operation operation)
+        protected XRefType GetFlowInstructionType(Operation operation)
         {
             switch (operation)
             {
@@ -720,9 +740,143 @@ namespace Disassembler
                 case Operation.CALLF:
                     return XRefType.FarCall;
 
+                case Operation.RET:
+                    return XRefType.NearReturn;
+
+                case Operation.RETF:
+                    return XRefType.FarReturn;
+
+                case Operation.INT:
+                case Operation.INTO:
+                    return XRefType.Interrupt;
+
+                case Operation.IRET:
+                    return XRefType.InterruptReturn;
+
+                case Operation.HLT:
+                    return XRefType.Halt;
+
                 default:
                     return XRefType.None;
             }
+        }
+
+        protected virtual BasicBlockType GetBasicBlockType(XRefType flowType)
+        {
+            switch (flowType)
+            {
+                case XRefType.ConditionalJump:
+                    return BasicBlockType.Branch;
+
+                case XRefType.NearJump:
+                case XRefType.FarJump:
+                case XRefType.NearIndexedJump:
+                    return BasicBlockType.Jump;
+
+                case XRefType.Interrupt:
+                case XRefType.NearCall:
+                case XRefType.FarCall:
+                    return BasicBlockType.Call;
+
+                case XRefType.NearReturn:
+                case XRefType.FarReturn:
+                case XRefType.InterruptReturn:
+                    return BasicBlockType.Return;
+                
+                case XRefType.Halt:
+                    return BasicBlockType.Halt;
+
+                default:
+                    return BasicBlockType.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the given cross reference may possibly fall
+        /// through to a "default" flow path such as "branch not taken" or
+        /// "return from call".
+        /// </summary>
+        /// <param name="xrefType">Type of cross reference.</param>
+        /// <returns></returns>
+        protected virtual bool CanFallThrough(XRefType xrefType)
+        {
+            switch (xrefType)
+            {
+                case XRefType.FarJump:
+                case XRefType.NearJump:
+                case XRefType.NearIndexedJump:
+                case XRefType.FarReturn:
+                case XRefType.NearReturn:
+                case XRefType.InterruptReturn:
+                case XRefType.Halt:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        protected virtual XRef CreateFallThroughXRef(Address source, Address target)
+        {
+            XRef xref = new XRef(
+                type: XRefType.FallThrough,
+                source: source,
+                target: target
+                );
+            return xref;
+        }
+
+        protected virtual bool NeedsActiveXRef(XRefType flowType)
+        {
+            switch (flowType)
+            {
+                case XRefType.ConditionalJump:
+                case XRefType.FarCall:
+                case XRefType.NearCall:
+                //case XRefType.Interrupt:
+                case XRefType.FarJump:
+                case XRefType.NearJump:
+                case XRefType.NearIndexedJump:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        protected virtual XRef CreateFlowXRef(
+            XRefType xrefType, Address source, Instruction instruction)
+        {
+            switch (xrefType)
+            {
+                case XRefType.ConditionalJump:
+                case XRefType.FarJump:
+                case XRefType.NearJump:
+                case XRefType.FarCall:
+                case XRefType.NearCall:
+                    return CreateBranchJumpCallXRef(xrefType, source, instruction);
+
+                case XRefType.NearIndexedJump:
+                    throw new NotImplementedException();
+
+                default:
+                    return null;
+            }
+        }
+
+        protected virtual XRef CreateBranchJumpCallXRef(
+            XRefType type, Address source, Instruction instruction)
+        {
+            Address target = ResolveFlowInstructionTarget(instruction.Operands[0]);
+            
+            if (target == Address.Invalid)
+            {
+                AddError(source, ErrorCode.DynamicTarget,
+                    "Cannot determine the target of {0} instruction.", instruction.Operation);
+            }
+            return new XRef(
+                type: type,
+                source: source,
+                target: target
+            );
         }
 
         // TODO: add CurrentInstruction, CurrentLocation member variables
@@ -753,6 +907,10 @@ namespace Disassembler
         /// fix-up information if present.
         /// </summary>
         /// <returns>The decoded instruction.</returns>
+        /// <remarks>
+        /// When overridden, the method must guarantee that the instruction
+        /// is contained in the image, and not into another segment.
+        /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">If offset refers to
         /// a location outside of the image.</exception>
         protected virtual Instruction DecodeInstruction(ImageChunk image, Address address)
@@ -760,8 +918,17 @@ namespace Disassembler
             if (!image.Bounds.Contains(address.Offset))
                 throw new ArgumentOutOfRangeException("offset");
 
-            Instruction instruction = X86Codec.Decoder.Decode(
-                image.Data.Slice(address.Offset), CpuMode.RealAddressMode);
+            Instruction instruction ;
+            try
+            {
+                instruction = X86Codec.Decoder.Decode(
+                    image.Data.Slice(address.Offset), CpuMode.RealAddressMode);
+            }
+            catch (Exception ex)
+            {
+                AddError(address, ErrorCode.InvalidInstruction, "Bad instruction: {0}", ex.Message);
+                return null;
+            }
 
             MakeRelativeOperandSourceAware(instruction, address);
 

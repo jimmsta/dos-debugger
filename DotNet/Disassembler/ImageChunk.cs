@@ -168,6 +168,16 @@ namespace Disassembler
 #endif
         }
 
+        public void AssociateInstruction(int offset, Instruction instruction)
+        {
+            if (!Bounds.Contains(offset) ||
+                !Bounds.Contains(offset + instruction.EncodedLength - 1))
+                throw new ArgumentException();
+
+            UpdateByteType(offset, instruction.EncodedLength, ByteType.Code);
+            Instructions.Add(offset, instruction);
+        }
+
         public Dictionary<int, Instruction> Instructions
         {
             get { return instructions; }

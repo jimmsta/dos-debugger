@@ -115,7 +115,7 @@ namespace Disassembler
         /// User specified entry point (such as program start or symbol).
         /// </summary>
         UserSpecified,
-        
+
         /// <summary>
         /// A JMPN instruction refers to this location.
         /// </summary>
@@ -142,6 +142,11 @@ namespace Disassembler
         /// its target address can always be determined).
         /// </summary>
         ConditionalJump,
+
+        /// <summary>
+        /// Indicates a branch-not-taken or a return-from-call condition.
+        /// </summary>
+        FallThrough,
 
         /// <summary>
         /// A JUMP instruction where the jump target address is given by
