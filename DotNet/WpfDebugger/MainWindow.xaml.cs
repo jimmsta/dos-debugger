@@ -134,8 +134,15 @@ namespace WpfDebugger
         private void DoOpenLibFile(string fileName)
         {
             ObjectLibrary library = OmfLoader.LoadLibrary(fileName);
-            this.program = library;
             library.ResolveAllSymbols();
+
+            LibraryDisassembler dasm = new LibraryDisassembler(library);
+            dasm.AnalyzeAll();
+
+            this.program = library;
+            this.procedureList.Program = program;
+            this.errorList.Program = program;
+            this.segmentList.Program = program;
 
             // Display all unresolved symbols.
             foreach (string key in library.GetUnresolvedSymbols())

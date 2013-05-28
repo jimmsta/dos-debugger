@@ -55,6 +55,11 @@ namespace Disassembler
     /// </summary>
     public class ExternalSymbol : Symbol, IAddressReferent
     {
+        public ExternalSymbol()
+        {
+            this.ResolvedAddress = Address.Invalid;
+        }
+
         public Address ResolvedAddress { get; set; }
 
         public string Label

@@ -300,7 +300,10 @@ namespace Disassembler
 
         public override string ToString()
         {
-            return string.Format("seg{0:0000}:{1:X4}", segment, offset);
+            if (this == Invalid)
+                return "(Invalid)";
+            else
+                return string.Format("seg{0:0000}:{1:X4}", segment, offset);
         }
     }
 

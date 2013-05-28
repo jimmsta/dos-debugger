@@ -199,7 +199,8 @@ namespace Disassembler
     {
         public override string FormatOperand(Operand operand)
         {
-            if (operand is SourceAwareRelativeOperand)
+            if (operand is SourceAwareRelativeOperand &&
+                operand.Tag == null)
                 return FormatOperand((SourceAwareRelativeOperand)operand);
             else
                 return base.FormatOperand(operand);

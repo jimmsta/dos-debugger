@@ -141,7 +141,7 @@ namespace Disassembler
         /// <summary>
         /// Generates control flow graph from existing xrefs.
         /// </summary>
-        private void GenerateControlFlowGraph()
+        protected virtual void GenerateControlFlowGraph()
         {
             foreach (XRef xref in CrossReferences)
             {
@@ -311,7 +311,7 @@ namespace Disassembler
         /// </summary>
         /// <param name="proc"></param>
         /// <param name="xrefs"></param>
-        private void AddBasicBlocksToProcedures()
+        protected virtual void AddBasicBlocksToProcedures()
         {
             foreach (Procedure proc in Procedures)
             {
@@ -332,11 +332,6 @@ namespace Disassembler
             BasicBlock block = BasicBlocks.Find(proc.EntryPoint);
             if (block == null)
                 return false;
-
-            if (proc.EntryPoint.Offset == 0x0B38)
-            {
-                int kk = 1;
-            }
 
             Stack<BasicBlock> queue = new Stack<BasicBlock>();
             queue.Push(block);
