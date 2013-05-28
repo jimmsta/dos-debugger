@@ -260,6 +260,22 @@ namespace WpfDebugger
             get { return location; }
         }
 
+        public string LocationString
+        {
+            get
+            {
+                Segment segment = assembly.GetSegment(location.Segment);
+                if (segment is LogicalSegment)
+                {
+                    return ((LogicalSegment)segment).FullName + "+" + location.Offset.ToString("X4");
+                }
+                else
+                {
+                    return location.ToString();
+                }
+            }
+        }
+
         public virtual Color ForeColor
         {
             get { return Colors.Black; }

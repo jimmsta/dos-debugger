@@ -28,6 +28,8 @@ namespace Disassembler
         [Browsable(true)]
         public string Name { get; internal set; }
 
+        public string FullName { get; internal set; }
+
         /// <summary>
         /// Gets the segment's class, such as "CODE". A segment's name
         /// together with its class name uniquely identifies the segment.

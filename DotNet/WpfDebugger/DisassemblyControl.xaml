@@ -61,7 +61,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock TextTrimming="CharacterEllipsis" 
-                                           Text="{Binding Location,Mode=OneTime}"/>
+                                           Text="{Binding LocationString,Mode=OneTime}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

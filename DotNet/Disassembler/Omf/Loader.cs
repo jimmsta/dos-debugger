@@ -174,6 +174,7 @@ namespace Disassembler
             segment.Combination = def.Combination;
             segment.AbsoluteFrame = def.Frame; // ignore Offset
             segment.Name = def.SegmentName;
+            segment.FullName = module.Name + "." + def.SegmentName;
             segment.Class = def.ClassName; // ignore OverlayName
 
             long length = def.RealLength;
