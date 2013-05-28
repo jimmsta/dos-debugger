@@ -206,7 +206,7 @@ namespace WpfDebugger
 
             public int Size
             {
-                get { return -1; /* Procedure.Size; */ }
+                get { return Procedure.Size; }
             }
 
             public Uri Uri

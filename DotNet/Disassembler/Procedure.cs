@@ -17,6 +17,7 @@ namespace Disassembler
     {
         private Address entryPoint;
         private string name; // TODO: add Names property to store aliases
+        private BasicBlockCollection basicBlocks = new BasicBlockCollection();
 
         /// <summary>
         /// Creates a procedure with the given entry point.
@@ -59,6 +60,11 @@ namespace Disassembler
             get { return new Range<LinearPointer>(this.StartAddress, this.EndAddress); }
         }
 #endif
+
+        public BasicBlockCollection BasicBlocks
+        {
+            get { return basicBlocks; }
+        }
 
         /// <summary>
         /// Adds a basic block to the procedure.
@@ -115,7 +121,23 @@ namespace Disassembler
         }
 
         //public ProcedureFeatures Features { get; private set; }
-        //public int Size { get; private set; }
+
+        /// <summary>
+        /// Gets the size, in bytes, of the procedure. This is the total size
+        /// of its basic blocks. This size does NOT include data.
+        /// </summary>
+        public int Size
+        {
+            get
+            {
+                int size = 0;
+                foreach (BasicBlock block in basicBlocks)
+                {
+                    size += block.Length;
+                }
+                return size;
+            }
+        }
 
         /// <summary>
         /// Adds a basic block to the procedure.

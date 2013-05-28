@@ -179,14 +179,14 @@ namespace Disassembler
         /// be in the collection.
         /// </summary>
         /// <param name="block"></param>
-        public void SplitBasicBlock(BasicBlock block, Address cutoff)
+        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff)
         {
             if (block == null)
                 throw new ArgumentNullException("block");
             if (!block.Bounds.Contains(cutoff))
                 throw new ArgumentOutOfRangeException("cutoff");
             if (cutoff == block.Location)
-                return;
+                return null;
 
             int k = blocks.IndexOf(block);
             if (k < 0)
@@ -206,6 +206,9 @@ namespace Disassembler
             map.Remove(block.Bounds);
             map.Add(block1.Bounds, block1);
             map.Add(block2.Bounds, block2);
+
+            // Return the two basic blocks.
+            return new BasicBlock[2] { block1, block2 };
         }
 
         #region ICollection Interface Implementation
@@ -275,6 +278,14 @@ namespace Disassembler
                 dataLocation: xref.Source
             );
             controlFlowGraph.Add(xFlow);
+        }
+
+        public IEnumerable<BasicBlock> GetSuccessors(BasicBlock source)
+        {
+            foreach (XRef xref in controlFlowGraph.GetReferencesFrom(source.Location))
+            {
+                yield return Find(xref.Target);
+            }
         }
     }
 }

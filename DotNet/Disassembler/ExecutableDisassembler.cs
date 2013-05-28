@@ -59,6 +59,16 @@ namespace Disassembler
             return new Address(operand.Segment.Value, (int)operand.Offset.Value);
         }
 
+        protected override void GenerateProcedures()
+        {
+            base.GenerateProcedures();
+            foreach (Procedure proc in Procedures)
+            {
+                int offset = proc.EntryPoint.Segment * 16 + proc.EntryPoint.Offset;
+                proc.Name = string.Format("sub_{0:X5}", offset);
+            }
+        }
+
 #if false
         /// <summary>
         /// Checks for segment overlaps and emits error messages for

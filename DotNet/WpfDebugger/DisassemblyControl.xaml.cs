@@ -29,18 +29,19 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(Assembly assembly, Segment segment)
+        public void SetView(Assembly assembly, Segment segment, int offset)
         {
             this.DataContext = null;
 
             this.viewModel = new ListingViewModel(assembly, segment);
             this.DataContext = viewModel;
+            GoToAddress(offset);
         }
 
-#if false
-        public void GoToAddress(LogicalAddress address)
+#if true
+        public void GoToAddress(int offset)
         {
-            int index = viewModel.FindRowIndex(address.LinearAddress);
+            int index = viewModel.FindRowIndex(offset);
 
             // Scroll to the bottom first so that the actual item will be
             // on the top when we scroll again.

@@ -263,7 +263,7 @@ namespace Disassembler
         /// <summary>
         /// Represents an invalid (null) address.
         /// </summary>
-        public static readonly Address Invalid = new Address();
+        public static readonly Address Invalid = new Address(-1, -1);
 
         /// <summary>
         /// Compares this address to another address lexicographically; that

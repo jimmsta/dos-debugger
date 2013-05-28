@@ -59,6 +59,7 @@ namespace Disassembler
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
             GenerateProcedures();
+            AddBasicBlocksToProcedures();
         }
 
         /// <summary>
@@ -133,7 +134,10 @@ namespace Disassembler
                     proc.AddBasicBlock(block);
 #endif
                 }
-
+                if (entry.Source.Offset == 0x0B44)
+                {
+                    int kk = 1;
+                }
                 CrossReferences.Add(entry);
             }
         }
@@ -149,6 +153,9 @@ namespace Disassembler
                 // point) or target (e.g. dynamic call or jump).
                 if (xref.Source == Address.Invalid ||
                     xref.Target == Address.Invalid)
+                    continue;
+                if (xref.Type == XRefType.NearCall ||
+                    xref.Type == XRefType.FarCall)
                     continue;
 
                 // Find the basic blocks that owns the source location
@@ -177,6 +184,8 @@ namespace Disassembler
             foreach (XRef xref in CrossReferences)
             {
                 Address entryPoint = xref.Target;
+                if (entryPoint == Address.Invalid)
+                    continue;
                 CallType callType =
                     (xref.Type == XRefType.NearCall) ? CallType.Near :
                     (xref.Type == XRefType.FarCall) ? CallType.Far : CallType.Unknown;
@@ -263,18 +272,49 @@ namespace Disassembler
         /// </summary>
         /// <param name="proc"></param>
         /// <param name="xrefs"></param>
-        private void MapBasicBlocksToProcedures(Procedure proc, XRefCollection xrefs)
+        private void AddBasicBlocksToProcedures()
         {
-#if false
+            foreach (Procedure proc in Procedures)
+            {
+                AddBasicBlocksToProcedure(proc);
+            }
+        }
+
+        /// <summary>
+        /// Adds all basic blocks, starting from the procedure's entry point,
+        /// to the procedure's list of owning blocks. Note that multiple
+        /// procedures may share one or more basic blocks.
+        /// </summary>
+        /// <param name="proc"></param>
+        protected virtual bool AddBasicBlocksToProcedure(Procedure proc)
+        {
             // TODO: introduce ProcedureAlias, so that we don't need to
             // analyze the same procedure twice.
+            BasicBlock block = BasicBlocks.Find(proc.EntryPoint);
+            if (block == null)
+                return false;
 
-            LogicalAddress entryPoint = proc.EntryPoint;
-            ResolvedAddress address = entryPoint.ResolvedAddress;
-            // TODO: we need to make BasicBlock dependent on ResolvedAddress
-            BasicBlock block = address.Image.BasicBlocks.GetValueOrDefault(address.Offset);
+            if (proc.EntryPoint.Offset == 0x0B38)
+            {
+                int kk = 1;
+            }
 
-#endif
+            Stack<BasicBlock> queue = new Stack<BasicBlock>();
+            queue.Push(block);
+
+            while (queue.Count > 0)
+            {
+                BasicBlock parent = queue.Pop();
+                if (!proc.BasicBlocks.Contains(parent))
+                {
+                    proc.BasicBlocks.Add(parent);
+                    foreach (BasicBlock child in this.BasicBlocks.GetSuccessors(parent))
+                    {
+                        queue.Push(child);
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -464,7 +504,12 @@ namespace Disassembler
                         start.Source);
                     return null;
                 }
-                BasicBlocks.SplitBasicBlock(block, ip);
+                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip);
+
+                // Create a xref from the previous block to this block.
+                XRef xref = CreateFallThroughXRef(GetLastInstructionInBasicBlock(subBlocks[0]), ip);
+                xrefs.Add(xref);
+
                 return null;
             }
             // TODO: Move the above into a separate procedure.
@@ -485,12 +530,6 @@ namespace Disassembler
                     break;
                 }
                 Address instructionEnd = ip + insn.EncodedLength;
-
-                // Debug
-                if (ip.Offset == 0x0118)
-                {
-                    int kk = 1;
-                }
 
                 // Advance the instruction pointer.
                 ip = instructionEnd;
@@ -907,6 +946,15 @@ namespace Disassembler
         }
 
         #endregion
+
+        private Address GetLastInstructionInBasicBlock(BasicBlock block)
+        {
+            Address ip = block.Bounds.End - 1;
+            ImageChunk image = ResolveSegment(ip.Segment);
+            while (!image[ip.Offset].IsLeadByte)
+                ip = ip - 1;
+            return ip;
+        }
 
         protected void AddError(
             Address location, ErrorCode errorCode,

@@ -169,7 +169,7 @@
                             <avalonDock:LayoutAnchorable ContentId="libraryBrowser" Title="Library">
                                 <my:LibraryBrowserControl x:Name="libraryBrowser"
                                                           RequestProperty="libraryBrowser_RequestProperty"
-                                                          RequestNavigate="libraryBrowser_RequestNavigate"/>
+                                                          RequestNavigate="OnRequestNavigate"/>
                             </avalonDock:LayoutAnchorable>
                         </avalonDock:LayoutAnchorGroup>
                     </avalonDock:LayoutAnchorSide>
