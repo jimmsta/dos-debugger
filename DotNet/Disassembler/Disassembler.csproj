@@ -77,19 +77,19 @@
     <Compile Include="BinaryImage.cs" />
     <Compile Include="DisassemblerBase.cs" />
     <Compile Include="Error.cs" />
-    <Compile Include="Executable.cs" />
-    <Compile Include="ExecutableDisassembler.cs" />
-    <Compile Include="ExecutableImage.cs" />
-    <Compile Include="Fixup.cs" />
+    <Compile Include="Executable\Executable.cs" />
+    <Compile Include="Executable\ExecutableDisassembler.cs" />
+    <Compile Include="Executable\ExecutableImage.cs" />
     <Compile Include="FunctionSignature.cs" />
-    <Compile Include="ImageChunk.cs" />
-    <Compile Include="LibraryDisassembler.cs" />
-    <Compile Include="LibraryImage.cs" />
-    <Compile Include="LogicalSegment.cs" />
+    <Compile Include="Library\Fixup.cs" />
+    <Compile Include="Library\LibraryDisassembler.cs" />
+    <Compile Include="Library\LibraryImage.cs" />
+    <Compile Include="Library\LogicalSegment.cs" />
+    <Compile Include="Library\ObjectLibrary.cs" />
+    <Compile Include="Library\ObjectModule.cs" />
+    <Compile Include="Library\SegmentGroup.cs" />
     <Compile Include="MemoryModel.cs" />
     <Compile Include="MZLoader.cs" />
-    <Compile Include="ObjectLibrary.cs" />
-    <Compile Include="ObjectModule.cs" />
     <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\FixupRecord.cs">
       <SubType>Code</SubType>
@@ -106,10 +106,9 @@
     <Compile Include="Segment.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="SegmentGroup.cs" />
     <Compile Include="Symbol.cs" />
     <Compile Include="Symbolic.cs" />
-    <Compile Include="LogicalXRef.cs" />
+    <Compile Include="XRef.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Util\Util-v2.0.csproj">

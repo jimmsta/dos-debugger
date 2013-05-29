@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using X86Codec;
-using System.Diagnostics;
 using Util.Data;
 
 namespace Disassembler
@@ -12,21 +9,21 @@ namespace Disassembler
     /// A xref between code and code is analog to an edge in a Control Flow 
     /// Graph.
     /// </summary>
-    public class XRef : IGraphEdge<LinearPointer>
+    public class XRef : IGraphEdge<Address>
     {
         /// <summary>
-        /// Gets the target address being referenced. This may be
-        /// <code>Pointer.Invalid</code> if the target address cannot be
-        /// determined, such as in a dynamic jump or call.
+        /// Gets the target address being referenced. This may be set to
+        /// <code>ResolvedAddress.Invalid</code> if the target address cannot
+        /// be determined, such as in a dynamic jump or call.
         /// </summary>
-        public Pointer Target { get; private set; }
+        public Address Target { get; private set; }
 
         /// <summary>
-        /// Gets the source address that refers to target. This may be
-        /// <code>Pointer.Invalid</code> if the source address cannot be
-        /// determined, such as in the entry routine of a program.
+        /// Gets the source address that refers to target. This may be set to
+        /// <code>ResolvedAddress.Invalid</code> if the source address cannot
+        /// be determined, such as in the entry routine of a program.
         /// </summary>
-        public Pointer Source { get; private set; }
+        public Address Source { get; private set; }
 
         /// <summary>
         /// Gets the type of this cross-reference.
@@ -38,25 +35,29 @@ namespace Disassembler
         /// if Type is NearIndexedJump or FarIndexedJump, where DataLocation
         /// contains the address of the jump table entry.
         /// </summary>
-        public Pointer DataLocation { get; private set; }
+        public Address DataLocation { get; private set; }
 
+        //public XRefContext Context { get; set; }
+
+#if false
         /// <summary>
         /// Returns true if this xref is dynamic, i.e. its Target address
-        /// contains <code>Pointer.Invalid</code>.
+        /// contains <code>LogicalAddress.Invalid</code>.
         /// </summary>
         public bool IsDynamic
         {
-            get { return Target == Pointer.Invalid; }
+            get { return Target == Address.Invalid; }
         }
+#endif
 
         public XRef()
         {
-            this.Source = Pointer.Invalid;
-            this.Target = Pointer.Invalid;
-            this.DataLocation = Pointer.Invalid;
+            this.Source = Address.Invalid;
+            this.Target = Address.Invalid;
+            this.DataLocation = Address.Invalid;
         }
 
-        public XRef(XRefType type, Pointer source, Pointer target, Pointer dataLocation)
+        public XRef(XRefType type, Address source, Address target, Address dataLocation)
         {
             this.Source = source;
             this.Target = target;
@@ -64,8 +65,8 @@ namespace Disassembler
             this.DataLocation = dataLocation;
         }
 
-        public XRef(XRefType type, Pointer source, Pointer target)
-            : this(type, source, target, Pointer.Invalid)
+        public XRef(XRefType type, Address source, Address target)
+            : this(type, source, target, Address.Invalid)
         {
         }
 
@@ -80,11 +81,11 @@ namespace Disassembler
         /// </summary>
         public static int CompareByLocation(XRef x, XRef y)
         {
-            int cmp = x.Source.LinearAddress.CompareTo(y.Source.LinearAddress);
+            int cmp = x.Source.CompareTo(y.Source);
             if (cmp == 0)
-                cmp = x.Target.LinearAddress.CompareTo(y.Target.LinearAddress);
+                cmp = x.Target.CompareTo(y.Target);
             if (cmp == 0)
-                cmp = x.DataLocation.LinearAddress.CompareTo(y.DataLocation.LinearAddress);
+                cmp = x.DataLocation.CompareTo(y.DataLocation);
             return cmp;
         }
 
@@ -95,17 +96,8 @@ namespace Disassembler
         /// </summary>
         public static int CompareByPriority(XRef x, XRef y)
         {
-            return (int)x.Type - (int)y.Type;
-        }
-
-        LinearPointer IGraphEdge<LinearPointer>.Source
-        {
-            get { return this.Source.LinearAddress; }
-        }
-
-        LinearPointer IGraphEdge<LinearPointer>.Target
-        {
-            get { return this.Target.LinearAddress; }
+            int cmp = (int)x.Type - (int)y.Type;
+            return cmp;
         }
     }
 
@@ -115,17 +107,15 @@ namespace Disassembler
     /// </summary>
     public enum XRefType
     {
-#if false
-        /// <summary>
-        /// User specified entry point (such as program start).
-        /// </summary>
-        UserSpecified,
-#endif
-
         /// <summary>
         /// Indicates that the XRef object is invalid.
         /// </summary>
         None = 0,
+
+        /// <summary>
+        /// User specified entry point (such as program start or symbol).
+        /// </summary>
+        UserSpecified,
 
         /// <summary>
         /// A JMPN instruction refers to this location.
@@ -155,6 +145,11 @@ namespace Disassembler
         ConditionalJump,
 
         /// <summary>
+        /// Indicates a branch-not-taken or a return-from-call condition.
+        /// </summary>
+        FallThrough,
+
+        /// <summary>
         /// A JUMP instruction where the jump target address is given by
         /// a memory location (such as jump table). ??????
         /// </summary>
@@ -178,7 +173,41 @@ namespace Disassembler
         /// entry is stored in the DataLocation field of the XRef object.
         /// </summary>
         /* FarIndexedJump, */
+
+        /// <summary>
+        /// An INT xx or INTO instruction. The Source is the location of the
+        /// instruction, and Target.Offset is the interrupt number.
+        /// </summary>
+        Interrupt,
+
+        /// <summary>
+        /// An IRET instruction.
+        /// </summary>
+        InterruptReturn,
+
+        /// <summary>
+        /// A RET instruction.
+        /// </summary>
+        NearReturn,
+
+        /// <summary>
+        /// A RETF instruction.
+        /// </summary>
+        FarReturn,
+
+        /// <summary>
+        /// A HLT instruction.
+        /// </summary>
+        Halt,
     }
+
+    /// <summary>
+    /// Provides additional information related to a cross reference.
+    /// </summary>
+    //public class XRefContext
+    //{
+    //    public LogicalAddress LogicalTarget;
+    //}
 
     /// <summary>
     /// Maintains a collection of cross references and provides methods to
@@ -186,17 +215,14 @@ namespace Disassembler
     /// </summary>
     public class XRefCollection : ICollection<XRef>
     {
-        private Range<LinearPointer> addressRange;
-        private Graph<LinearPointer, XRef> graph;
+        readonly Graph<Address, XRef> graph;
 
         /// <summary>
-        /// Creates a cross reference collection for the given image.
+        /// Creates a cross reference collection.
         /// </summary>
-        /// <param name="image"></param>
-        public XRefCollection(Range<LinearPointer> addressRange)
+        public XRefCollection()
         {
-            this.addressRange = addressRange;
-            this.graph = new Graph<LinearPointer, XRef>(XRef.CompareByLocation);
+            this.graph = new Graph<Address, XRef>();
         }
 
         /// <summary>
@@ -221,29 +247,20 @@ namespace Disassembler
             {
                 throw new ArgumentNullException("xref");
             }
-            if (xref.Source == Pointer.Invalid && xref.Target == Pointer.Invalid)
+            if (xref.Source == Address.Invalid &&
+                xref.Target == Address.Invalid)
             {
-                throw new ArgumentException("can't have both source and target invalid");
-            }
-            if (xref.Source != Pointer.Invalid)
-            {
-                if (!addressRange.Contains(xref.Source.LinearAddress))
-                    throw new ArgumentException("xref.Source is out of range.");
-            }
-            if (xref.Target != Pointer.Invalid)
-            {
-                if (!addressRange.Contains(xref.Target.LinearAddress))
-                    throw new ArgumentException("xref.Target is out of range.");
+                throw new ArgumentException("Source and Target cannot be both Invalid.");
             }
 
             graph.AddEdge(xref);
 
             // Raise the XRefAdded event.
-            if (XRefAdded != null)
-            {
-                XRefAddedEventArgs e = new XRefAddedEventArgs(xref);
-                XRefAdded(this, e);
-            }
+            //if (XRefAdded != null)
+            //{
+            //    LogicalXRefAddedEventArgs e = new LogicalXRefAddedEventArgs(xref);
+            //    XRefAdded(this, e);
+            //}
         }
 
         /// <summary>
@@ -252,7 +269,7 @@ namespace Disassembler
         /// <returns></returns>
         public IEnumerable<XRef> GetDynamicReferences()
         {
-            return graph.GetIncomingEdges(Pointer.Invalid.LinearAddress);
+            return graph.GetIncomingEdges(Address.Invalid);
         }
 
         /// <summary>
@@ -261,12 +278,8 @@ namespace Disassembler
         /// </summary>
         /// <param name="target"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesTo(LinearPointer target)
+        public IEnumerable<XRef> GetReferencesTo(Address target)
         {
-            if (!addressRange.Contains(target))
-            {
-                throw new ArgumentOutOfRangeException("target");
-            }
             return graph.GetIncomingEdges(target);
         }
 
@@ -275,22 +288,18 @@ namespace Disassembler
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        public IEnumerable<XRef> GetReferencesFrom(LinearPointer source)
+        public IEnumerable<XRef> GetReferencesFrom(Address source)
         {
-            if (!addressRange.Contains(source))
-            {
-                throw new ArgumentOutOfRangeException("source");
-            }
             return graph.GetOutgoingEdges(source);
         }
 
-        public event EventHandler<XRefAddedEventArgs> XRefAdded;
+        //public event EventHandler<LogicalXRefAddedEventArgs> XRefAdded;
 
         #region ICollection Interface Implementation
 
         public bool Contains(XRef item)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public void CopyTo(XRef[] array, int arrayIndex)
@@ -305,7 +314,7 @@ namespace Disassembler
 
         public bool Remove(XRef item)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public IEnumerator<XRef> GetEnumerator()
@@ -315,19 +324,21 @@ namespace Disassembler
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return graph.Edges.GetEnumerator();
+            return GetEnumerator();
         }
 
         #endregion
     }
 
-    public class XRefAddedEventArgs : EventArgs
+#if false
+    public class LogicalXRefAddedEventArgs : EventArgs
     {
         public XRef XRef { get; private set; }
 
-        public XRefAddedEventArgs(XRef xref)
+        public LogicalXRefAddedEventArgs(XRef xref)
         {
             this.XRef = xref;
         }
     }
+#endif
 }
