@@ -15,8 +15,14 @@ namespace Disassembler
     /// </summary>
     public abstract class DisassemblerBase
     {
-        protected DisassemblerBase()
+        protected readonly BinaryImage image;
+
+        protected DisassemblerBase(BinaryImage image)
         {
+            if (image == null)
+                throw new ArgumentNullException("image");
+
+            this.image = image;
         }
 
         /// <summary>
@@ -460,7 +466,7 @@ namespace Disassembler
         /// <param name="segmentId">Id of the segment to resolve.</param>
         /// <returns>The image associated with the given segment, or null if
         /// the segment id is invalid.</returns>
-        protected abstract ImageChunk ResolveSegment(int segmentId);
+        //protected abstract ImageChunk ResolveSegment(int segmentId);
 
         #region Flow Analysis Methods
 
@@ -484,9 +490,8 @@ namespace Disassembler
         protected virtual BasicBlock AnalyzeBasicBlock(XRef start, ICollection<XRef> xrefs)
         {
             Address ip = start.Target; // instruction pointer
-            ImageChunk image = ResolveSegment(ip.Segment);
 
-            if (image == null || !image.Bounds.Contains(ip.Offset))
+            if (!image.IsAddressValid(ip))
             {
                 AddError(ip, ErrorCode.OutOfImage,
                    "XRef target is outside of the image (referred from {0})",
@@ -495,7 +500,7 @@ namespace Disassembler
             }
 
             // Check if the entry address is already analyzed.
-            ImageByte b = image[ip.Offset];
+            ByteAttribute b = image[ip];
             if (b.Type != ByteType.Unknown)
             {
                 // Fail if we ran into data or padding while expecting code.
@@ -555,7 +560,7 @@ namespace Disassembler
             {
                 // Decode an instruction at this location.
                 Address instructionStart = ip;
-                Instruction insn = CreateInstruction(image, ip, start);
+                Instruction insn = CreateInstruction(ip, start);
                 if (insn == null)
                 {
                     AddError(ip, ErrorCode.BrokenBasicBlock,
@@ -596,16 +601,15 @@ namespace Disassembler
                 // If the new location is already analyzed as code, create a
                 // control-flow edge from the previous block to the existing
                 // block, and we are done.
-                if (!image.Bounds.Contains(ip.Offset))
+                if (!image.IsAddressValid(ip))
                 {
                     blockType = BasicBlockType.Broken;
                     break;
                 }
-                if (image[ip.Offset].Type == ByteType.Code)
+                if (image[ip].Type == ByteType.Code)
                 {
-                    System.Diagnostics.Debug.Assert(image[ip.Offset].IsLeadByte);
+                    System.Diagnostics.Debug.Assert(image[ip].IsLeadByte);
 
-                    // TBD: create fall-through xref.
                     XRef xref = CreateFallThroughXRef(instructionStart, instructionEnd);
                     xrefs.Add(xref);
                     blockType = BasicBlockType.FallThrough;
@@ -902,16 +906,15 @@ namespace Disassembler
         /// <param name="image"></param>
         /// <param name="address"></param>
         /// <returns></returns>
-        protected virtual Instruction CreateInstruction(
-            ImageChunk image, Address address, XRef entry)
+        protected virtual Instruction CreateInstruction(Address address, XRef entry)
         {
-            Instruction instruction = DecodeInstruction(image, address);
+            Instruction instruction = DecodeInstruction(address);
             if (instruction == null)
                 return null;
 
             // Check that the bytes covered by the decoded instruction are
             // unanalyzed.
-            if (!image.CheckByteType(address.Offset, instruction.EncodedLength, ByteType.Unknown))
+            if (!image.CheckByteType(address, address + instruction.EncodedLength, ByteType.Unknown))
             {
                 AddError(address, ErrorCode.OverlappingInstruction,
                     "Ran into the middle of code when processing block {0} referred from {1}",
@@ -920,7 +923,8 @@ namespace Disassembler
             }
 
             // Create a code piece for this instruction.
-            image.AssociateInstruction(address.Offset, instruction);
+            image.UpdateByteType(address, address + instruction.EncodedLength, ByteType.Code);
+            image.SetInstruction(address, instruction);
 
             // Return the decoded instruction.
             return instruction;
@@ -937,16 +941,16 @@ namespace Disassembler
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">If offset refers to
         /// a location outside of the image.</exception>
-        protected virtual Instruction DecodeInstruction(ImageChunk image, Address address)
+        protected virtual Instruction DecodeInstruction(Address address)
         {
-            if (!image.Bounds.Contains(address.Offset))
-                throw new ArgumentOutOfRangeException("offset");
+            if (!image.IsAddressValid(address))
+                throw new ArgumentOutOfRangeException("address");
 
             Instruction instruction ;
             try
             {
                 instruction = X86Codec.Decoder.Decode(
-                    image.Data.Slice(address.Offset), CpuMode.RealAddressMode);
+                    image.GetBytes(address), CpuMode.RealAddressMode);
             }
             catch (Exception ex)
             {
@@ -985,8 +989,7 @@ namespace Disassembler
         private Address GetLastInstructionInBasicBlock(BasicBlock block)
         {
             Address ip = block.Bounds.End - 1;
-            ImageChunk image = ResolveSegment(ip.Segment);
-            while (!image[ip.Offset].IsLeadByte)
+            while (!image[ip].IsLeadByte)
                 ip = ip - 1;
             return ip;
         }

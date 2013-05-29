@@ -8,159 +8,46 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Stores the analysis results of an executable image. This class only
-    /// takes care of book-keeping; it does not analyze the image. The 
-    /// analysis is done by Disassembler.
+    /// Defines an abstract class that provides methods to access the bytes
+    /// in a binary image and keep track of analysis results.
     /// </summary>
-    public class BinaryImage : ByteBlock // might rename to Module
+    /// <remarks>
+    /// This class only takes care of book-keeping; it does not analyze the
+    /// image. The analysis is done by DisassemblerBase.
+    /// </remarks>
+    public abstract class BinaryImage
     {
-        private byte[] image;
-        private Pointer baseAddress;
-        private ByteProperties[] attr;
-
-        private List<BasicBlock> blocks = new List<BasicBlock>();
-
-        /// <summary>
-        /// Maintains a collection of procedures contained in this image.
-        /// </summary>
-        private ProcedureCollection procedures;
-
-        /// <summary>
-        /// Dictionary that maps a 16-bit segment address to a Segment
-        /// object. 
-        /// </summary>
-        private SortedList<UInt16, Segment> segments
-            = new SortedList<UInt16, Segment>();
-
-        /// <summary>
-        /// Maintains a collection of cross references in this image.
-        /// </summary>
-        private XRefCollection xrefs;
-
-        /// <summary>
-        /// -Maintains a dictionary that maps an offset to an Error object
-        /// -where the error occurred at this offset.
-        /// </summary>
-        private List<Error> errors = new List<Error>();
-
-        public List<Error> Errors { get { return errors; } }
-
-        /// <summary>
-        /// Creates a binary image with the given data and base address.
-        /// </summary>
-        /// <param name="image"></param>
-        /// <param name="baseAddress"></param>
-        /// <exception cref="ArgumentNullException">If image is null.
-        /// </exception>
-        public BinaryImage(byte[] image, Pointer baseAddress)
-            : base(baseAddress.LinearAddress, baseAddress.LinearAddress + image.Length)
+        public BinaryImage()
         {
-            if (image == null)
-                throw new ArgumentNullException("image");
-            if (baseAddress.LinearAddress.Address + image.Length > 0x100000)
-                throw new ArgumentOutOfRangeException("baseAddress",
-                    "The image will not fit in 1MB address space.");
+        }
+        
+        /// <summary>
+        /// Returns true if the supplied address refers to an accessible byte
+        /// in the image.
+        /// </summary>
+        /// <param name="address">The address to check.</param>
+        /// <returns>true if the address is valid, false otherwise.</returns>
+        public abstract bool IsAddressValid(Address address);
 
-            this.image = image;
-            this.baseAddress = baseAddress;
-
-            this.attr = new ByteProperties[image.Length];
-            for (int i = 0; i < attr.Length; i++)
-            {
-                attr[i] = new ByteProperties();
-            }
-
-            this.xrefs = new XRefCollection(this.AddressRange);
-            this.procedures = new ProcedureCollection(this);
+        /// <summary>
+        /// Returns information about a byte the given address.
+        /// </summary>
+        /// <param name="address">Address of the byte to return.</param>
+        /// <returns></returns>
+        public ByteAttribute this[Address address]
+        {
+            get { return GetByteAttribute(address); }
         }
 
-        /// <summary>
-        /// Gets the underlying executable image.
-        /// </summary>
-        /// <remarks>
-        /// This property MUST be set to Browsable(false). Otherwise the WPF
-        /// PropertyGrid (either the one from WpfToolkits or the one bundled
-        /// in Workflow Foundation) will hang. It appears that they use a
-        /// O(n^2) algorithm to prepare the PropertyGrid (where n is the
-        /// number of items in the array), and ironically doesn't display
-        /// anything in the end.
-        /// </remarks>
-        [Browsable(false)]
-        public byte[] Image
-        {
-            get { return image; }
-        }
+        protected abstract ByteAttribute GetByteAttribute(Address address);
+
+        protected abstract void SetByteAttribute(Address address, ByteAttribute attr);
+
+        public abstract Instruction GetInstruction(Address address);
+
+        public abstract void SetInstruction(Address address, Instruction instruction);
 
 #if false
-        // The following code shows how to hang PropertyGrid.
-        private byte[] a = new byte[100000];
-        [Browsable(true)]
-        public IEnumerable<byte> Dummy
-        {
-            get { return a; }
-        }
-#endif
-
-        [Browsable(false)]
-        public Range<LinearPointer> AddressRange
-        {
-            get { return new Range<LinearPointer>(StartAddress, EndAddress); }
-        }
-
-        /// <summary>
-        /// Returns an object that encapsulates the byte at the given address.
-        /// </summary>
-        /// <param name="address">Address of the byte to return.</param>
-        /// <returns></returns>
-        public ByteProperties this[LinearPointer address]
-        {
-            get
-            {
-                int offset = address - this.StartAddress;
-                if (offset < 0 || offset >= attr.Length)
-                    throw new ArgumentOutOfRangeException("address");
-                return attr[offset];
-            }
-        }
-
-        /// <summary>
-        /// Returns an object that encapsulates the byte at the given address.
-        /// </summary>
-        /// <param name="address">Address of the byte to return.</param>
-        /// <returns></returns>
-        public ByteProperties this[Pointer address]
-        {
-            get { return this[address.LinearAddress]; }
-        }
-
-        /// <summary>
-        /// Gets the CS:IP address of the first byte in the image.
-        /// </summary>
-        [Browsable(true)]
-        public Pointer BaseAddress
-        {
-            get { return baseAddress; }
-        }
-
-#if true
-        /// <summary>
-        /// Converts a CS:IP pointer to its offset within the executable
-        /// image. Note that different CS:IP pointers may correspond to the
-        /// same offset.
-        /// </summary>
-        /// <param name="address">The CS:IP address to convert.</param>
-        /// <returns>An offset that may be outside the image.</returns>
-        private int PointerToOffset(Pointer address)
-        {
-            return address.LinearAddress - baseAddress.LinearAddress;
-        }
-
-        private int PointerToOffset(LinearPointer address)
-        {
-            return address - baseAddress.LinearAddress;
-        }
-#endif
-
         /// <summary>
         /// Decodes an instruction at the given address. In addition to being
         /// a shortcut for X86Codec.Decoder.Decode(...), this method does the
@@ -194,25 +81,31 @@ namespace Disassembler
             }
             return instruction;
         }
+#endif
 
-        public bool IsAddressValid(LinearPointer address)
+        /// <summary>
+        /// Gets the underlying binary data at the given location.
+        /// </summary>
+        /// <param name="address">Address to return.</param>
+        /// <param name="count">Number of bytes to return. Must be within the
+        /// segment.</param>
+        /// <returns></returns>
+        public abstract ArraySegment<byte> GetBytes(Address address, int count);
+
+        /// <summary>
+        /// Gets all data within the segment starting at the given address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public abstract ArraySegment<byte> GetBytes(Address address);
+
+        public UInt16 GetUInt16(Address address)
         {
-            return (address >= StartAddress) && (address < EndAddress);
+            ArraySegment<byte> x = GetBytes(address, 2);
+            return (UInt16)(x.Array[x.Offset] | (x.Array[x.Offset + 1] << 8));
         }
 
-        public byte[] GetBytes(LinearPointer address, int count)
-        {
-            int offset = PointerToOffset(address);
-            if (offset < 0 || offset > image.Length)
-                throw new ArgumentOutOfRangeException("address");
-            if (count < 0 || offset + count > image.Length)
-                throw new ArgumentOutOfRangeException("count");
-
-            byte[] result = new byte[count];
-            Array.Copy(image, offset, result, 0, count);
-            return result;
-        }
-
+#if false
         /// <summary>
         /// Reads a 16-bit unsigned integer from the given linear address.
         /// </summary>
@@ -227,28 +120,65 @@ namespace Disassembler
 
             return (UInt16)(image[offset] | (image[offset + 1] << 8));
         }
+#endif
 
         /// <summary>
-        /// Returns true if all the bytes within [start, end) are of type
-        /// 'type'.
+        /// Returns true if all bytes within the given address range are of
+        /// the given type.
         /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public bool CheckByteType(Pointer start, Pointer end, ByteType type)
+        public bool CheckByteType(Address startAddress, Address endAddress, ByteType type)
         {
-            int pos1 = PointerToOffset(start);
-            int pos2 = PointerToOffset(end);
-            
-            for (int i = pos1; i < pos2; i++)
+            if (startAddress.Segment!=endAddress.Segment)
+                throw new ArgumentException("startAddress and endAddress must be on the same segment.");
+
+            for (Address p=startAddress;p!=endAddress;p=p+1)
             {
-                if (attr[i].Type != type)
+                if (GetByteAttribute(p).Type != type)
                     return false;
             }
             return true;
         }
 
+        /// <summary>
+        /// Marks a contiguous range of bytes as the given type, and marks
+        /// the first byte in this range as a lead byte.
+        /// </summary>
+        public void UpdateByteType(Address startAddress, Address endAddress, ByteType type)
+        {
+            if (startAddress.Segment!=endAddress.Segment)
+                throw new ArgumentException("startAddress and endAddress must be on the same segment.");
+
+            if (!CheckByteType(startAddress,endAddress,ByteType.Unknown))
+                throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
+
+            for (Address p=startAddress;p!=endAddress;p=p+1)
+            {
+                ByteAttribute attr=new ByteAttribute
+                {
+                    Type=type,
+                    IsLeadByte=(p==startAddress),
+                };
+                SetByteAttribute(p,attr);
+            }
+
+#if false
+            // Update the segment bounds.
+            Segment segment = FindSegment(start.Segment);
+            if (segment == null)
+            {
+                segment = new Segment(start.Segment, start.LinearAddress, end.LinearAddress);
+                segments.Add(start.Segment, segment);
+            }
+            else
+            {
+                // TODO: modify this to use MultiRange.
+                segment.Extend(start.LinearAddress, end.LinearAddress);
+            }
+            return piece;
+#endif
+        }
+
+#if false
         /// <summary>
         /// Marks a continuous range of bytes as an atomic item of the given
         /// type.
@@ -364,52 +294,11 @@ namespace Disassembler
             return true;
         }
 
-        /// <summary>
-        /// Creates a basic block over the given byte range. The basic block
-        /// must cover consecutive Piece objects.
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <returns></returns>
-        public BasicBlock CreateBasicBlock(LinearPointer start, LinearPointer end)
-        {
-            if (start < this.StartAddress || start > this.EndAddress)
-                throw new ArgumentOutOfRangeException("start");
-            if (end < start || end > this.EndAddress)
-                throw new ArgumentOutOfRangeException("end");
-
-            // Verify that the basic block covers continuous code bytes.
-            if (!RangeCoversWholeInstructions(start, end))
-            {
-                throw new ArgumentException("A basic block must consist of whole instructions.");
-            }
-
-            // Verify that no existing basic block overlaps with this range.
-            for (var i = start; i < end; i++)
-            {
-                if (this[i].BasicBlock != null)
-                    throw new ArgumentException("A existing basic block overlaps with this range.");
-            }
-
-            // Update the mapping from byte to basic block.
-            BasicBlock block = new BasicBlock(this, start, end);
-            for (var i = start; i < end; i++)
-            {
-                this[i].BasicBlock = block;
-            }
-
-            // Add the block to our internal list of blocks.
-            blocks.Add(block);
-            return block;
-        }
-
-        [Browsable(true)]
         public ProcedureCollection Procedures
         {
             get { return procedures; }
         }
 
-        [Browsable(true)]
         public XRefCollection CrossReferences
         {
             get { return xrefs; }
@@ -418,105 +307,106 @@ namespace Disassembler
         //class ImageByte : ByteProperties
         //{
         //}
+#endif
     }
 
     /// <summary>
-    /// Contains information about a byte in a binary image.
+    /// 
     /// </summary>
-    public class ByteProperties
+    /// <remarks>
+    /// This is a bit-field, described as below:
+    /// 
+    ///   7   6   5   4   3   2   1   0
+    /// +---+---+---+---+---+---+---+---+
+    /// | - | - | FL| F | L | - |  TYPE |
+    /// +---+---+---+---+---+---+---+---+
+    /// 
+    /// -   : reserved
+    /// TYPE: 00 = unknown
+    ///       01 = padding
+    ///       10 = code
+    ///       11 = data
+    /// L (LeadByte): 0 = not a lead byte
+    ///               1 = is lead byte of code or data
+    /// F (Fix-up):   0 = no fix-up info
+    ///               1 = has fix-up info
+    /// </remarks>
+    public struct ByteAttribute
     {
-        /// <summary>
-        /// Gets or sets the type of the byte.
-        /// </summary>
-        public ByteType Type { get; internal set; }
+        byte attr;
 
-        /// <summary>
-        /// Gets or sets a flag that indicates whether this byte is the first
-        /// byte of an instruction or data item.
-        /// </summary>
-        public bool IsLeadByte { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the CS:IP address that this byte is interpreted as.
-        /// </summary>
-        public Pointer Address { get; internal set; }
-
-        public BasicBlock BasicBlock { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the procedure that owns this byte.
-        /// </summary>
-        public Procedure Procedure { get; internal set; }
-
-        //public Piece Piece { get; internal set; }
-
-        public Instruction Instruction { get; set; }
-
-        public ByteProperties()
+        public ByteType Type
         {
-            this.Address = Pointer.Invalid;
+            get { return (ByteType)(attr & 0x3); }
+            set { attr = (byte)((attr & ~3) | ((int)value & 3)); }
+        }
+
+        public bool IsLeadByte
+        {
+            get { return (attr & 0x08) != 0; }
+            set
+            {
+                if (value)
+                    attr |= 0x08;
+                else
+                    attr &= 0xF7;
+            }
+        }
+
+        public bool HasFixup
+        {
+            get { return (attr & 0x10) != 0; }
+            set
+            {
+                if (value)
+                    attr |= 0x10;
+                else
+                    attr &= 0xEF;
+            }
         }
     }
 
 #if false
-    public struct ByteAttribute
+    /// <summary>
+    /// Provides methods to retrieve the properties of a byte in an image.
+    /// This is a wrapper class that is generated on the fly.
+    /// </summary>
+    public struct ImageByte
     {
-        byte x;
+        ByteAttribute attr
+        readonly byte[] bytes;
+        readonly BinaryImage
+        readonly int index;
 
-        const byte TypeMask = 3;
-        const byte BoundaryBit = 4;
-        const byte BlockStartBit = 8;
-
-        /// <summary>
-        /// Tests whether the byte has been analyzed.
-        /// </summary>
-        public bool IsProcessed
+        public ImageByte(ImageChunk image, int index)
         {
-            get { return Type == ByteType.Code || Type == ByteType.Data; }
+            this.image = image;
+            this.index = index;
         }
 
-        /// <summary>
-        /// Gets or sets the type of the byte.
-        /// </summary>
+        public byte Value
+        {
+            get { return image.Data.GetAt(index); }
+        }
+
         public ByteType Type
         {
-            get { return (ByteType)(x & TypeMask); }
-            set
-            {
-                x = (byte)(x & ~TypeMask | (byte)value);
-            }
+            get { return image.Attributes.GetAt(index).Type; }
         }
 
-        /// <summary>
-        /// Gets or sets a flag that indicates whether the byte is the first
-        /// byte of an instruction or a data item.
-        /// </summary>
-        public bool IsBoundary
+        public bool IsLeadByte
         {
-            get { return (x & BoundaryBit) != 0; }
-            set
-            {
-                if (value)
-                    x |= BoundaryBit;
-                else
-                    x = (byte)(x & ~BoundaryBit);
-            }
+            get { return image.Attributes.GetAt(index).IsLeadByte; }
         }
 
-        /// <summary>
-        /// Gets or sets a flag that indicates whether the byte is the first
-        /// byte of an instruction that starts a basic block.
-        /// </summary>
-        public bool IsBlockStart
+        //public BasicBlock BasicBlock
+        //{
+        //    get { return image.BasicBlockMapping.GetValueOrDefault(index); }
+        //}
+
+        public Instruction Instruction
         {
-            get { return (x & BlockStartBit) != 0; }
-            set
-            {
-                if (value)
-                    x |= BlockStartBit;
-                else
-                    x = (byte)(x & ~BlockStartBit);
-            }
+            get { return image.Instructions[index]; }
         }
     }
 #endif
@@ -548,6 +438,7 @@ namespace Disassembler
         Data = 3,
     }
 
+#if false
     /// <summary>
     /// Represents a range of consecutive bytes that constitute a single
     /// instruction or data item.
@@ -565,113 +456,6 @@ namespace Disassembler
             : base(start, end)
         {
             this.Type = type;
-        }
-    }
-
-    /// <summary>
-    /// Represents a basic block of code.
-    /// </summary>
-    /// <remarks>
-    /// A basic block is a continuous sequence of instructions such that in a
-    /// well-behaved program, if any of these instructions is executed, then
-    /// all the rest instructions must be executed.
-    /// 
-    /// For example, a basic block may begin with an instruction that is the
-    /// target of a JMP instruction, continue execution for a few 
-    /// instructions, and end with another JMP instruction.
-    /// 
-    /// In a control flow graph, each basic block can be represented by a
-    /// node, and the control flow can be expressed as directed edges linking
-    /// these nodes.
-    /// 
-    /// For the purpose in our application, we do NOT terminate a basic block
-    /// when we encounter a CALL instruction. This has the benefit that the
-    /// resulting control flow graph won't have too many nodes that merely
-    /// call another function. 
-    /// </remarks>
-    public class BasicBlock : ByteBlock
-    {
-        private BinaryImage image;
-
-        public BinaryImage Image { get { return image; } }
-
-        internal BasicBlock(BinaryImage image, LinearPointer start, LinearPointer end)
-            : base(start, end)
-        {
-            this.image = image;
-        }
-
-        /// <summary>
-        /// Splits the basic block into two at the given location.
-        /// </summary>
-        /// <param name="location"></param>
-        /// TODO: how does this sync with Procedure.BasicBlocks?
-        internal BasicBlock Split(LinearPointer location)
-        {
-            if (location <= StartAddress || location >= EndAddress)
-                throw new ArgumentException("location must be within [start, end).");
-            if (!image[location].IsLeadByte)
-                throw new ArgumentException("location must be at piece boundary.");
-
-            // Create a new block that covers [location, end).
-            BasicBlock newBlock = new BasicBlock(image, location, EndAddress);
-
-            // Update the BasicBlock property of bytes in the second block.
-            for (var i = location; i < EndAddress; i++)
-            {
-                image[i].BasicBlock = newBlock;
-            }
-
-            // Update the end position of this block.
-            this.EndAddress = location;
-
-            return newBlock;
-        }
-    }
-
-    public class SourceAwareRelativeOperand : RelativeOperand
-    {
-        public Pointer Source { get; private set; }
-        public Pointer Target
-        {
-            get { return Source.IncrementWithWrapping(Offset.Value); }
-        }
-
-        public SourceAwareRelativeOperand(RelativeOperand opr, Pointer source)
-            : base(opr.Offset)
-        {
-            this.Source = source;
-        }
-
-        public override string ToString()
-        {
-            return Target.Offset.ToString("X4");
-        }
-    }
-
-#if false
-    /// <summary>
-    /// Specifies a location in a binary image, which may be referenced either
-    /// by its SEG:OFF address or by its linear address.
-    /// </summary>
-    public struct Location
-    {
-        private Pointer address;
-
-        public Pointer Address
-        {
-            get { return this.address; }
-            set { this.address = value; }
-        }
-
-        public int Position
-        {
-            get { return address.LinearAddress; }
-        }
-
-        public Location(Pointer address)
-        {
-            this.address = address;
         }
     }
 #endif

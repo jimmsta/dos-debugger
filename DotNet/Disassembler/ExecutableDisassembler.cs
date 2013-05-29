@@ -14,6 +14,7 @@ namespace Disassembler
         readonly Executable executable;
 
         public ExecutableDisassembler(Executable executable)
+            : base(executable.Image)
         {
             this.executable = executable;
         }
@@ -31,6 +32,7 @@ namespace Disassembler
             get { return executable; }
         }
 
+#if false
         protected override ImageChunk ResolveSegment(int segmentId)
         {
             var segment = executable.GetSegment(segmentId);
@@ -39,8 +41,9 @@ namespace Disassembler
             else
                 return null;
         }
+#endif
 
-        protected override Instruction DecodeInstruction(ImageChunk image, Address address)
+        protected override Instruction DecodeInstruction(Address address)
         {
             // Check if the address is relocatable. If it is, it
             // cannot be an instruction ah...
@@ -48,7 +51,7 @@ namespace Disassembler
             if (Array.BinarySearch(executable.RelocatableLocations, offset) >= 0)
                 return null;
 
-            return base.DecodeInstruction(image, address);
+            return base.DecodeInstruction(address);
         }
 
         protected override Address ResolveFlowInstructionTarget(PointerOperand operand)

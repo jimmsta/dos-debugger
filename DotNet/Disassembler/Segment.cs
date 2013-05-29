@@ -32,7 +32,7 @@ namespace Disassembler
             }
         }
 
-        public abstract ImageChunk Image { get; }
+        //public abstract ImageChunk Image { get; }
 
         protected virtual string GetLabel()
         {

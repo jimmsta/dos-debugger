@@ -15,6 +15,7 @@ namespace Disassembler
         readonly ObjectLibrary library;
 
         public LibraryDisassembler(ObjectLibrary library)
+            : base(library.Image)
         {
             this.library = library;
         }
@@ -22,11 +23,6 @@ namespace Disassembler
         public override Assembly Assembly
         {
             get { return library; }
-        }
-
-        protected override ImageChunk ResolveSegment(int segmentId)
-        {
-            return library.GetSegment(segmentId).Image;
         }
 
         protected override void GenerateProcedures()
@@ -39,9 +35,9 @@ namespace Disassembler
                     if (symbol.BaseSegment != null)
                     {
                         Address address = new Address(symbol.BaseSegment.Id, (int)symbol.Offset);
-                        if (symbol.BaseSegment.Image.Bounds.Contains((int)symbol.Offset))
+                        if (image.IsAddressValid(address))
                         {
-                            ImageByte b = symbol.BaseSegment.Image[(int)symbol.Offset];
+                            ByteAttribute b = image[address];
                             if (b.Type == ByteType.Code && b.IsLeadByte)
                             {
                                 Procedure proc = Procedures.Find(address);
@@ -58,25 +54,26 @@ namespace Disassembler
             }
         }
 
-        protected override Instruction DecodeInstruction(ImageChunk image, Address address)
+        protected override Instruction DecodeInstruction(Address address)
         {
-            Instruction instruction = base.DecodeInstruction(image, address);
+            Instruction instruction = base.DecodeInstruction(address);
             if (instruction == null)
                 return instruction;
 
             // Find the first fixup that covers the instruction. If no
             // fix-up covers the instruction, find the closest fix-up
             // that comes after.
-            int fixupIndex = image.Fixups.BinarySearch(address.Offset);
+            FixupCollection fixups = library.Image.SegmentImages[address.Segment].Fixups;
+            int fixupIndex = fixups.BinarySearch(address.Offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
 
             for (int i = 0; i < instruction.Operands.Length; i++)
             {
-                if (fixupIndex >= image.Fixups.Count) // no more fixups
+                if (fixupIndex >= fixups.Count) // no more fixups
                     break;
 
-                Fixup fixup = image.Fixups[fixupIndex];
+                Fixup fixup = fixups[fixupIndex];
                 if (fixup.StartIndex >= address.Offset + instruction.EncodedLength) // past end
                     break;
 
@@ -111,9 +108,9 @@ namespace Disassembler
                 }
             }
 
-            if (fixupIndex < image.Fixups.Count)
+            if (fixupIndex < fixups.Count)
             {
-                Fixup fixup = image.Fixups[fixupIndex];
+                Fixup fixup = fixups[fixupIndex];
                 if (fixup.StartIndex < address.Offset + instruction.EncodedLength)
                 {
                     if (IsFloatingPointEmulatorFixup(fixup))

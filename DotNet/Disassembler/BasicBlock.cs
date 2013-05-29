@@ -49,14 +49,14 @@ namespace Disassembler
         }
 #endif
 
-        public BasicBlock(Address begin, Address end, BasicBlockType type, ImageChunk image)
+        public BasicBlock(Address begin, Address end, BasicBlockType type, BinaryImage image)
         {
             if (begin.Segment != end.Segment)
                 throw new ArgumentException("Basic block must be on the same segment.");
             this.location = begin;
             this.length = end.Offset - begin.Offset;
             this.type = type;
-            this.features = ComputeFeatures(image, begin.Offset, end.Offset);
+            this.features = ComputeFeatures(image, begin, end);
         }
 
         public Address Location
@@ -89,12 +89,13 @@ namespace Disassembler
             get { return features; }
         }
 
-        private static CodeFeatures ComputeFeatures(ImageChunk image, int startIndex, int endIndex)
+        private static CodeFeatures ComputeFeatures(
+            BinaryImage image, Address startAddress, Address endAddress)
         {
             CodeFeatures features = CodeFeatures.None;
-            for (int i = startIndex; i < endIndex; )
+            for (Address p = startAddress; p!=endAddress;)
             {
-                Instruction instruction = image[i].Instruction;
+                Instruction instruction = image.GetInstruction(p);
 
                 switch (instruction.Operation)
                 {
@@ -116,7 +117,7 @@ namespace Disassembler
                         break;
                 }
 
-                i += instruction.EncodedLength;
+                p += instruction.EncodedLength;
             }
             return features;
         }
@@ -210,7 +211,7 @@ namespace Disassembler
         /// be in the collection.
         /// </summary>
         /// <param name="block"></param>
-        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, ImageChunk image)
+        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, BinaryImage image)
         {
             if (block == null)
                 throw new ArgumentNullException("block");

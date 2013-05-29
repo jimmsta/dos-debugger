@@ -75,6 +75,7 @@ namespace Disassembler
             get { return Image.Length; }
         }
 
+        internal SegmentImage Image { get; set; }
 
 #if false
         /// <summary>
@@ -100,6 +101,7 @@ namespace Disassembler
             return Name;
         }
 
+#if false
         public override ImageChunk Image
         {
             get { return image; }
@@ -111,6 +113,7 @@ namespace Disassembler
         {
             this.image = image;
         }
+#endif
 
         public override string ToString()
         {

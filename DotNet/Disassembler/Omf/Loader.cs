@@ -182,8 +182,7 @@ namespace Disassembler
             {
                 throw new InvalidDataException("Segment larger than 2GB is not supported.");
             }
-            segment.SetImage(new ImageChunk(def.Data,
-                module.Name + "." + segment.Name));
+            segment.Image = new SegmentImage(def.Data, module.Name + "." + segment.Name);
 
             return segment;
         }

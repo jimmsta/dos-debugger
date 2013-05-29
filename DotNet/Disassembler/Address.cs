@@ -182,16 +182,21 @@ namespace Disassembler
     }
 
     /// <summary>
-    /// Represents an address in an assembly. The address is uniquely
-    /// identified its segment id and its offset within the segment.
+    /// Represents an address in a binary image. The address is uniquely
+    /// represented by a segment selector and an offset within this segment.
     /// </summary>
     /// <remarks>
-    /// The segment id is the one-based index of the segment that contains
-    /// the address, among all segments in an assembly. A segment id of zero
-    /// indicates an invalid segment, which is used as a guard against
-    /// accidental programming error.
+    /// The segment selector uniquely identifies a segment within the binary
+    /// image. Addresses in the same segment are contiguous, but addresses in
+    /// different segments are independent. In particular, the segment
+    /// selector is NOT the frame number as in real mode addressing.
     /// 
-    /// The offset is an integer that references a byte within the segment.
+    /// The offset is a displacement value that references a byte within the
+    /// segment. Note that the addressible byte within a segment may not
+    /// necessarily start from offset zero.
+    /// 
+    /// The special address FFFF:FFFF is used to denote an invalid address.
+    /// 
     /// While 16 bits is adequate to address a byte, it is not sufficient to
     /// express an 'end' index, which is often used in ranges. Therefore, we
     /// use 32 bits to store the offset. This also allows for future extension

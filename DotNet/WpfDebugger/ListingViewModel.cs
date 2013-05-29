@@ -19,7 +19,8 @@ namespace WpfDebugger
         //readonly List<SegmentItem> segmentItems = new List<SegmentItem>();
         //private Disassembler16 dasm;
         //private BinaryImage image;
-        readonly ImageChunk image;
+        readonly BinaryImage image;
+        private int segment;
 
         /// <summary>
         /// Array of the address of each row. This array is used to speed up
@@ -34,9 +35,13 @@ namespace WpfDebugger
 
         public ListingViewModel(Assembly assembly, Segment segment)
         {
-            ImageChunk image = segment.Image;
-            this.image = image;
-
+            if (assembly is Executable)
+                this.image = ((Executable)assembly).Image;
+            else if (assembly is ObjectLibrary)
+                this.image = ((ObjectLibrary)assembly).Image;
+            else
+                this.image = null;
+            
             // Make a list of the errors in this segment. Ideally we should
             // put this logic into ErrorCollection. But for convenience we
             // leave it here for the moment.
@@ -48,12 +53,13 @@ namespace WpfDebugger
             int iError = 0;
 
             // Display analyzed code and data.
+            // TODO: a segment may not start at zero.
             Address address = new Address(segment.Id, 0);
-            for (int i = 0; i < image.Length; )
+            while (image.IsAddressValid(address))
             {
-                ImageByte b = image[i];
+                ByteAttribute b = image[address];
 
-                while (iError < errors.Count && errors[iError].Location.Offset <= i)
+                while (iError < errors.Count && errors[iError].Location.Offset <= address.Offset)
                 {
                     rows.Add(new ErrorListingRow(assembly, errors[iError++]));
                 }
@@ -67,24 +73,27 @@ namespace WpfDebugger
                     }
 #endif
 
-                    Instruction insn = b.Instruction;
+                    Instruction insn = image.GetInstruction(address);
                     System.Diagnostics.Debug.Assert(insn != null);
-                    rows.Add(new CodeListingRow(assembly, address, insn, image.Data.Slice(i, insn.EncodedLength)));
+                    rows.Add(new CodeListingRow(
+                        assembly, address, insn, 
+                        image.GetBytes(address, insn.EncodedLength).ToArray()));
 
                     address += insn.EncodedLength; // TODO: handle wrapping
-                    i += insn.EncodedLength;
                 }
                 else if (IsLeadByteOfData(b))
                 {
-                    var j = i + 1;
-                    while (j < image.Length &&
+                    Address j = address + 1;
+                    while (image.IsAddressValid(j) &&
                            image[j].Type == ByteType.Data &&
                            !image[j].IsLeadByte)
-                        j++;
+                        j += 1;
 
-                    rows.Add(new DataListingRow(assembly, address, image.Data.Slice(i, j - i)));
-                    address += (j - i); // TODO: handle wrapping
-                    i = j;
+                    int count = j.Offset - address.Offset;
+                    rows.Add(new DataListingRow(
+                        assembly, address,
+                        image.GetBytes(address, count).ToArray()));
+                    address = j; // TODO: handle wrapping
                 }
                 else
                 {
@@ -92,14 +101,17 @@ namespace WpfDebugger
                     {
                         //    rows.Add(new ErrorListingRow(errorMap[i]));
                     }
-                    var j = i + 1;
-                    while (j < image.Length &&
+                    Address j = address + 1;
+                    while (image.IsAddressValid(j) &&
                            !IsLeadByteOfCode(image[j]) &&
                            !IsLeadByteOfData(image[j]))
-                        j++;
+                        j += 1;
 
-                    rows.Add(new BlankListingRow(assembly, address, image.Data.Slice(i, j - i)));
-                    address += (j - i); // TODO: handle wrapping
+                    int count = j.Offset - address.Offset;
+                    rows.Add(new BlankListingRow(
+                        assembly, address, 
+                        image.GetBytes(address, count).ToArray()));
+                    address = j; // TODO: handle wrapping
 #if false
                     try
                     {
@@ -110,7 +122,6 @@ namespace WpfDebugger
                         address = Address.Invalid;
                     }
 #endif
-                    i = j;
                 }
             }
 
@@ -153,17 +164,17 @@ namespace WpfDebugger
 #endif
         }
 
-        private static bool IsLeadByteOfCode(ImageByte b)
+        private static bool IsLeadByteOfCode(ByteAttribute b)
         {
             return (b.Type == ByteType.Code && b.IsLeadByte);
         }
 
-        private static bool IsLeadByteOfData(ImageByte b)
+        private static bool IsLeadByteOfData(ByteAttribute b)
         {
             return (b.Type == ByteType.Data && b.IsLeadByte);
         }
 
-        public ImageChunk Image
+        public BinaryImage Image
         {
             get { return image; }
         }

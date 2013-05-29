@@ -74,14 +74,17 @@
     <Compile Include="Address.cs" />
     <Compile Include="Assembly.cs" />
     <Compile Include="BasicBlock.cs" />
+    <Compile Include="BinaryImage.cs" />
     <Compile Include="DisassemblerBase.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="Executable.cs" />
     <Compile Include="ExecutableDisassembler.cs" />
+    <Compile Include="ExecutableImage.cs" />
     <Compile Include="Fixup.cs" />
     <Compile Include="FunctionSignature.cs" />
     <Compile Include="ImageChunk.cs" />
     <Compile Include="LibraryDisassembler.cs" />
+    <Compile Include="LibraryImage.cs" />
     <Compile Include="LogicalSegment.cs" />
     <Compile Include="MemoryModel.cs" />
     <Compile Include="MZLoader.cs" />

@@ -40,6 +40,8 @@ namespace Disassembler
         public readonly SortedDictionary<string, List<ObjectModule>> Symbols
             = new SortedDictionary<string, List<ObjectModule>>();
 
+        public LibraryImage Image { get; set; }
+
         public IEnumerable<string> GetUnresolvedSymbols()
         {
             foreach (var kv in Symbols)
@@ -64,13 +66,15 @@ namespace Disassembler
 
         public void AssignIdsToSegments()
         {
+            this.Image = new LibraryImage();
             int id = 0;
             foreach (ObjectModule module in Modules)
             {
                 foreach (LogicalSegment segment in module.Segments)
                 {
-                    ++id;
                     segment.Id = id;
+                    Image.SegmentImages.Add(segment.Image);
+                    id++;
                     base.AddSegment(id, segment);
                 }
             }

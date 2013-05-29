@@ -8,22 +8,19 @@ namespace Disassembler
     {
         private byte[] data;
         private Address entryPoint;
-        private LoadModule loadModule;
         private int[] relocatableLocations;
 
         // Maps a segment number (before relocation) to a dummy segment.
         readonly SortedList<UInt16, DummySegment> segments =
             new SortedList<UInt16, DummySegment>();
 
-        byte[] image;
-        ImageChunk.ByteAttribute[] attrs;
+        readonly ExecutableImage image;
 
         public Executable(string fileName)
         {
             MZFile file = new MZFile(fileName);
 
-            this.image = file.Image;
-            this.attrs = new ImageChunk.ByteAttribute[image.Length];
+            this.image = new ExecutableImage(file.Image);
 
             // Each relocation entry provides a hint of the program's
             // segmentation.
@@ -35,7 +32,7 @@ namespace Disassembler
                 {
                     relocs.Add(index);
                     segments[location.Segment] = null;
-                    UInt16 target = BitConverter.ToUInt16(image, index);
+                    UInt16 target = BitConverter.ToUInt16(image.Data, index);
                     segments[target] = null;
                 }
             }
@@ -51,10 +48,7 @@ namespace Disassembler
             for (int i = 0; i < segments.Count; i++)
             {
                 UInt16 frameNumber = segments.Keys[i];
-                ImageChunk chunk = new ImageChunk(image, attrs, frameNumber * 16, "");
-                DummySegment segment = new DummySegment(this, chunk);
-                segment.Frame = frameNumber;
-                segment.Id = frameNumber;
+                DummySegment segment = new DummySegment(this, frameNumber);
                 segments[frameNumber] = segment;
             }
 
@@ -62,8 +56,17 @@ namespace Disassembler
             relocatableLocations = relocs.ToArray();
 
             this.data = file.Image;
-            this.entryPoint = new Address(file.EntryPoint.Segment, file.EntryPoint.Offset);
-            this.loadModule = new LoadModule(new ImageChunk(data, "LoadModule"));
+            this.entryPoint = PointerToAddress(file.EntryPoint);
+        }
+
+        public BinaryImage Image
+        {
+            get { return image; }
+        }
+
+        private static Address PointerToAddress(FarPointer pointer)
+        {
+            return new Address(pointer.Segment, pointer.Offset);
         }
 
         public override Segment GetSegment(int segmentSelector)
@@ -73,11 +76,6 @@ namespace Disassembler
                 return segment;
             else
                 return null;
-        }
-
-        public LoadModule LoadModule
-        {
-            get { return LoadModule; }
         }
 
         /// <summary>
@@ -96,27 +94,26 @@ namespace Disassembler
 
     public class DummySegment : Segment
     {
-        Executable executable;
-        ImageChunk image;
+        readonly Executable executable;
+        readonly UInt16 frameNumber;
 
-        public DummySegment(Executable executable, ImageChunk image)
+        public DummySegment(Executable executable, UInt16 frameNumber)
         {
             this.executable = executable;
-            this.image = image;
+            this.frameNumber = frameNumber;
         }
 
         /// <summary>
         /// Gets the frame number of the canonical frame of this segment,
         /// relative to the beginning of the executable image.
         /// </summary>
-        public UInt16 Frame { get; set; }
-
-        public override ImageChunk Image
+        public UInt16 Frame
         {
-            get { return image; }
+            get { return frameNumber; }
         }
     }
 
+#if false
     public class LoadModule : Module
     {
         ImageChunk image;
@@ -159,4 +156,5 @@ namespace Disassembler
         /// </summary>
         public UInt16 InitialIP { get; set; }
     }
+#endif
 }
