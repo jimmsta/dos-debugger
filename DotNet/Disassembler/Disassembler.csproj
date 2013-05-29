@@ -75,11 +75,15 @@
     <Compile Include="Assembly.cs" />
     <Compile Include="BasicBlock.cs" />
     <Compile Include="BinaryImage.cs" />
+    <Compile Include="CallGraph.cs" />
+    <Compile Include="CodeFeatures.cs" />
+    <Compile Include="ControlFlowGraph.cs" />
     <Compile Include="DisassemblerBase.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="Executable\Executable.cs" />
     <Compile Include="Executable\ExecutableDisassembler.cs" />
     <Compile Include="Executable\ExecutableImage.cs" />
+    <Compile Include="Executable\MZLoader.cs" />
     <Compile Include="FunctionSignature.cs" />
     <Compile Include="Library\Fixup.cs" />
     <Compile Include="Library\LibraryDisassembler.cs" />
@@ -89,7 +93,6 @@
     <Compile Include="Library\ObjectModule.cs" />
     <Compile Include="Library\SegmentGroup.cs" />
     <Compile Include="MemoryModel.cs" />
-    <Compile Include="MZLoader.cs" />
     <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\FixupRecord.cs">
       <SubType>Code</SubType>

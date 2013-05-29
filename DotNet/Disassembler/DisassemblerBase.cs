@@ -176,7 +176,7 @@ namespace Disassembler
 #endif
                 // Create a directed edge from the source basic block to
                 // the target basic block.
-                BasicBlocks.AddControlFlowGraphEdge(
+                BasicBlocks.ControlFlowGraph.AddEdge(
                     sourceBlock, targetBlock, xref);
             }
         }
@@ -347,8 +347,8 @@ namespace Disassembler
                 BasicBlock parent = queue.Pop();
                 if (!proc.BasicBlocks.Contains(parent))
                 {
-                    proc.BasicBlocks.Add(parent);
-                    foreach (BasicBlock child in this.BasicBlocks.GetSuccessors(parent))
+                    proc.AddBasicBlock(parent);
+                    foreach (BasicBlock child in BasicBlocks.ControlFlowGraph.GetSuccessors(parent))
                     {
                         queue.Push(child);
                     }

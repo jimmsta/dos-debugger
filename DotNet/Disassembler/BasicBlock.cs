@@ -35,20 +35,7 @@ namespace Disassembler
         readonly int length;
         readonly BasicBlockType type;
         readonly CodeFeatures features;
-
-#if false
-        internal BasicBlock(ImageChunk image, Range<int> range)
-        {
-            if (image == null)
-                throw new ArgumentNullException("image");
-            if (!image.Bounds.IsSupersetOf(range))
-                throw new ArgumentOutOfRangeException("range");
-
-            this.location = new Address(image, range.Begin);
-            this.length = range.End - range.Begin;
-        }
-#endif
-
+        
         public BasicBlock(Address begin, Address end, BasicBlockType type, BinaryImage image)
         {
             if (begin.Segment != end.Segment)
@@ -56,7 +43,7 @@ namespace Disassembler
             this.location = begin;
             this.length = end.Offset - begin.Offset;
             this.type = type;
-            this.features = ComputeFeatures(image, begin, end);
+            this.features = CodeFeaturesHelper.GetFeatures(GetInstructions(image));
         }
 
         public Address Location
@@ -89,37 +76,14 @@ namespace Disassembler
             get { return features; }
         }
 
-        private static CodeFeatures ComputeFeatures(
-            BinaryImage image, Address startAddress, Address endAddress)
+        public IEnumerable<Instruction> GetInstructions(BinaryImage image)
         {
-            CodeFeatures features = CodeFeatures.None;
-            for (Address p = startAddress; p!=endAddress;)
+            for (Address p = this.location; p != this.location + length; )
             {
                 Instruction instruction = image.GetInstruction(p);
-
-                switch (instruction.Operation)
-                {
-                    case Operation.INT:
-                    case Operation.INTO:
-                        features |= CodeFeatures.HasInterrupt;
-                        break;
-                    case Operation.RET:
-                        features |= CodeFeatures.HasRETN;
-                        break;
-                    case Operation.RETF:
-                        features |= CodeFeatures.HasRETF;
-                        break;
-                    case Operation.IRET:
-                        features |= CodeFeatures.HasIRET;
-                        break;
-                    case Operation.FCLEX:
-                        features |= CodeFeatures.HasFpu;
-                        break;
-                }
-
+                yield return instruction;
                 p += instruction.EncodedLength;
             }
-            return features;
         }
     }
 
@@ -177,10 +141,11 @@ namespace Disassembler
         readonly List<BasicBlock> blocks = new List<BasicBlock>();
         readonly RangeDictionary<Address, BasicBlock> map =
             new RangeDictionary<Address, BasicBlock>();
-        readonly XRefCollection controlFlowGraph = new XRefCollection();
+        readonly ControlFlowGraph controlFlowGraph;
 
         public BasicBlockCollection()
         {
+            controlFlowGraph = new ControlFlowGraph(this);
         }
 
         public void Add(BasicBlock block)
@@ -249,7 +214,6 @@ namespace Disassembler
         {
             blocks.Clear();
             map.Clear();
-            controlFlowGraph.Clear();
         }
 
         public bool Contains(BasicBlock item)
@@ -292,32 +256,9 @@ namespace Disassembler
 
         #endregion
 
-        public void AddControlFlowGraphEdge(
-            BasicBlock source, BasicBlock target, XRef xref)
+        public ControlFlowGraph ControlFlowGraph
         {
-            if (source == null)
-                throw new ArgumentNullException("source");
-            if (target == null)
-                throw new ArgumentNullException("target");
-            if (xref == null)
-                throw new ArgumentNullException("xref");
-
-            // TODO: verify that the basic blocks exist in this collection.
-            XRef xFlow = new XRef(
-                type: xref.Type,
-                source: source.Location,
-                target: target.Location,
-                dataLocation: xref.Source
-            );
-            controlFlowGraph.Add(xFlow);
-        }
-
-        public IEnumerable<BasicBlock> GetSuccessors(BasicBlock source)
-        {
-            foreach (XRef xref in controlFlowGraph.GetReferencesFrom(source.Location))
-            {
-                yield return Find(xref.Target);
-            }
+            get { return controlFlowGraph; }
         }
     }
 }
