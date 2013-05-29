@@ -8,13 +8,18 @@
              d:DesignHeight="300" d:DesignWidth="300" Focusable="True">
     <Grid>
 
+        <!--
+        VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+        
+        VirtualizingStackPanel-->
         <ListView Name="lvProcedures"
                   ItemsSource="{Binding Items}"
                   FontFamily="Consolas"
                   SelectionMode="Single"
-                  VirtualizingPanel.IsContainerVirtualizable="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                   PreviewKeyDown="ListView_PreviewKeyDown">
 
             <ListView.CommandBindings>

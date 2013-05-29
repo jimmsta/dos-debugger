@@ -35,14 +35,18 @@
         </Grid>
         
         <!-- Main disassembly listing -->
+        <!--
+                  VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling">
+        -->
         <ListView Name="lvListing"
                   Grid.Row="1"
                   ItemsSource="{Binding Rows}"
                   FontFamily="Consolas"
                   SelectionMode="Single"
-                  VirtualizingPanel.IsContainerVirtualizable="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling">
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling">
 
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}">

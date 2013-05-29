@@ -45,15 +45,19 @@
                 </StackPanel>
             </ToggleButton>
         </ToolBar>
-        
+
+        <!--
+                          VirtualizingPanel.IsContainerVirtualizable="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+        -->
         <ListView Name="lvErrors" Grid.Row="1"
                   ItemsSource="{Binding Items}"
                   FontFamily="Consolas" 
                   SelectionMode="Single"
                   itenso:ListViewLayoutManager.Enabled="true"
-                  VirtualizingPanel.IsContainerVirtualizable="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                   SelectionChanged="lvErrors_SelectionChanged">
             <ListView.View>
                 <GridView>
