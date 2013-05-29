@@ -20,7 +20,7 @@ namespace FileFormats.Omf
         public long Length { get; set; }
 
         public byte[] Data;
-        public List<FixupDefinition> Fixups;
+        public List<FixupDefinition> Fixups = new List<FixupDefinition>();
     }
 
     public enum SegmentAlignment
@@ -87,10 +87,37 @@ namespace FileFormats.Omf
         public readonly List<SegmentDefinition> Segments =
             new List<SegmentDefinition>();
     }
-
-    public enum FixupMode : byte
+    
+    public class NameDefinition
     {
-        SelfRelative = 0,
-        SegmentRelative = 1
+        public string Name;
+        public UInt16 TypeIndex;
+        internal Records.RecordNumber DefinedBy;
+    }
+
+    public class ExternalNameDefinition : NameDefinition
+    {
+    }
+
+    public class PublicNameDefinition : NameDefinition
+    {
+        public bool IsLocal;
+        public GroupDefinition BaseGroup;
+        public SegmentDefinition BaseSegment;
+        public UInt16 BaseFrame;
+        public int Offset;
+    }
+
+    public class CommunalNameDefinition : ExternalNameDefinition
+    {
+        public byte DataType;
+        public UInt32 ElementCount;
+        public UInt32 ElementSize;
+    }
+
+    public class AliasDefinition
+    {
+        public string AliasName;
+        public string SubstituteName;
     }
 }

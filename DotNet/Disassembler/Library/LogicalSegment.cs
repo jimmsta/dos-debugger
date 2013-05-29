@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
+using FileFormats.Omf;
 
 namespace Disassembler
 {
@@ -21,32 +22,27 @@ namespace Disassembler
     public class LogicalSegment : Segment // create new class LibrarySegment
                                           // to handle book-keeping of Segment
     {
+        SegmentDefinition definition;
+
         readonly int id;
-        readonly Alignment alignment;
-        readonly SegmentCombination combination;
-        readonly UInt16 absoluteFrame;
-        readonly string segmentName;
         readonly string fullName;
-        readonly string className;
         readonly byte[] data;
         readonly FixupCollection fixups = new FixupCollection();
 
         internal LogicalSegment(
             int id,
-            Disassembler2.Omf.SegmentDefinition def,
+            SegmentDefinition def,
             Dictionary<object, object> objectMap,
             ObjectModule module)
         {
             if (def.IsUse32)
                 throw new NotSupportedException("Use32 is not supported.");
+            if (def.Length > 0x10000)
+                throw new NotSupportedException("Segments larger than 64KB are not supported.");
 
+            this.definition = def;
             this.id = id;
-            this.alignment = def.Alignment;
-            this.combination = def.Combination;
-            this.absoluteFrame = def.Frame; // ignore Offset
-            this.segmentName = def.SegmentName;
             this.fullName = module.Name + "." + def.SegmentName;
-            this.className = def.ClassName; // ignore OverlayName
             this.data = def.Data;
         }
 
@@ -56,7 +52,7 @@ namespace Disassembler
         /// </summary>
         public string Name
         {
-            get { return segmentName; }
+            get { return definition.SegmentName; }
         }
 
         // TODO: make Segment an interface, and explicitly implement
@@ -72,24 +68,7 @@ namespace Disassembler
         /// </summary>
         public string Class
         {
-            get { return className; }
-        }
-
-        /// <summary>
-        /// Gets or sets the alignment requirement of the logical segment.
-        /// </summary>
-        public Alignment Alignment
-        {
-            get { return alignment; }
-        }
-
-        /// <summary>
-        /// Gets or sets how to combine two segments of the same name and
-        /// class.
-        /// </summary>
-        public SegmentCombination Combination
-        {
-            get { return combination; }
+            get { return definition.ClassName; }
         }
 
         /// <summary>
@@ -98,7 +77,7 @@ namespace Disassembler
         /// </summary>
         public UInt16 AbsoluteFrame
         {
-            get { return absoluteFrame; }
+            get { return definition.Frame; } // ignore Offset
         }
 
         /// <summary>

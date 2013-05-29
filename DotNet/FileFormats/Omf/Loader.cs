@@ -8,13 +8,12 @@ namespace FileFormats.Omf
 {
     public static class OmfLoader
     {
-#if false
         /// <summary>
         /// Loads a LIB file from disk.
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        public static ObjectLibrary LoadLibrary(string fileName)
+        public static IEnumerable<Records.RecordContext> LoadLibrary(string fileName)
         {
             if (fileName == null)
                 throw new ArgumentNullException("fileName");
@@ -22,26 +21,21 @@ namespace FileFormats.Omf
             using (Stream stream = File.OpenRead(fileName))
             using (BinaryReader reader = new BinaryReader(stream))
             {
-                ObjectLibrary library = LoadLibrary(reader);
-                library.AssignIdsToSegments();
-                library.FileName = fileName;
-                return library;
+                List<Records.RecordContext> modules =
+                    new List<RecordContext>(LoadLibrary(reader));
+                return modules;
             }
         }
-#endif
 
-#if false
         /// <summary>
         /// Loads a LIB file from a BinaryReader.
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static ObjectLibrary LoadLibrary(BinaryReader reader)
+        public static IEnumerable<Records.RecordContext> LoadLibrary(BinaryReader reader)
         {
             if (reader == null)
                 throw new ArgumentNullException("reader");
-
-            ObjectLibrary library = new ObjectLibrary();
 
             LibraryHeaderRecord r = (LibraryHeaderRecord)
                 Record.ReadRecord(reader, null, RecordNumber.LibraryHeader);
@@ -49,12 +43,12 @@ namespace FileFormats.Omf
 
             while (true)
             {
-                ObjectModule module = LoadObject(reader);
+                Records.RecordContext module = LoadObject(reader);
                 if (module == null) // LibraryEndRecord encountered
                 {
-                    break;
+                    yield break;
                 }
-                library.Modules.Add(module);
+                yield return module;
 
                 // Since a LIB file consists of multiple object modules
                 // aligned on page boundary, we need to consume the padding
@@ -65,11 +59,7 @@ namespace FileFormats.Omf
                     reader.ReadBytes(pageSize - mod);
                 }
             }
-
-            // The dictionary follows, but we ignore it.
-            return library;
         }
-#endif
 
         /// <summary>
         /// Loads an object module from binary reader.

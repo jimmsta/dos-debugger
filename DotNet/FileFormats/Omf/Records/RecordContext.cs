@@ -55,36 +55,4 @@ namespace FileFormats.Omf.Records
 
         internal Record[] Records;
     }
-
-    public class NameDefinition
-    {
-        public string Name;
-        public UInt16 TypeIndex;
-        public RecordNumber DefinedBy;
-    }
-
-    public class ExternalNameDefinition : NameDefinition
-    {
-    }
-
-    public class PublicNameDefinition : NameDefinition
-    {
-        public GroupDefinition BaseGroup;
-        public SegmentDefinition BaseSegment;
-        public UInt16 BaseFrame;
-        public int Offset;
-    }
-
-    public class CommunalNameDefinition : ExternalNameDefinition
-    {
-        public byte DataType;
-        public UInt32 ElementCount;
-        public UInt32 ElementSize;
-    }
-
-    public class AliasDefinition
-    {
-        public string AliasName;
-        public string SubstituteName;
-    }
 }

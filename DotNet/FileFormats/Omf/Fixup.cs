@@ -94,6 +94,12 @@ namespace FileFormats.Omf
         LoaderResolvedOffset32 = 13,
     }
 
+    public enum FixupMode : byte
+    {
+        SelfRelative = 0,
+        SegmentRelative = 1
+    }
+
     public struct FixupTarget
     {
         /// <summary>

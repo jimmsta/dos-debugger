@@ -52,15 +52,15 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Omf\Comments.cs" />
     <Compile Include="Omf\Fixup.cs" />
-    <Compile Include="Omf\FixupRecord.cs" />
     <Compile Include="Omf\Loader.cs" />
     <Compile Include="Omf\MemoryModel.cs" />
-    <Compile Include="Omf\RecordContext.cs" />
-    <Compile Include="Omf\RecordReader.cs" />
-    <Compile Include="Omf\Records.cs" />
-    <Compile Include="Omf\SEGDEFRecord.cs" />
+    <Compile Include="Omf\Records\Comments.cs" />
+    <Compile Include="Omf\Records\FixupRecord.cs" />
+    <Compile Include="Omf\Records\RecordContext.cs" />
+    <Compile Include="Omf\Records\RecordReader.cs" />
+    <Compile Include="Omf\Records\Records.cs" />
+    <Compile Include="Omf\Records\SEGDEFRecord.cs" />
     <Compile Include="Omf\Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

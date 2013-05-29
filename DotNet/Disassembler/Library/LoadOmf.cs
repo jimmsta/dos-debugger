@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using FileFormats.Omf;
 
 namespace Disassembler
 {
@@ -39,30 +40,11 @@ namespace Disassembler
 
             ObjectLibrary library = new ObjectLibrary();
 
-            LibraryHeaderRecord r = (LibraryHeaderRecord)
-                Record.ReadRecord(reader, null, RecordNumber.LibraryHeader);
-            int pageSize = r.PageSize;
-
-            while (true)
+            foreach (var context in FileFormats.Omf.OmfLoader.LoadLibrary(reader))
             {
-                ObjectModule module = LoadObject(reader);
-                if (module == null) // LibraryEndRecord encountered
-                {
-                    break;
-                }
+                ObjectModule module = LoadObject(context);
                 library.Modules.Add(module);
-
-                // Since a LIB file consists of multiple object modules
-                // aligned on page boundary, we need to consume the padding
-                // bytes if present.
-                int mod = (int)(reader.BaseStream.Position % pageSize);
-                if (mod != 0)
-                {
-                    reader.ReadBytes(pageSize - mod);
-                }
             }
-
-            // The dictionary follows, but we ignore it.
             return library;
         }
 
@@ -72,28 +54,9 @@ namespace Disassembler
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static ObjectModule LoadObject(BinaryReader reader)
+        public static ObjectModule LoadObject(FileFormats.Omf.Records.RecordContext context)
         {
             ObjectModule module = new ObjectModule();
-            List<Record> records = new List<Record>();
-            RecordContext context = new RecordContext();
-
-            while (true)
-            {
-                Record record = Record.ReadRecord(reader, context);
-                records.Add(record);
-
-                if (record.RecordNumber == RecordNumber.MODEND ||
-                    record.RecordNumber == RecordNumber.MODEND32)
-                {
-                    break;
-                }
-                if (record.RecordNumber == RecordNumber.LibraryEnd)
-                {
-                    return null;
-                }
-            }
-            context.Records = records.ToArray();
 
             Dictionary<object, object> objectMap =
                 new Dictionary<object, object>();
@@ -225,7 +188,7 @@ namespace Disassembler
         }
 
         private static DefinedSymbol ConvertPublicNameDefinition(
-            PublicNameDefinition def, Dictionary<object, object> objectMap)
+            FileFormats.Omf.PublicNameDefinition def, Dictionary<object, object> objectMap)
         {
             DefinedSymbol symbol = new DefinedSymbol();
             if (def.BaseGroup != null)
@@ -236,8 +199,7 @@ namespace Disassembler
             symbol.Name = def.Name;
             symbol.TypeIndex = def.TypeIndex;
             symbol.Offset = (uint)def.Offset;
-            if (def.DefinedBy == RecordNumber.LPUBDEF ||
-                             def.DefinedBy == RecordNumber.LPUBDEF32)
+            if (def.IsLocal)
                 symbol.Scope = SymbolScope.Private;
             else
                 symbol.Scope = SymbolScope.Public;

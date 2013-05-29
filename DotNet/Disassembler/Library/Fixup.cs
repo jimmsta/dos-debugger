@@ -51,7 +51,7 @@ namespace Disassembler
         /// <summary>
         /// Gets or sets the fix-up mode.
         /// </summary>
-        public FixupMode Mode { get; internal set; }
+        public FileFormats.Omf.FixupMode Mode { get; internal set; }
 
         /// <summary>
         /// Gets or sets the fix-up target.
@@ -62,7 +62,7 @@ namespace Disassembler
         /// Gets or sets the target frame relative to which to apply the
         /// fix up.
         /// </summary>
-        public FixupFrame Frame { get; internal set; }
+        public FileFormats.Omf.FixupFrame Frame { get; internal set; }
 
         public override string ToString()
         {
@@ -113,85 +113,6 @@ namespace Disassembler
 
         /// <summary>32-bit pointer (16-bit base:16-bit offset).</summary>
         Pointer,
-    }
-
-    public struct FixupFrame
-    {
-        public FixupFrameMethod Method { get; internal set; }
-
-        /// <summary>
-        /// Gets or sets the INDEX of the SEG/GRP/EXT item that is used as
-        /// the referent to find the frame. This is used only if Method is
-        /// one of 0, 1, or 2. If Method is 3, then this field contains an
-        /// absolute frame number. If Method is 4-7, this field is not used.
-        /// </summary>
-        public UInt16 IndexOrFrame { get; internal set; }
-
-        public override string ToString()
-        {
-            switch (Method)
-            {
-                case FixupFrameMethod.SegmentIndex:
-                    return string.Format("SEG({0})", IndexOrFrame);
-                case FixupFrameMethod.GroupIndex:
-                    return string.Format("GRP({0})", IndexOrFrame);
-                case FixupFrameMethod.ExternalIndex:
-                    return string.Format("EXT({0})", IndexOrFrame);
-                case FixupFrameMethod.ExplicitFrame:
-                    return string.Format("{0:X4}", IndexOrFrame);
-                case FixupFrameMethod.UseLocation:
-                    return "LOCATION";
-                case FixupFrameMethod.UseTarget:
-                    return "TARGET";
-                default:
-                    return "(invalid)";
-            }
-        }
-    }
-
-    public enum FixupFrameMethod : byte
-    {
-        /// <summary>
-        /// The FRAME is the canonical frame of the LSEG (logical segment)
-        /// identified by Index.
-        /// </summary>
-        SegmentIndex = 0,
-
-        /// <summary>
-        /// The FRAME is the canonical frame of the group identified by Index.
-        /// </summary>
-        GroupIndex = 1,
-
-        /// <summary>
-        /// The FRAME is determined according to the External Name's PUBDEF
-        /// record. There are three cases:
-        /// a) If there is an associated group with the symbol, the canonical
-        ///    frame of that group is used; otherwise,
-        /// b) If the symbol is defined relative to some LSEG, the canonical
-        ///    frame of the LSEG is used.
-        /// c) If the symbol is defined at an absolute address, the frame of
-        ///    this absolute address is used.
-        /// </summary>
-        ExternalIndex = 2,
-
-        /// <summary>
-        /// The FRAME is specified explicitly by a number. This method is not
-        /// supported by any linker.
-        /// </summary>
-        ExplicitFrame = 3,
-
-        /// <summary>
-        /// The FRAME is the canonic FRAME of the LSEG containing LOCATION.
-        /// If the location is defined by an absolute address, the frame 
-        /// component of that address is used.
-        /// </summary>
-        UseLocation = 4,
-
-        /// <summary>
-        /// The FRAME is determined by the TARGET's segment, group, or
-        /// external index.
-        /// </summary>
-        UseTarget = 5,
     }
 
     public class BrokenFixupException : InvalidInstructionException
