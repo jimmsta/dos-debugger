@@ -213,11 +213,15 @@ namespace WpfDebugger
             {
                 get
                 {
+#if false
                     var segment = program.GetSegment(procedure.EntryPoint.Segment);
                     if (segment != null)
                         return new AssemblyUri(program, segment, procedure.EntryPoint.Offset);
                     else
                         return null;
+#else
+                    return new AssemblyUri(program, procedure.EntryPoint);
+#endif
                 }
             }
         }

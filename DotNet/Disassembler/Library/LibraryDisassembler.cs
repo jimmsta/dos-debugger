@@ -63,7 +63,7 @@ namespace Disassembler
             // Find the first fixup that covers the instruction. If no
             // fix-up covers the instruction, find the closest fix-up
             // that comes after.
-            FixupCollection fixups = library.Image.SegmentImages[address.Segment].Fixups;
+            FixupCollection fixups = library.Image.SegmentImages[address.Segment].Segment.Fixups;
             int fixupIndex = fixups.BinarySearch(address.Offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
@@ -205,8 +205,8 @@ namespace Disassembler
 
                     // TODO: do not disassemble if the symbol is obviously
                     // a data item.
-                    int iFixup = symbol.BaseSegment.Image.Fixups.BinarySearch((int)symbol.Offset);
-                    if (iFixup >= 0 && symbol.BaseSegment.Image.Fixups[iFixup].StartIndex
+                    int iFixup = symbol.BaseSegment.Fixups.BinarySearch((int)symbol.Offset);
+                    if (iFixup >= 0 && symbol.BaseSegment.Fixups[iFixup].StartIndex
                         == (int)symbol.Offset) // likely a data item
                     {
                         continue;

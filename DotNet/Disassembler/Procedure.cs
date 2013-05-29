@@ -7,6 +7,24 @@ using X86Codec;
 
 namespace Disassembler
 {
+    // TBD: if multiple procedures share a basic block (known as "function
+    // chunk"), it is a bit messy when we generate a call graph or display
+    // the procedure size statistic. On the other hand, it might be easy
+    // to generate a procedure checksum.
+    //
+    // Since a procedure chunk is shared code, while a procedure is itself
+    // shared code, a procedure chunk is not much different than procedures
+    // in terms of their purpose. The only difference is whether it is
+    // invoked by a CALL or JUMP (or possibly fall-through). It is therefore
+    // natural to create a "dummy" procedure type called "procedure chunk".
+    // This ensures every basic block belongs to only one procedure, which
+    // is nice because it simplifies code and also simplifies call graph.
+    //
+    // Now in terms of procedure checksum computing, we can simply treat
+    // a procedure chunk as a procedure; that is, we compute the chunk's
+    // checksum and include that when computing the procedure's checksum.
+
+
     /// <summary>
     /// Contains information about a procedure in an assembly (executable or
     /// library). The procedure is uniquely identified by its resolved entry

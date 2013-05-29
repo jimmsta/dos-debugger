@@ -32,6 +32,7 @@ namespace Disassembler
 #endif
 
         public string FileName { get; set; }
+
         public string Name
         {
             get { return System.IO.Path.GetFileName(FileName); }
@@ -67,15 +68,12 @@ namespace Disassembler
         public void AssignIdsToSegments()
         {
             this.Image = new LibraryImage();
-            int id = 0;
             foreach (ObjectModule module in Modules)
             {
                 foreach (LogicalSegment segment in module.Segments)
                 {
-                    segment.Id = id;
-                    Image.SegmentImages.Add(segment.Image);
-                    id++;
-                    base.AddSegment(id, segment);
+                    segment.Id = Image.SegmentImages.Count;
+                    Image.SegmentImages.Add(new SegmentImage(segment));
                 }
             }
         }

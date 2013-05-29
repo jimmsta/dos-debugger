@@ -28,6 +28,8 @@ namespace Disassembler
         [Browsable(true)]
         public string Name { get; internal set; }
 
+        // TODO: make Segment an interface, and explicitly implement
+        // its Name property.
         public string FullName { get; internal set; }
 
         /// <summary>
@@ -72,48 +74,25 @@ namespace Disassembler
         [Browsable(true)]
         public long Length
         {
-            get { return Image.Length; }
+            get { return Data.Length; }
         }
 
-        internal SegmentImage Image { get; set; }
-
-#if false
         /// <summary>
         /// Gets the bytes in this logical segment.
         /// </summary>
         public byte[] Data { get; internal set; }
 
-        // datafixups[i] corresponds to data[i]
-        // it is 1+index of the fix up that covers this byte. 0=none
-        [TypeConverter(typeof(ExpandableObjectConverter))]
-        public UInt16[] DataFixups { get; internal set; }
+        readonly FixupCollection fixups = new FixupCollection();
 
-        internal readonly List<FixupDefinition> fixups = new List<FixupDefinition>();
-
-        public FixupDefinition[] Fixups
+        public FixupCollection Fixups
         {
-            get { return fixups.ToArray(); }
+            get { return fixups; }
         }
-#endif
 
         protected override string GetLabel()
         {
             return Name;
         }
-
-#if false
-        public override ImageChunk Image
-        {
-            get { return image; }
-        }
-
-        private ImageChunk image;
-
-        internal void SetImage(ImageChunk image)
-        {
-            this.image = image;
-        }
-#endif
 
         public override string ToString()
         {

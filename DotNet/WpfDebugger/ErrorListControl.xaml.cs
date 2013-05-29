@@ -50,8 +50,7 @@ namespace WpfDebugger
             if (RequestNavigate != null)
             {
                 Error error = item.Error;
-                Segment segment = program.GetSegment(error.Location.Segment);
-                AssemblyUri uri = new AssemblyUri(program, segment, error.Location.Offset);
+                AssemblyUri uri = new AssemblyUri(program, error.Location);
                 RequestNavigateEventArgs args = new RequestNavigateEventArgs(uri, null);
                 RequestNavigate(this, args);
             }

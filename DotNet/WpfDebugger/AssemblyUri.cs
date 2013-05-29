@@ -82,6 +82,7 @@ namespace WpfDebugger
         readonly Assembly assembly;
         readonly IAddressReferent referent;
         readonly int offset;
+        readonly Address address;
 
         public AssemblyUri(string uriString)
             : base(uriString)
@@ -94,11 +95,26 @@ namespace WpfDebugger
             this.assembly = assembly;
             this.referent = referent;
             this.offset = offset;
+            this.address = referent.Resolve() + offset;
+        }
+
+        public AssemblyUri(Assembly assembly, Address address)
+            : base(MakeUriString(assembly,address))
+        {
+            this.assembly = assembly;
+            //this.referent = assembly.GetSegment(address.Segment);
+            this.offset = address.Offset;
+            this.address = address;
         }
 
         public Assembly Assembly
         {
             get { return assembly; }
+        }
+
+        public Address Address
+        {
+            get { return address; }
         }
 
         public IAddressReferent Referent
@@ -109,6 +125,15 @@ namespace WpfDebugger
         public int Offset
         {
             get { return offset; }
+        }
+
+        private static string MakeUriString(Assembly assembly, Address address)
+        {
+            return string.Format("ddd://{0}{1}/seg/{2}/{3:X4}",
+                assembly is Executable ? "exe" : "lib",
+                assembly.GetHashCode(),
+                address.Segment,
+                address.Offset);
         }
 
         private static string MakeUriString(

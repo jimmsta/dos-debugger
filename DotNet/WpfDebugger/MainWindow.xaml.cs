@@ -327,6 +327,7 @@ namespace WpfDebugger
             if (uri == null)
                 return;
 
+#if false
             if (uri.Referent is Segment)
             {
                 this.disassemblyList.SetView(program, uri.Referent as Segment, uri.Offset);
@@ -335,6 +336,9 @@ namespace WpfDebugger
             {
                 MessageBox.Show("Not supported");
             }
+#else
+            this.disassemblyList.SetView(program, uri.Address);
+#endif
         }
 
         private void FileOpenCommand_CanExecute(object sender, CanExecuteRoutedEventArgs e)

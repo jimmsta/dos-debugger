@@ -235,11 +235,13 @@ namespace Disassembler
 
             // To determine the call type of the procedure, examine the 
             // features of the basic blocks.
-            CodeFeatures features = CodeFeatures.None;
+            CodeFeatures features = proc.Features;
+#if false
             foreach (BasicBlock block in proc.BasicBlocks)
             {
                 features |= block.Features;
             }
+#endif
 
             CodeFeatures callFeatures = features & (
                 CodeFeatures.HasRETN | CodeFeatures.HasRETF | CodeFeatures.HasIRET);

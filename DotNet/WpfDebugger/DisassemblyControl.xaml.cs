@@ -29,13 +29,13 @@ namespace WpfDebugger
         }
 #endif
 
-        public void SetView(Assembly assembly, Segment segment, int offset)
+        public void SetView(Assembly assembly, Address address)
         {
             this.DataContext = null;
 
-            this.viewModel = new ListingViewModel(assembly, segment);
+            this.viewModel = new ListingViewModel(assembly, address.Segment);
             this.DataContext = viewModel;
-            GoToAddress(offset);
+            GoToAddress(address.Offset);
         }
 
 #if true

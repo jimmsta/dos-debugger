@@ -33,7 +33,7 @@ namespace WpfDebugger
         /// </summary>
         private int[] rowAddresses; // rename to rowOffsets
 
-        public ListingViewModel(Assembly assembly, Segment segment)
+        public ListingViewModel(Assembly assembly, int segmentId)
         {
             if (assembly is Executable)
                 this.image = ((Executable)assembly).Image;
@@ -47,14 +47,14 @@ namespace WpfDebugger
             // leave it here for the moment.
             List<Error> errors =
                 (from error in assembly.Errors
-                 where error.Location.Segment == segment.Id
+                 where error.Location.Segment == segmentId
                  orderby error.Location
                  select error).ToList();
             int iError = 0;
 
             // Display analyzed code and data.
             // TODO: a segment may not start at zero.
-            Address address = new Address(segment.Id, 0);
+            Address address = new Address(segmentId, 0);
             while (image.IsAddressValid(address))
             {
                 ByteAttribute b = image[address];
@@ -275,12 +275,12 @@ namespace WpfDebugger
         {
             get
             {
-                Segment segment = assembly.GetSegment(location.Segment);
-                if (segment is LogicalSegment)
-                {
-                    return ((LogicalSegment)segment).FullName + "+" + location.Offset.ToString("X4");
-                }
-                else
+                //Segment segment = assembly.GetSegment(location.Segment);
+                //if (segment is LogicalSegment)
+                //{
+                //    return ((LogicalSegment)segment).FullName + "+" + location.Offset.ToString("X4");
+                //}
+                //else
                 {
                     return location.ToString();
                 }

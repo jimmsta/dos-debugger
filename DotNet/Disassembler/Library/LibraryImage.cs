@@ -33,63 +33,86 @@ namespace Disassembler
 
         protected override ByteAttribute GetByteAttribute(Address address)
         {
-            return segmentImages[address.Segment].attrs[address.Offset];
+            return segmentImages[address.Segment].ByteAttributes[address.Offset];
         }
 
         protected override void SetByteAttribute(Address address, ByteAttribute attr)
         {
-            segmentImages[address.Segment].attrs[address.Offset] = attr;
+            segmentImages[address.Segment].ByteAttributes[address.Offset] = attr;
         }
 
         public override ArraySegment<byte> GetBytes(Address address, int count)
         {
             SegmentImage seg = segmentImages[address.Segment];
-            return new ArraySegment<byte>(seg.bytes, address.Offset, count);
+            return new ArraySegment<byte>(seg.Data, address.Offset, count);
         }
 
         public override ArraySegment<byte> GetBytes(Address address)
         {
             SegmentImage seg = segmentImages[address.Segment];
-            return new ArraySegment<byte>(seg.bytes, address.Offset, seg.bytes.Length - address.Offset);
+            return new ArraySegment<byte>(seg.Data, address.Offset, seg.Data.Length - address.Offset);
         }
 
         public override Instruction GetInstruction(Address address)
         {
             SegmentImage seg = segmentImages[address.Segment];
-            return seg.instructions[address.Offset];
+            return seg.Instructions[address.Offset];
         }
 
         public override void SetInstruction(Address address, Instruction instruction)
         {
             SegmentImage seg = segmentImages[address.Segment];
-            seg.instructions[address.Offset] = instruction;
+            seg.Instructions[address.Offset] = instruction;
         }
     }
 
     class SegmentImage
     {
-        internal readonly byte[] bytes;
-        internal readonly ByteAttribute[] attrs;
-        internal readonly FixupCollection fixups;
-        internal readonly Dictionary<int, Instruction> instructions;
+        readonly LogicalSegment segment;
+        readonly ByteAttribute[] attrs;
+        readonly Dictionary<int, Instruction> instructions;
 
-        public SegmentImage(byte[] bytes, string name)
+        //internal readonly FixupCollection fixups;
+
+        public SegmentImage(LogicalSegment segment)
         {
-            this.fixups = new FixupCollection();
-            this.bytes = bytes;
-            this.attrs = new ByteAttribute[bytes.Length];
-            this.fixups = new FixupCollection { Name = name };
+            this.segment = segment;
+
+            //this.fixups = new FixupCollection();
+            //this.bytes = bytes;
+            this.attrs = new ByteAttribute[segment.Data.Length];
+            //this.fixups = new FixupCollection { Name = name };
             this.instructions = new Dictionary<int, Instruction>();
+        }
+
+        public LogicalSegment Segment
+        {
+            get { return segment; }
         }
 
         public int Length
         {
-            get { return bytes.Length; }
+            get { return segment.Data.Length; }
         }
 
-        public FixupCollection Fixups
+        public ByteAttribute[] ByteAttributes
         {
-            get { return fixups; }
+            get { return attrs; }
         }
+
+        public byte[] Data
+        {
+            get { return segment.Data; }
+        }
+
+        public Dictionary<int, Instruction> Instructions
+        {
+            get { return instructions; }
+        }
+
+        //public FixupCollection Fixups
+        //{
+        //    get { return fixups; }
+        //}
     }
 }

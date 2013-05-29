@@ -41,7 +41,7 @@ namespace Disassembler
         readonly ErrorCollection errors = new ErrorCollection();
 
         readonly ModuleCollection modules = new ModuleCollection();
-        readonly Dictionary<int, Segment> segments = new Dictionary<int, Segment>();
+        //readonly Dictionary<int, Segment> segments = new Dictionary<int, Segment>();
 
         public Assembly()
         {
@@ -72,16 +72,19 @@ namespace Disassembler
             get { return modules; }
         }
 
+#if false
         /// <summary>
         /// Finds the segment with the given segment selector.
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        public virtual Segment GetSegment(int segmentSelector)
+        public abstract Segment GetSegment(int segmentId)
         {
             return segments[segmentSelector];
         }
+#endif
 
+#if false
         /// <summary>
         /// Finds the segment with the given segment selector.
         /// </summary>
@@ -91,6 +94,7 @@ namespace Disassembler
         {
             segments.Add(segmentSelector, segment);
         }
+#endif
     }
 
     /// <summary>
