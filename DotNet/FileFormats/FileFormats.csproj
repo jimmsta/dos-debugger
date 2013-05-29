@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FE4ABC64-1873-4E7D-B930-D50D2E948E1E}</ProjectGuid>
+    <ProjectGuid>{536C6FE2-6F7B-4FCA-8E56-47B6BE7F9ECD}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Disassembler</RootNamespace>
-    <AssemblyName>Disassembler</AssemblyName>
+    <RootNamespace>FileFormats</RootNamespace>
+    <AssemblyName>FileFormats</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -48,70 +48,26 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Address.cs" />
-    <Compile Include="Assembly.cs" />
-    <Compile Include="BasicBlock.cs" />
-    <Compile Include="BinaryImage.cs" />
-    <Compile Include="CallGraph.cs" />
-    <Compile Include="CodeFeatures.cs" />
-    <Compile Include="ControlFlowGraph.cs" />
-    <Compile Include="DisassemblerBase.cs" />
-    <Compile Include="Error.cs" />
-    <Compile Include="Executable\Executable.cs" />
-    <Compile Include="Executable\ExecutableDisassembler.cs" />
-    <Compile Include="Executable\ExecutableImage.cs" />
-    <Compile Include="Executable\MZLoader.cs" />
-    <Compile Include="FunctionSignature.cs" />
-    <Compile Include="Library\Fixup.cs" />
-    <Compile Include="Library\LibraryDisassembler.cs" />
-    <Compile Include="Library\LibraryImage.cs" />
-    <Compile Include="Library\LoadOmf.cs" />
-    <Compile Include="Library\LogicalSegment.cs" />
-    <Compile Include="Library\ObjectLibrary.cs" />
-    <Compile Include="Library\ObjectModule.cs" />
-    <Compile Include="Library\SegmentGroup.cs" />
-    <Compile Include="Procedure.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Omf\Comments.cs" />
+    <Compile Include="Omf\Fixup.cs" />
+    <Compile Include="Omf\FixupRecord.cs" />
+    <Compile Include="Omf\Loader.cs" />
+    <Compile Include="Omf\MemoryModel.cs" />
+    <Compile Include="Omf\RecordContext.cs" />
+    <Compile Include="Omf\RecordReader.cs" />
+    <Compile Include="Omf\Records.cs" />
+    <Compile Include="Omf\SEGDEFRecord.cs" />
+    <Compile Include="Omf\Types.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Segment.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Symbol.cs" />
-    <Compile Include="Symbolic.cs" />
-    <Compile Include="XRef.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Util\Util-v2.0.csproj">
       <Project>{70014904-13e0-4afa-a6dd-0ec93100c3c7}</Project>
       <Name>Util-v2.0</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\X86Codec\X86Codec.csproj">
-      <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>
-      <Name>X86Codec</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

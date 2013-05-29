@@ -18,61 +18,95 @@ namespace Disassembler
     /// Examples: fopen._TEXT, crt0._DATA, etc.
     /// </example>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class LogicalSegment : Segment
+    public class LogicalSegment : Segment // create new class LibrarySegment
+                                          // to handle book-keeping of Segment
     {
+        readonly int id;
+        readonly Alignment alignment;
+        readonly SegmentCombination combination;
+        readonly UInt16 absoluteFrame;
+        readonly string segmentName;
+        readonly string fullName;
+        readonly string className;
+        readonly byte[] data;
+        readonly FixupCollection fixups = new FixupCollection();
+
+        internal LogicalSegment(
+            int id,
+            Disassembler2.Omf.SegmentDefinition def,
+            Dictionary<object, object> objectMap,
+            ObjectModule module)
+        {
+            if (def.IsUse32)
+                throw new NotSupportedException("Use32 is not supported.");
+
+            this.id = id;
+            this.alignment = def.Alignment;
+            this.combination = def.Combination;
+            this.absoluteFrame = def.Frame; // ignore Offset
+            this.segmentName = def.SegmentName;
+            this.fullName = module.Name + "." + def.SegmentName;
+            this.className = def.ClassName; // ignore OverlayName
+            this.data = def.Data;
+        }
+
         /// <summary>
         /// Gets the segment's name, such as "_TEXT". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
-        [Category("Identity")]
-        [Browsable(true)]
-        public string Name { get; internal set; }
+        public string Name
+        {
+            get { return segmentName; }
+        }
 
         // TODO: make Segment an interface, and explicitly implement
         // its Name property.
-        public string FullName { get; internal set; }
+        public string FullName
+        {
+            get { return fullName; }
+        }
 
         /// <summary>
         /// Gets the segment's class, such as "CODE". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
-        [Category("Identity")]
-        [Browsable(true)]
-        public string Class { get; internal set; }
-
-        /// <summary>
-        /// Ignored by MS LINK.
-        /// </summary>
-        [Category("Identity")]
-        [Browsable(false)]
-        public string OverlayName { get; internal set; }
+        public string Class
+        {
+            get { return className; }
+        }
 
         /// <summary>
         /// Gets or sets the alignment requirement of the logical segment.
         /// </summary>
-        [Browsable(true)]
-        public Alignment Alignment { get; internal set; }
+        public Alignment Alignment
+        {
+            get { return alignment; }
+        }
 
         /// <summary>
         /// Gets or sets how to combine two segments of the same name and
         /// class.
         /// </summary>
-        [Browsable(true)]
-        public SegmentCombination Combination { get; internal set; }
+        public SegmentCombination Combination
+        {
+            get { return combination; }
+        }
 
         /// <summary>
         /// Gets the frame number of an absolute segment. This is only
         /// relevant if Alignment is Absolute.
         /// </summary>
-        public UInt16 AbsoluteFrame { get; internal set; }
+        public UInt16 AbsoluteFrame
+        {
+            get { return absoluteFrame; }
+        }
 
         /// <summary>
         /// Gets the length (in bytes) of the logical segment. This length
         /// does not include COMDAT records. If COMDAT records are present,
         /// their size should be added to this length.
         /// </summary>
-        [Browsable(true)]
-        public long Length
+        public int Length
         {
             get { return Data.Length; }
         }
@@ -80,9 +114,10 @@ namespace Disassembler
         /// <summary>
         /// Gets the bytes in this logical segment.
         /// </summary>
-        public byte[] Data { get; internal set; }
-
-        readonly FixupCollection fixups = new FixupCollection();
+        public byte[] Data
+        {
+            get { return data; }
+        }
 
         public FixupCollection Fixups
         {
@@ -100,61 +135,5 @@ namespace Disassembler
         }
     }
 
-    public enum Alignment: short
-    {
-        /// <summary>The alignment is irrelevant or default.</summary>
-        None = 0,
 
-        /// <summary>Align on byte boundary.</summary>
-        Byte = 1,
-
-        /// <summary>Align on word boundary.</summary>
-        Word = 2,
-
-        /// <summary>Align on dword boundary.</summary>
-        DWord = 4,
-        
-        /// <summary>Align on qword boundary.</summary>
-        QWord = 8,
-        
-        /// <summary>Align on paragraph (16-byte) boundary.</summary>
-        Paragraph = 16,
-
-        /// <summary>Align on page (256-byte) boundary.</summary>
-        Page = 256,
-    }
-
-    /// <summary>
-    /// Specifies how the linker should combine two segments with the same
-    /// name and class.
-    /// </summary>
-    public enum SegmentCombination : byte
-    {
-        /// <summary>
-        /// Do not combine the segment with segments from other modules, even
-        /// if they have the same segment name and class name.
-        /// </summary>
-        Private,
-
-        /// <summary>
-        /// Concatenates all segments having the same name (and class name)
-        /// to form a single, contiguous segment (subject to alignment
-        /// requirements). This may leave a gap in between two segments.
-        /// </summary>
-        Public,
-
-        /// <summary>
-        /// Combine by overlapping the two segments. They either have the same
-        /// start address or the same end address. The combine segment size is
-        /// the larger size of the two.
-        /// </summary>
-        Common,
-
-        /// <summary>
-        /// Concatenates all segments having the same name (and class name)
-        /// and causes the operating system to set SS:00 to the bottom and
-        /// SS:SP to the top of the resulting segment.
-        /// </summary>
-        Stack,
-    }
 }

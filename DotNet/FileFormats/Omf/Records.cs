@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using Util.Data;
 
-namespace Disassembler2.Omf
+namespace FileFormats.Omf.Records
 {
     public enum RecordNumber : byte
     {

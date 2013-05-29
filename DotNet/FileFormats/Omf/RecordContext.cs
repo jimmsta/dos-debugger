@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Disassembler2.Omf
+namespace FileFormats.Omf.Records
 {
     /// <summary>
     /// Contains context information to assist reading and writing records.
     /// </summary>
-    class RecordContext
+    public class RecordContext
     {
         // Populated by THEADR records.
         public string ObjectName;
@@ -45,36 +45,29 @@ namespace Disassembler2.Omf
             new List<AliasDefinition>();
 
         // FRAME threads.
-        public readonly FixupThreadDefinition[] FrameThreads = new FixupThreadDefinition[4];
+        internal readonly FixupThreadDefinition[] FrameThreads = new FixupThreadDefinition[4];
 
         // TARGET threads.
-        public readonly FixupThreadDefinition[] TargetThreads = new FixupThreadDefinition[4];
+        internal readonly FixupThreadDefinition[] TargetThreads = new FixupThreadDefinition[4];
 
         // Contains the last record.
-        public Record LastRecord = null;
+        internal Record LastRecord = null;
 
-        public Record[] Records;
+        internal Record[] Records;
     }
 
-    class GroupDefinition
-    {
-        public string Name;
-        public readonly List<SegmentDefinition> Segments = 
-            new List<SegmentDefinition>();
-    }
-
-    class NameDefinition
+    public class NameDefinition
     {
         public string Name;
         public UInt16 TypeIndex;
         public RecordNumber DefinedBy;
     }
 
-    class ExternalNameDefinition : NameDefinition
+    public class ExternalNameDefinition : NameDefinition
     {
     }
 
-    class PublicNameDefinition : NameDefinition
+    public class PublicNameDefinition : NameDefinition
     {
         public GroupDefinition BaseGroup;
         public SegmentDefinition BaseSegment;
@@ -82,14 +75,14 @@ namespace Disassembler2.Omf
         public int Offset;
     }
 
-    class CommunalNameDefinition : ExternalNameDefinition
+    public class CommunalNameDefinition : ExternalNameDefinition
     {
         public byte DataType;
         public UInt32 ElementCount;
         public UInt32 ElementSize;
     }
 
-    class AliasDefinition
+    public class AliasDefinition
     {
         public string AliasName;
         public string SubstituteName;

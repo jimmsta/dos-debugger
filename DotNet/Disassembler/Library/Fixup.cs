@@ -92,12 +92,6 @@ namespace Disassembler
         }
     }
 
-    public enum FixupMode : byte
-    {
-        SelfRelative = 0,
-        SegmentRelative = 1
-    }
-
     /// <summary>
     /// Specifies the type of data to fix up in that location.
     /// </summary>

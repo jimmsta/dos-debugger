@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 
-namespace Disassembler2.Omf
+namespace FileFormats.Omf.Records
 {
     public class CommentRecord : Record
     {

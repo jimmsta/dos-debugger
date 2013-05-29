@@ -6,13 +6,14 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a relocatable or logical segment in a binary image.
+    /// Represents a segment in a binary image. A segment is a contiguous
+    /// block of bytes that are addressible with the same segment selector.
+    /// This segment selector is also called "SegmentId" here.
+    ///
+    /// A relocatable segment in an executable, or a logical segment in an
+    /// object library.
     /// </summary>
-    /// <remarks>
-    /// A segment is uniquely identified by a non-zero SegmentId within its
-    /// owning assembly.
-    /// </remarks>
-    public abstract class Segment : IAddressReferent
+    public abstract class Segment : IAddressReferent // ?? should we implement IAddressReferent?
     {
         private int id;
 

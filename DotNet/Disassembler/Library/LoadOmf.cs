@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using Disassembler2.Omf;
 
 namespace Disassembler
 {
@@ -66,7 +65,7 @@ namespace Disassembler
             // The dictionary follows, but we ignore it.
             return library;
         }
-        
+
         /// <summary>
         /// Returns null if LibraryEnd record is encountered before
         /// MODEND or MODEND32 record is encountered.
@@ -96,7 +95,7 @@ namespace Disassembler
             }
             context.Records = records.ToArray();
 
-            Dictionary<object, object> objectMap = 
+            Dictionary<object, object> objectMap =
                 new Dictionary<object, object>();
 
             // Convert meta-data.
@@ -165,27 +164,7 @@ namespace Disassembler
             ObjectModule module)
         {
             // Convert the record.
-            LogicalSegment segment = new LogicalSegment();
-            if (def.IsUse32)
-                throw new NotSupportedException("Use32 is not supported.");
-
-            //segment.Id = module.Segments.Count + 1;
-            segment.Alignment = def.Alignment;
-            segment.Combination = def.Combination;
-            segment.AbsoluteFrame = def.Frame; // ignore Offset
-            segment.Name = def.SegmentName;
-            segment.FullName = module.Name + "." + def.SegmentName;
-            segment.Class = def.ClassName; // ignore OverlayName
-
-            long length = def.RealLength;
-            if (length > Int32.MaxValue)
-            {
-                throw new InvalidDataException("Segment larger than 2GB is not supported.");
-            }
-            //segment.Image = new SegmentImage(def.Data, module.Name + "." + segment.Name);
-            //segment.Data = new byte[length];
-            segment.Data = def.Data;
-
+            LogicalSegment segment = new LogicalSegment(0, def, objectMap, module);
             return segment;
         }
 
