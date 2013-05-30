@@ -203,11 +203,12 @@ namespace Disassembler
                 }
 
                 // Check the calling type against the procedure's signature.
-                if (callType != proc.CallType)
+                if (callType == CallType.Near && proc.ReturnType != ReturnType.Near ||
+                    callType == CallType.Far && proc.ReturnType != ReturnType.Far)
                 {
                     AddError(entryPoint, ErrorCode.InconsistentCall,
-                        "Procedure at entry point {0} has inconsistent call type.",
-                        entryPoint);
+                        @"Procedure {0} is defined as ""{1}"" but called as ""{2}"".",
+                        entryPoint, proc.ReturnType, callType);
                 }
             }
         }
@@ -248,13 +249,13 @@ namespace Disassembler
             switch (callFeatures)
             {
                 case CodeFeatures.HasRETN:
-                    proc.CallType = CallType.Near;
+                    proc.ReturnType |= ReturnType.Near;
                     break;
                 case CodeFeatures.HasRETF:
-                    proc.CallType = CallType.Far;
+                    proc.ReturnType |= ReturnType.Far;
                     break;
                 case CodeFeatures.HasIRET:
-                    proc.CallType = CallType.Interrupt;
+                    proc.ReturnType |= ReturnType.Interrupt;
                     break;
                 case CodeFeatures.None:
                     AddError(entryPoint, ErrorCode.InconsistentCall,

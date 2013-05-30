@@ -96,7 +96,7 @@ namespace Disassembler
         /// [Description]
         /// [Example]
         /// [Solution]
-        /// 
+        [ErrorCategory(ErrorCategory.Warning)]
         InconsistentCall,
 
         /// <summary>

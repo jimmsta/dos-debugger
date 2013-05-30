@@ -7,7 +7,8 @@ using X86Codec;
 namespace Disassembler
 {
     /// <summary>
-    /// Provides methods to disassemble and analyze 16-bit x86 binary code.
+    /// Provides methods to disassemble a 16-bit executable without symbol
+    /// information.
     /// </summary>
     public class ExecutableDisassembler : DisassemblerBase
     {
@@ -32,17 +33,6 @@ namespace Disassembler
             get { return executable; }
         }
 
-#if false
-        protected override ImageChunk ResolveSegment(int segmentId)
-        {
-            var segment = executable.GetSegment(segmentId);
-            if (segment != null)
-                return segment.Image;
-            else
-                return null;
-        }
-#endif
-
         protected override Instruction DecodeInstruction(Address address)
         {
             // Check if the address is relocatable. If it is, it
@@ -57,9 +47,14 @@ namespace Disassembler
         protected override Address ResolveFlowInstructionTarget(PointerOperand operand)
         {
             // TBD: need to perform mapping from segment address to segment id.
+            // TBD: need to check fixups and avoid absolute calls.
+
+            int segment = executable.Image.MapFrameToSegment(operand.Segment.Value);
+            return new Address(segment, (int)operand.Offset.Value);
+
             //int segmentId = executable.GetSegment((int)operand.Segment.Value);
             //return new Address(segmentId, (int)operand.Offset.Value);
-            return new Address(operand.Segment.Value, (int)operand.Offset.Value);
+            //return new Address(operand.Segment.Value, (int)operand.Offset.Value);
         }
 
         protected override void GenerateProcedures()

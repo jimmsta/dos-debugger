@@ -60,7 +60,7 @@ namespace Disassembler
             set { this.name = value; }
         }
 
-        public CallType CallType { get; set; } // near or far
+        public ReturnType ReturnType { get; set; } // RETN/RETF/IRET
 
         /// <summary>
         /// Gets the entry point address of the procedure.
@@ -146,9 +146,48 @@ namespace Disassembler
     public enum CallType
     {
         Unknown = 0,
+
+        /// <summary>
+        /// Indicate
+        /// </summary>
         Near = 1,
         Far = 2,
         Interrupt = 3,
+    }
+
+    /// <summary>
+    /// Specifies the ways a procedure returns. It is possible, though rare,
+    /// for a procedure to have multiple ways of return; therefore we define
+    /// the enum as Flags.
+    /// </summary>
+    [Flags]
+    public enum ReturnType
+    {
+        /// <summary>
+        /// Indicates that the procedure never returns. Possible causes are:
+        /// - the procedure terminates the program through e.g. int 21h;
+        /// - the procedure contains a HLT instruction;
+        /// - the procedure is an infinite loop;
+        /// - the procedure calls a procedure that never returns.
+        /// </summary>
+        Unknown = 0,
+
+        /// <summary>
+        /// Indicates that the procedure returns with an RETN instruction.
+        /// </summary>
+        Near = 1,
+
+        /// <summary>
+        /// Indicates that the procedure returns with an RETF instruction.
+        /// </summary>
+        Far = 2,
+
+        /// <summary>
+        /// Indicates that the procedure returns with an IRET instruction.
+        /// </summary>
+        Interrupt = 4,
+
+        // Chunk
     }
 
     /// <summary>

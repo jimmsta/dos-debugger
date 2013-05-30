@@ -14,10 +14,11 @@ namespace Disassembler
             MZFile file = new MZFile(fileName);
 
             this.image = new ExecutableImage(file);
-            this.entryPoint = PointerToAddress(file.EntryPoint);
+            this.entryPoint =
+                new Address(image.MapFrameToSegment(file.EntryPoint.Segment), file.EntryPoint.Offset);
         }
 
-        public BinaryImage Image
+        public ExecutableImage Image
         {
             get { return image; }
         }

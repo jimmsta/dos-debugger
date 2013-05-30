@@ -138,6 +138,8 @@ namespace Disassembler
 
     public class BasicBlockCollection : ICollection<BasicBlock>
     {
+        public static int TimesSplit = 0;
+
         readonly List<BasicBlock> blocks = new List<BasicBlock>();
         readonly RangeDictionary<Address, BasicBlock> map =
             new RangeDictionary<Address, BasicBlock>();
@@ -152,7 +154,7 @@ namespace Disassembler
         {
             if (block == null)
                 throw new ArgumentNullException("block");
-            if (blocks.Contains(block))
+            if (this.Contains(block))
                 throw new ArgumentException("Block already exists in the collection.");
 
             this.blocks.Add(block);
@@ -178,6 +180,7 @@ namespace Disassembler
         /// <param name="block"></param>
         public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, BinaryImage image)
         {
+            ++TimesSplit;
             if (block == null)
                 throw new ArgumentNullException("block");
             if (!block.Bounds.Contains(cutoff))

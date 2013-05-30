@@ -45,7 +45,8 @@ namespace WpfDebugger
             string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\NEWHELLO.EXE";
             DoOpenFile(fileName);
 #else
-            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            //string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            string fileName = @"E:\Dev\Projects\DosDebugger\Test\Q.EXE";
             //mnuHelpTest_Click(null, null);
             DoOpenFile(fileName);
 #endif

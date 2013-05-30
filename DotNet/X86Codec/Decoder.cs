@@ -1032,7 +1032,7 @@ namespace X86Codec
                         var seg = reader.ReadImmediate(CpuSize.Use16Bit);
                         return new PointerOperand(
                             new Operand.LocationAware<UInt16>(seg.Location, (UInt16)seg.Value),
-                            new Operand.LocationAware<UInt32>(off.Location, (UInt32)off.Value));
+                            new Operand.LocationAware<UInt32>(off.Location, (UInt16)off.Value));
                     }
 
                 case O.Eb: // r/m; 8-bit
