@@ -48,6 +48,8 @@ namespace Disassembler
 
         public abstract void SetInstruction(Address address, Instruction instruction);
 
+        public abstract IEnumerable<Segment> Segments { get; }
+
         /// <summary>
         /// Gets the underlying binary data at the given location.
         /// </summary>

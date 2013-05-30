@@ -37,10 +37,12 @@ namespace Disassembler
         {
             // Check if the address is relocatable. If it is, it
             // cannot be an instruction ah...
-            int offset = address.Segment * 16 + address.Offset;
-            if (Array.BinarySearch(((ExecutableImage)image).RelocatableLocations, offset) >= 0)
+            if (((ExecutableImage)image).IsAddressRelocatable(address))
+            {
+                AddError(address, ErrorCode.BrokenFixup,
+                    "Cannot decode an instruction at a relocatable location.");
                 return null;
-
+            }
             return base.DecodeInstruction(address);
         }
 

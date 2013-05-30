@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.ComponentModel;
 using FileFormats.Omf;
+using Util.Data;
 
 namespace Disassembler
 {
@@ -46,14 +47,24 @@ namespace Disassembler
             this.data = def.Data;
         }
 
+        public override string Name
+        {
+            get { return fullName; }
+        }
+
+        public override Range<int> OffsetRange
+        {
+            get { return new Range<int>(0, this.Length); }
+        }
+
         /// <summary>
         /// Gets the segment's name, such as "_TEXT". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
-        public string Name
-        {
-            get { return definition.SegmentName; }
-        }
+        //public new string Name
+        //{
+        //    get { return definition.SegmentName; }
+        //}
 
         // TODO: make Segment an interface, and explicitly implement
         // its Name property.

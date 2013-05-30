@@ -77,9 +77,9 @@ namespace Disassembler
             segments[file.EntryPoint.Segment] = null;
 
             // Create a dummy segment for each of the guessed segments.
-            // Initially, we set the ActualSize of each segment to zero,
-            // which indicates that we have no knowledge about the start
-            // and end offset of each segment.
+            // Initially, we set segment.OffsetCoverage to an empty range to
+            // indicate that we have no knowledge about the start and end
+            // offset of each segment.
             for (int i = segments.Count - 1; i >= 0; i--)
             {
                 UInt16 frameNumber = segments.Keys[i];
@@ -116,9 +116,27 @@ namespace Disassembler
             get { return relocatableLocations; }
         }
 
+        public override IEnumerable<Segment> Segments
+        {
+            get
+            {
+                foreach (DummySegment segment in this.segments.Values)
+                    yield return segment;
+            }
+        }
+
         public int MapFrameToSegment(UInt16 frameNumber)
         {
             return segments[frameNumber].Id;
+        }
+
+        public bool IsAddressRelocatable(Address address)
+        {
+            int index = ToLinearAddress(address);
+            if (Array.BinarySearch(relocatableLocations, index) >= 0)
+                return true;
+            else
+                return false;
         }
 
         private int ToLinearAddress(Address address)
@@ -261,11 +279,22 @@ namespace Disassembler
             
         }
 
-        //Range<int> OffsetRange { get; set; }
+        public override string Name
+        {
+            get { return frameNumber.ToString("X4"); }
+        }
+
+        public override Range<int> OffsetRange
+        {
+            get { return OffsetBounds; }
+        }
+
         public Range<int> OffsetBounds { get; set; }
+
+        /// <summary>
+        /// Gets or sets the range of offsets that are analyzed.
+        /// </summary>
         public Range<int> OffsetCoverage { get; set; }
-        //public UInt16 MinimumOffset { get; set; }
-        //public UInt16 MaximumOffset{get;set;}
 
         /// <summary>
         /// Gets the frame number of the canonical frame of this segment,

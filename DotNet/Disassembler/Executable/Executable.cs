@@ -18,6 +18,11 @@ namespace Disassembler
                 new Address(image.MapFrameToSegment(file.EntryPoint.Segment), file.EntryPoint.Offset);
         }
 
+        public override BinaryImage GetImage()
+        {
+            return image;
+        }
+
         public ExecutableImage Image
         {
             get { return image; }

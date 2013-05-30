@@ -43,6 +43,11 @@ namespace Disassembler
 
         public LibraryImage Image { get; set; }
 
+        public override BinaryImage GetImage()
+        {
+            return Image;
+        }
+
         public IEnumerable<string> GetUnresolvedSymbols()
         {
             foreach (var kv in Symbols)

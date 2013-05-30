@@ -567,7 +567,7 @@ namespace Disassembler
                 if (insn == null)
                 {
                     AddError(ip, ErrorCode.BrokenBasicBlock,
-                        "Basic block ended prematurally.");
+                        "Basic block ended prematurally because of invalid instruction.");
                     blockType = BasicBlockType.Broken;
                     break;
                 }

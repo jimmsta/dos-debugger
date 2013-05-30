@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Util.Data;
 using X86Codec;
 
 namespace Disassembler
@@ -33,7 +34,17 @@ namespace Disassembler
             }
         }
 
-        //public abstract ImageChunk Image { get; }
+        /// <summary>
+        /// Gets the display name of the segment.
+        /// </summary>
+        public abstract string Name { get; }
+
+        /// <summary>
+        /// Gets the range of addressible offsets within this segment. Any
+        /// offset within this range must have IsAddressValid() return true.
+        /// The returned range may not necessarily start from offset zero.
+        /// </summary>
+        public abstract Range<int> OffsetRange { get; }
 
         protected virtual string GetLabel()
         {

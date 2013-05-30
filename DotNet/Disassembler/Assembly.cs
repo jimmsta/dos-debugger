@@ -33,7 +33,7 @@ namespace Disassembler
     ///     |-- ...
     /// 
     /// </remarks>
-    public class Assembly
+    public abstract class Assembly
     {
         readonly XRefCollection crossReferences = new XRefCollection();
         readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
@@ -71,6 +71,11 @@ namespace Disassembler
         {
             get { return modules; }
         }
+
+        /// <summary>
+        /// Returns the binary image of this assembly.
+        /// </summary>
+        public abstract BinaryImage GetImage();
 
 #if false
         /// <summary>

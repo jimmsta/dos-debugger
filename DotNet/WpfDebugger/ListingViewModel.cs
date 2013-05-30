@@ -35,12 +35,7 @@ namespace WpfDebugger
 
         public ListingViewModel(Assembly assembly, int segmentId)
         {
-            if (assembly is Executable)
-                this.image = ((Executable)assembly).Image;
-            else if (assembly is ObjectLibrary)
-                this.image = ((ObjectLibrary)assembly).Image;
-            else
-                this.image = null;
+            this.image = assembly.GetImage();
             
             // Make a list of the errors in this segment. Ideally we should
             // put this logic into ErrorCollection. But for convenience we
@@ -52,9 +47,21 @@ namespace WpfDebugger
                  select error).ToList();
             int iError = 0;
 
+            // Find the segment. 
+            // Todo: we should provide a way to do this.
+            Segment segment = null;
+            foreach (Segment seg in image.Segments)
+            {
+                if (seg.Id == segmentId)
+                {
+                    segment = seg;
+                    break;
+                }
+            }
+
             // Display analyzed code and data.
             // TODO: a segment may not start at zero.
-            Address address = new Address(segmentId, 0);
+            Address address = new Address(segmentId, segment.OffsetRange.Begin);
             while (image.IsAddressValid(address))
             {
                 ByteAttribute b = image[address];

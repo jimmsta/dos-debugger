@@ -31,6 +31,15 @@ namespace Disassembler
             return true;
         }
 
+        public override IEnumerable<Segment> Segments
+        {
+            get
+            {
+                foreach (SegmentImage segmentImage in segmentImages)
+                    yield return segmentImage.Segment;
+            }
+        }
+
         protected override ByteAttribute GetByteAttribute(Address address)
         {
             return segmentImages[address.Segment].ByteAttributes[address.Offset];
