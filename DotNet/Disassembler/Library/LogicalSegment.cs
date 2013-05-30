@@ -57,7 +57,7 @@ namespace Disassembler
             get { return fullName; }
         }
 
-        public override Range<int> OffsetRange
+        public override Range<int> OffsetBounds
         {
             get { return new Range<int>(0, this.Length); }
         }

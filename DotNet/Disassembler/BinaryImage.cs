@@ -7,35 +7,88 @@ using X86Codec;
 
 namespace Disassembler
 {
-    // todo: make this an interface
-
     /// <summary>
-    /// Defines an abstract class that provides methods to access the bytes
-    /// in a binary image. The bytes are organized in segments.
+    /// Provides methods to access the bytes in a binary image and keeps
+    /// track of related analysis results.
     /// </summary>
-    /// <remarks>
-    /// This class does not analyze the image; nor does it store analysis
-    /// results. The analysis is done by DisassemblerBase, and the results
-    /// (basic blocks, procedures, etc) are stored in AnalysisResults.
-    /// </remarks>
     public abstract class BinaryImage
     {
-        public BinaryImage()
+        readonly List<Segment> segments = new List<Segment>();
+
+        protected BinaryImage()
         {
         }
-        
+
+        #region Abstract Methods
+
         /// <summary>
-        /// Returns true if the supplied address refers to an accessible byte
+        /// Gets the underlying image data starting from the given address.
+        /// </summary>
+        /// <param name="address">Address to start return.</param>
+        /// <param name="count">Number of bytes to return. Must be within the
+        /// segment.</param>
+        /// <returns></returns>
+        public abstract ArraySegment<byte> GetBytes(Address address, int count);
+
+        /// <summary>
+        /// Gets all data within the segment starting at the given address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public abstract ArraySegment<byte> GetBytes(Address address);
+
+        #endregion
+
+        #region Overridable Methods
+
+        /// <summary>
+        /// Gets a user-friendly display string for the address.
+        /// </summary>
+        /// <remarks>
+        /// It is possible that the offset of the address is not accessible,
+        /// e.g. when we format the location of an error. But the segment is
+        /// required to be valid.
+        /// </remarks>
+        public virtual string FormatAddress(Address address)
+        {
+            return string.Format("seg{0:000}:{1:X4}", 
+                address.Segment, address.Offset);
+        }
+
+        /// <summary>
+        /// Called when the attributes of the given range of bytes have
+        /// changed from Unknown to something.
+        /// </summary>
+        /// <param name="startAddress"></param>
+        /// <param name="endAddress"></param>
+        protected virtual void OnBytesAnalyzed(Address startAddress, Address endAddress)
+        {
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Checks whether the supplied address refers to an accessible byte
         /// in the image.
         /// </summary>
         /// <param name="address">The address to check.</param>
         /// <returns>true if the address is valid, false otherwise.</returns>
-        public abstract bool IsAddressValid(Address address);
+        /// <remarks>
+        /// This method returns true if the segment index is valid and the
+        /// offset is within the OffsetBounds of that segment.
+        /// </remarks>
+        public bool IsAddressValid(Address address)
+        {
+            int segmentId = address.Segment;
+            if (segmentId < 0 || segmentId >= segments.Count)
+                return false;
 
-        /// <summary>
-        /// Returns a user-friendly display string for the address.
-        /// </summary>
-        public abstract string FormatAddress(Address address);
+            Segment segment = segments[segmentId];
+            if (!segment.OffsetBounds.Contains(address.Offset))
+                return false;
+
+            return true;
+        }
 
         /// <summary>
         /// Returns information about a byte the given address.
@@ -51,27 +104,15 @@ namespace Disassembler
 
         protected abstract void SetByteAttribute(Address address, ByteAttribute attr);
 
-        public abstract IEnumerable<Segment> Segments { get; }
+        #region Properties
+
+        public List<Segment> Segments { get { return segments; } }
+
+        #endregion
 
         // may change to
         // GetSegmentCount();
         // GetSegment(int index);
-
-        /// <summary>
-        /// Gets the underlying binary data at the given location.
-        /// </summary>
-        /// <param name="address">Address to return.</param>
-        /// <param name="count">Number of bytes to return. Must be within the
-        /// segment.</param>
-        /// <returns></returns>
-        public abstract ArraySegment<byte> GetBytes(Address address, int count);
-
-        /// <summary>
-        /// Gets all data within the segment starting at the given address.
-        /// </summary>
-        /// <param name="address"></param>
-        /// <returns></returns>
-        public abstract ArraySegment<byte> GetBytes(Address address);
 
         // TODO: move this out somewhere
         public UInt16 GetUInt16(Address address)
@@ -80,10 +121,9 @@ namespace Disassembler
             return (UInt16)(x.Array[x.Offset] | (x.Array[x.Offset + 1] << 8));
         }
 
-        // TODO: move this to AnalyzedImage
         /// <summary>
         /// Returns true if all bytes within the given address range are of
-        /// the given type.
+        /// the given type. The address range must be on the same segment.
         /// </summary>
         public bool CheckByteType(Address startAddress, Address endAddress, ByteType type)
         {
@@ -100,7 +140,8 @@ namespace Disassembler
 
         /// <summary>
         /// Marks a contiguous range of bytes as the given type, and marks
-        /// the first byte in this range as a lead byte.
+        /// the first byte in this range as a lead byte. The address range
+        /// must be on the same segment.
         /// </summary>
         public void UpdateByteType(Address startAddress, Address endAddress, ByteType type)
         {
@@ -119,10 +160,11 @@ namespace Disassembler
                 };
                 SetByteAttribute(p, attr);
             }
+
+            OnBytesAnalyzed(startAddress, endAddress);
         }
 
 #if false
-       
         private bool RangeCoversWholeInstructions(LinearPointer startAddress, LinearPointer endAddress)
         {
             int pos1 = PointerToOffset(startAddress);

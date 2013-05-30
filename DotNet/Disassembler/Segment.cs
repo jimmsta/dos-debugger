@@ -34,11 +34,18 @@ namespace Disassembler
 #endif
 
         /// <summary>
-        /// Gets the range of addressible offsets within this segment. Any
-        /// offset within this range must have IsAddressValid() return true.
-        /// The returned range may not necessarily start from offset zero.
+        /// Gets the range of addressible offsets within this segment. All
+        /// bytes within this range must be accessible, i.e. they will have
+        /// IsAddressValid() return true.
+        /// 
+        /// The return value may change overtime, but it can only shrink
+        /// and must never grow. This ensures that the return value from
+        /// the very first call to OffsetBounds can be used to allocate a
+        /// sufficiently large buffer.
+        /// 
+        /// The returned range does not necessarily start from offset zero.
         /// </summary>
-        public abstract Range<int> OffsetRange { get; }
+        public abstract Range<int> OffsetBounds { get; }
 
         protected virtual string GetLabel()
         {

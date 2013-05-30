@@ -63,7 +63,7 @@ namespace Disassembler
             // Find the first fixup that covers the instruction. If no
             // fix-up covers the instruction, find the closest fix-up
             // that comes after.
-            FixupCollection fixups = library.Image.SegmentImages[address.Segment].Segment.Fixups;
+            FixupCollection fixups = library.Image.GetSegment(address.Segment).Segment.Fixups;
             int fixupIndex = fixups.BinarySearch(address.Offset);
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;

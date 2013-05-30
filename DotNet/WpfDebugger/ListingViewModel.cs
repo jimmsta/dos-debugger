@@ -20,7 +20,6 @@ namespace WpfDebugger
         //private Disassembler16 dasm;
         //private BinaryImage image;
         readonly BinaryImage image;
-        private int segment;
 
         /// <summary>
         /// Array of the address of each row. This array is used to speed up
@@ -61,7 +60,7 @@ namespace WpfDebugger
 
             // Display analyzed code and data.
             // TODO: a segment may not start at zero.
-            Address address = new Address(segmentId, segment.OffsetRange.Begin);
+            Address address = new Address(segmentId, segment.OffsetBounds.Begin);
             while (image.IsAddressValid(address))
             {
                 ByteAttribute b = image[address];

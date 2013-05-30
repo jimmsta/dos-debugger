@@ -14,11 +14,8 @@ namespace Disassembler
         readonly Address entryPoint;
 
         // Maps a frame number (before relocation) to a segment id.
-        readonly SortedList<UInt16, ExecutableSegment> segments =
-            new SortedList<UInt16, ExecutableSegment>();
-
-        readonly Dictionary<Address, Instruction> instructions =
-            new Dictionary<Address, Instruction>();
+        readonly SortedList<UInt16, int> mapFrameToSegment
+            = new SortedList<UInt16, int>();
 
 #if false
         /// <summary>
@@ -73,17 +70,17 @@ namespace Disassembler
             foreach (int index in relocatableLocations)
             {
                 UInt16 frame = BitConverter.ToUInt16(bytes, index);
-                segments[frame] = null;
+                mapFrameToSegment[frame] = -1;
             }
-            segments[file.EntryPoint.Segment] = null;
+            mapFrameToSegment[file.EntryPoint.Segment] = -1;
 
             // Create a dummy segment for each of the guessed segments.
             // Initially, we set segment.OffsetCoverage to an empty range to
             // indicate that we have no knowledge about the start and end
             // offset of each segment.
-            for (int i = segments.Count - 1; i >= 0; i--)
+            for (int i = 0; i < mapFrameToSegment.Count; i++)
             {
-                UInt16 frameNumber = segments.Keys[i];
+                UInt16 frameNumber = mapFrameToSegment.Keys[i];
                 ExecutableSegment segment = new ExecutableSegment(this, i, frameNumber);
 
                 // Compute offset bounds for this segment.
@@ -94,16 +91,18 @@ namespace Disassembler
                 {
                     int offsetLowerBound = 0;
                     int offsetUpperBound = Math.Min(bytes.Length - startIndex, 0x10000);
-                    if (i < segments.Count - 1)
+                    if (i < mapFrameToSegment.Count - 1)
                     {
                         offsetUpperBound = Math.Min(
-                            offsetUpperBound, segments.Keys[i + 1] * 16 + 15 - startIndex);
+                            offsetUpperBound, 
+                            mapFrameToSegment.Keys[i + 1] * 16 + 15 - startIndex);
                     }
-                    segment.OffsetBounds = new Range<int>(
-                        offsetLowerBound, offsetUpperBound);
+                    segment.SetOffsetBounds(
+                        new Range<int>(offsetLowerBound, offsetUpperBound));
                 }
 
-                segments[frameNumber] = segment;
+                mapFrameToSegment[frameNumber] = i;
+                base.Segments.Add(segment);
             }
 
             this.entryPoint = new Address(
@@ -125,18 +124,9 @@ namespace Disassembler
             get { return this.entryPoint; }
         }
 
-        public override IEnumerable<Segment> Segments
-        {
-            get
-            {
-                foreach (ExecutableSegment segment in this.segments.Values)
-                    yield return segment;
-            }
-        }
-
         public int MapFrameToSegment(UInt16 frameNumber)
         {
-            return segments[frameNumber].Id;
+            return mapFrameToSegment[frameNumber];
         }
 
         public bool IsAddressRelocatable(Address address)
@@ -154,26 +144,19 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("address");
 
             return string.Format("{0:X4}:{1:X4}",
-                segments.Values[address.Segment].Frame,
+                ((ExecutableSegment)base.Segments[address.Segment]).Frame,
                 address.Offset);
+        }
+
+        private ExecutableSegment GetSegment(int index)
+        {
+            return (ExecutableSegment)base.Segments[index];
         }
 
         private int ToLinearAddress(Address address)
         {
-            return segments.Values[address.Segment].Frame * 16 + address.Offset;
-        }
-
-        public override bool IsAddressValid(Address address)
-        {
-            int segmentId = address.Segment;
-            if (segmentId < 0 || segmentId >= segments.Count)
-                return false;
-
-            ExecutableSegment segment = segments.Values[segmentId];
-            if (!segment.OffsetBounds.Contains(address.Offset))
-                return false;
-
-            return true;
+            ExecutableSegment segment = (ExecutableSegment)base.Segments[address.Segment];
+            return segment.Frame * 16 + address.Offset;
         }
 
         protected override ByteAttribute GetByteAttribute(Address address)
@@ -196,7 +179,7 @@ namespace Disassembler
 
         private void ExtendSegmentCoverage(Address address)
         {
-            ExecutableSegment segment = segments.Values[address.Segment];
+            ExecutableSegment segment = GetSegment(address.Segment);
             int offset = address.Offset;
 
             if (segment.OffsetCoverage.Contains(offset))
@@ -218,28 +201,28 @@ namespace Disassembler
             int i = segment.Id;
             if (i > 0)
             {
-                ExecutableSegment segBefore = segments.Values[i - 1];
+                ExecutableSegment segBefore = GetSegment(i - 1);
                 int numBytesOverlap = 
                     (segBefore.Frame * 16 + segBefore.OffsetBounds.End) -
                     (segment.Frame * 16 + segment.OffsetCoverage.Begin);
                 if (numBytesOverlap > 0)
                 {
-                    segBefore.OffsetBounds = new Range<int>(
+                    segBefore.SetOffsetBounds(new Range<int>(
                         segBefore.OffsetBounds.Begin,
-                        segBefore.OffsetBounds.End - numBytesOverlap);
+                        segBefore.OffsetBounds.End - numBytesOverlap));
                 }
             }
-            if (i < segments.Count - 1)
+            if (i < base.Segments.Count - 1)
             {
-                ExecutableSegment segAfter = segments.Values[i + 1];
+                ExecutableSegment segAfter = GetSegment(i + 1);
                 int numBytesOverlap =
                     (segment.Frame * 16 + segment.OffsetCoverage.End) -
                     (segAfter.Frame * 16 + segAfter.OffsetBounds.Begin);
                 if (numBytesOverlap > 0)
                 {
-                    segAfter.OffsetBounds = new Range<int>(
+                    segAfter.SetOffsetBounds(new Range<int>(
                         segAfter.OffsetBounds.Begin + numBytesOverlap,
-                        segAfter.OffsetBounds.End);
+                        segAfter.OffsetBounds.End));
                 }
             }
         }
@@ -266,22 +249,6 @@ namespace Disassembler
             int index = ToLinearAddress(address);
             return new ArraySegment<byte>(bytes, index, bytes.Length - index);
         }
-
-#if false
-        public override Instruction GetInstruction(Address address)
-        {
-            if (!IsAddressValid(address))
-                throw new ArgumentOutOfRangeException("address");
-            return instructions[address];
-        }
-
-        public override void SetInstruction(Address address, Instruction instruction)
-        {
-            if (!IsAddressValid(address))
-                throw new ArgumentOutOfRangeException("address");
-            instructions[address] = instruction;
-        }
-#endif
     }
 
     /// <summary>
@@ -292,6 +259,9 @@ namespace Disassembler
         readonly ExecutableImage image;
         readonly UInt16 frameNumber;
         readonly int id;
+
+        private Range<int> offsetBounds;
+        private Range<int> offsetCoverage;
 
         public ExecutableSegment(ExecutableImage image, int id, UInt16 frameNumber)
         {
@@ -310,17 +280,24 @@ namespace Disassembler
             get { return frameNumber.ToString("X4"); }
         }
 
-        public override Range<int> OffsetRange
+        public override Range<int> OffsetBounds
         {
-            get { return OffsetBounds; }
+            get { return offsetBounds; }
         }
 
-        public Range<int> OffsetBounds { get; set; }
+        internal void SetOffsetBounds(Range<int> bounds)
+        {
+            this.offsetBounds = bounds;
+        }
 
         /// <summary>
         /// Gets or sets the range of offsets that are analyzed.
         /// </summary>
-        public Range<int> OffsetCoverage { get; set; }
+        public Range<int> OffsetCoverage
+        {
+            get { return this.offsetCoverage; }
+            set { this.offsetCoverage = value; }
+        }
 
         /// <summary>
         /// Gets the frame number of the canonical frame of this segment,
