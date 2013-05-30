@@ -62,6 +62,7 @@ namespace Disassembler
             return new ArraySegment<byte>(seg.Data, address.Offset, seg.Data.Length - address.Offset);
         }
 
+#if false
         public override Instruction GetInstruction(Address address)
         {
             SegmentImage seg = segmentImages[address.Segment];
@@ -73,6 +74,7 @@ namespace Disassembler
             SegmentImage seg = segmentImages[address.Segment];
             seg.Instructions[address.Offset] = instruction;
         }
+#endif
 
         public override string FormatAddress(Address address)
         {

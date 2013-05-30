@@ -84,6 +84,7 @@ namespace WpfDebugger
 
         private void DisassembleSegment(LogicalSegment segment, Module module)
         {
+#if false
             foreach (DefinedSymbol symbol in ((ObjectModule)module).DefinedNames)
             {
                 if (symbol.BaseSegment == segment)
@@ -93,6 +94,7 @@ namespace WpfDebugger
                         new Address(segment.Id, (int)symbol.Offset));
                 }
             }
+#endif
 
             // Raise request navigate event.
             if (this.RequestNavigate != null)

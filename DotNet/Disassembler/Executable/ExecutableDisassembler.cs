@@ -471,11 +471,18 @@ namespace Disassembler
         }
 #endif
 
+        public override void Analyze()
+        {
+            base.Analyze(executable.Image.EntryPoint);
+        }
+
+#if false
         public static void Disassemble(Executable executable, Address entryPoint)
         {
             ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
             dasm.Analyze(entryPoint);
         }
+#endif
     }
 
 }

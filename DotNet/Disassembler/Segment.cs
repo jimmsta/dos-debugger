@@ -8,31 +8,16 @@ namespace Disassembler
 {
     /// <summary>
     /// Represents a segment in a binary image. A segment is a contiguous
-    /// block of bytes that are addressible with the same segment selector.
-    /// This segment selector is also called "SegmentId" here.
-    ///
-    /// A relocatable segment in an executable, or a logical segment in an
-    /// object library.
+    /// block of bytes that are addressible by the same segment selector.
+    /// This segment selector is a zero-based index that identifies the
+    /// segment within the binary image.
     /// </summary>
     public abstract class Segment : IAddressReferent // ?? should we implement IAddressReferent?
     {
-        private int id;
-
         /// <summary>
-        /// Gets or sets the ID of the segment. This ID uniquely identifies
-        /// the segment within its containing assembly. This ID may be set
-        /// only once.
+        /// Gets the zero-based index of the segment within the binary image.
         /// </summary>
-        public int Id
-        {
-            get { return id; }
-            set
-            {
-                if (id != 0)
-                    throw new InvalidOperationException();
-                id = value;
-            }
-        }
+        public abstract int Id { get; }
 
         /// <summary>
         /// Gets the display name of the segment.

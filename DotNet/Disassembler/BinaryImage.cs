@@ -7,14 +7,16 @@ using X86Codec;
 
 namespace Disassembler
 {
+    // todo: make this an interface
+
     /// <summary>
-    /// Defines an abstract class that provides methods to access the bytes,
-    /// arranged in segments, in a binary image.
+    /// Defines an abstract class that provides methods to access the bytes
+    /// in a binary image. The bytes are organized in segments.
     /// </summary>
     /// <remarks>
     /// This class does not analyze the image; nor does it store analysis
-    /// results. The analysis is done by DisassemblerBase, and analysis
-    /// results (basic blocks, procedures, etc) are stored in _____?
+    /// results. The analysis is done by DisassemblerBase, and the results
+    /// (basic blocks, procedures, etc) are stored in AnalysisResults.
     /// </remarks>
     public abstract class BinaryImage
     {
@@ -49,11 +51,11 @@ namespace Disassembler
 
         protected abstract void SetByteAttribute(Address address, ByteAttribute attr);
 
-        public abstract Instruction GetInstruction(Address address);
-
-        public abstract void SetInstruction(Address address, Instruction instruction);
-
         public abstract IEnumerable<Segment> Segments { get; }
+
+        // may change to
+        // GetSegmentCount();
+        // GetSegment(int index);
 
         /// <summary>
         /// Gets the underlying binary data at the given location.
@@ -71,12 +73,14 @@ namespace Disassembler
         /// <returns></returns>
         public abstract ArraySegment<byte> GetBytes(Address address);
 
+        // TODO: move this out somewhere
         public UInt16 GetUInt16(Address address)
         {
             ArraySegment<byte> x = GetBytes(address, 2);
             return (UInt16)(x.Array[x.Offset] | (x.Array[x.Offset + 1] << 8));
         }
 
+        // TODO: move this to AnalyzedImage
         /// <summary>
         /// Returns true if all bytes within the given address range are of
         /// the given type.
@@ -119,42 +123,6 @@ namespace Disassembler
 
 #if false
        
-
-        /// <summary>
-        /// Gets a collection of analyzed segments. The segments are returned
-        /// in order of their 16-bit segment number.
-        /// </summary>
-        [Browsable(true)]
-        public ICollection<Segment> Segments
-        {
-            get { return segments.Values; }
-        }
-
-        /// <summary>
-        /// Finds a Segment object with the given segment address.
-        /// </summary>
-        /// <param name="segmentAddress">16-bit segment address.</param>
-        /// <returns>A Segment object if found, null otherwise.</returns>
-        public Segment FindSegment(UInt16 segmentAddress)
-        {
-            Segment segment;
-            if (segments.TryGetValue(segmentAddress, out segment))
-                return segment;
-            else
-                return null;
-        }
-
-        public UInt16 LargestSegmentThatStartsBefore(LinearPointer address)
-        {
-            UInt16 result = 0;
-            foreach (Segment segment in Segments)
-            {
-                if (segment.StartAddress <= address)
-                    result = segment.SegmentAddress;
-            }
-            return result;
-        }
-
         private bool RangeCoversWholeInstructions(LinearPointer startAddress, LinearPointer endAddress)
         {
             int pos1 = PointerToOffset(startAddress);
@@ -187,7 +155,7 @@ namespace Disassembler
     /// 
     ///   7   6   5   4   3   2   1   0
     /// +---+---+---+---+---+---+---+---+
-    /// | - | - | FL| F | L | - |  TYPE |
+    /// | - | - | - | - | L | - |  TYPE |
     /// +---+---+---+---+---+---+---+---+
     /// 
     /// -   : reserved
@@ -197,8 +165,6 @@ namespace Disassembler
     ///       11 = data
     /// L (LeadByte): 0 = not a lead byte
     ///               1 = is lead byte of code or data
-    /// F (Fix-up):   0 = no fix-up info
-    ///               1 = has fix-up info
     /// </remarks>
     public struct ByteAttribute
     {
@@ -219,18 +185,6 @@ namespace Disassembler
                     attr |= 0x08;
                 else
                     attr &= 0xF7;
-            }
-        }
-
-        public bool HasFixup
-        {
-            get { return (attr & 0x10) != 0; }
-            set
-            {
-                if (value)
-                    attr |= 0x10;
-                else
-                    attr &= 0xEF;
             }
         }
     }

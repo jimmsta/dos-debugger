@@ -192,7 +192,7 @@ namespace Disassembler
             return base.ResolveFlowInstructionTarget(operand);
         }
 
-        public void AnalyzeAll()
+        public override void Analyze()
         {
             foreach (ObjectModule module in library.Modules)
             {
@@ -223,10 +223,12 @@ namespace Disassembler
             AddBasicBlocksToProcedures();
         }
 
+#if false
         public static void Disassemble(ObjectLibrary library, Address entryPoint)
         {
             LibraryDisassembler dasm = new LibraryDisassembler(library);
             dasm.Analyze(entryPoint);
         }
+#endif
     }
 }

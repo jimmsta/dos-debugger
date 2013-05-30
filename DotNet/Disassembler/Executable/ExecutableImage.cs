@@ -11,10 +11,11 @@ namespace Disassembler
         readonly byte[] bytes;
         readonly ByteAttribute[] attrs;
         readonly int[] relocatableLocations;
+        readonly Address entryPoint;
 
         // Maps a frame number (before relocation) to a segment id.
-        readonly SortedList<UInt16, DummySegment> segments =
-            new SortedList<UInt16, DummySegment>();
+        readonly SortedList<UInt16, ExecutableSegment> segments =
+            new SortedList<UInt16, ExecutableSegment>();
 
         readonly Dictionary<Address, Instruction> instructions =
             new Dictionary<Address, Instruction>();
@@ -83,7 +84,7 @@ namespace Disassembler
             for (int i = segments.Count - 1; i >= 0; i--)
             {
                 UInt16 frameNumber = segments.Keys[i];
-                DummySegment segment = new DummySegment(this, i, frameNumber);
+                ExecutableSegment segment = new ExecutableSegment(this, i, frameNumber);
 
                 // Compute offset bounds for this segment.
                 // The lower bound is off course zero.
@@ -104,6 +105,9 @@ namespace Disassembler
 
                 segments[frameNumber] = segment;
             }
+
+            this.entryPoint = new Address(
+                MapFrameToSegment(file.EntryPoint.Segment), file.EntryPoint.Offset);
         }
 
         public int Length
@@ -116,11 +120,16 @@ namespace Disassembler
             get { return relocatableLocations; }
         }
 
+        public Address EntryPoint
+        {
+            get { return this.entryPoint; }
+        }
+
         public override IEnumerable<Segment> Segments
         {
             get
             {
-                foreach (DummySegment segment in this.segments.Values)
+                foreach (ExecutableSegment segment in this.segments.Values)
                     yield return segment;
             }
         }
@@ -160,7 +169,7 @@ namespace Disassembler
             if (segmentId < 0 || segmentId >= segments.Count)
                 return false;
 
-            DummySegment segment = segments.Values[segmentId];
+            ExecutableSegment segment = segments.Values[segmentId];
             if (!segment.OffsetBounds.Contains(address.Offset))
                 return false;
 
@@ -187,7 +196,7 @@ namespace Disassembler
 
         private void ExtendSegmentCoverage(Address address)
         {
-            DummySegment segment = segments.Values[address.Segment];
+            ExecutableSegment segment = segments.Values[address.Segment];
             int offset = address.Offset;
 
             if (segment.OffsetCoverage.Contains(offset))
@@ -209,7 +218,7 @@ namespace Disassembler
             int i = segment.Id;
             if (i > 0)
             {
-                DummySegment segBefore = segments.Values[i - 1];
+                ExecutableSegment segBefore = segments.Values[i - 1];
                 int numBytesOverlap = 
                     (segBefore.Frame * 16 + segBefore.OffsetBounds.End) -
                     (segment.Frame * 16 + segment.OffsetCoverage.Begin);
@@ -222,7 +231,7 @@ namespace Disassembler
             }
             if (i < segments.Count - 1)
             {
-                DummySegment segAfter = segments.Values[i + 1];
+                ExecutableSegment segAfter = segments.Values[i + 1];
                 int numBytesOverlap =
                     (segment.Frame * 16 + segment.OffsetCoverage.End) -
                     (segAfter.Frame * 16 + segAfter.OffsetBounds.Begin);
@@ -258,6 +267,7 @@ namespace Disassembler
             return new ArraySegment<byte>(bytes, index, bytes.Length - index);
         }
 
+#if false
         public override Instruction GetInstruction(Address address)
         {
             if (!IsAddressValid(address))
@@ -271,22 +281,28 @@ namespace Disassembler
                 throw new ArgumentOutOfRangeException("address");
             instructions[address] = instruction;
         }
+#endif
     }
 
-    public class DummySegment : Segment
+    /// <summary>
+    /// Contains information about a segment in an executable file.
+    /// </summary>
+    public class ExecutableSegment : Segment
     {
         readonly ExecutableImage image;
         readonly UInt16 frameNumber;
+        readonly int id;
 
-        //UInt16 minOffset; 
-        //UInt16 maxOffset;
-
-        public DummySegment(ExecutableImage image, int id, UInt16 frameNumber)
+        public ExecutableSegment(ExecutableImage image, int id, UInt16 frameNumber)
         {
-            base.Id = id;
+            this.id = id;
             this.image = image;
             this.frameNumber = frameNumber;
-            
+        }
+
+        public override int Id
+        {
+            get { return this.id; }
         }
 
         public override string Name

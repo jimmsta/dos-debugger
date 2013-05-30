@@ -80,7 +80,7 @@ namespace WpfDebugger
                     }
 #endif
 
-                    Instruction insn = image.GetInstruction(address);
+                    Instruction insn = assembly.Result.Instructions.Find(address);
                     System.Diagnostics.Debug.Assert(insn != null);
                     rows.Add(new CodeListingRow(
                         assembly, address, insn, 

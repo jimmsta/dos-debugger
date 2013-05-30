@@ -36,14 +36,14 @@ namespace Disassembler
         readonly BasicBlockType type;
         readonly CodeFeatures features;
         
-        public BasicBlock(Address begin, Address end, BasicBlockType type, BinaryImage image)
+        public BasicBlock(Address begin, Address end, BasicBlockType type, AnalysisResults program)
         {
             if (begin.Segment != end.Segment)
                 throw new ArgumentException("Basic block must be on the same segment.");
             this.location = begin;
             this.length = end.Offset - begin.Offset;
             this.type = type;
-            this.features = CodeFeaturesHelper.GetFeatures(GetInstructions(image));
+            this.features = CodeFeaturesHelper.GetFeatures(GetInstructions(program));
         }
 
         public Address Location
@@ -76,11 +76,11 @@ namespace Disassembler
             get { return features; }
         }
 
-        public IEnumerable<Instruction> GetInstructions(BinaryImage image)
+        public IEnumerable<Instruction> GetInstructions(AnalysisResults program)
         {
             for (Address p = this.location; p != this.location + length; )
             {
-                Instruction instruction = image.GetInstruction(p);
+                Instruction instruction = program.Instructions.Find(p);
                 yield return instruction;
                 p += instruction.EncodedLength;
             }
@@ -178,7 +178,7 @@ namespace Disassembler
         /// be in the collection.
         /// </summary>
         /// <param name="block"></param>
-        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, BinaryImage image)
+        public BasicBlock[] SplitBasicBlock(BasicBlock block, Address cutoff, AnalysisResults program)
         {
             ++TimesSplit;
             if (block == null)
@@ -194,8 +194,8 @@ namespace Disassembler
 
             // Create two blocks.
             var range = block.Bounds;
-            BasicBlock block1 = new BasicBlock(range.Begin, cutoff, BasicBlockType.FallThrough, image);
-            BasicBlock block2 = new BasicBlock(cutoff, range.End, block.Type, image);
+            BasicBlock block1 = new BasicBlock(range.Begin, cutoff, BasicBlockType.FallThrough, program);
+            BasicBlock block2 = new BasicBlock(cutoff, range.End, block.Type, program);
 
             // Replace the big block from this collection and add the newly
             // created smaller blocks.

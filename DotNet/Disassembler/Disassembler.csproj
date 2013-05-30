@@ -72,6 +72,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Address.cs" />
+    <Compile Include="AnalysisResults.cs" />
     <Compile Include="Assembly.cs" />
     <Compile Include="BasicBlock.cs" />
     <Compile Include="BinaryImage.cs" />

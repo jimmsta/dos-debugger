@@ -72,6 +72,8 @@ namespace Disassembler
             get { return modules; }
         }
 
+        public AnalysisResults Result { get; set; }
+
         /// <summary>
         /// Returns the binary image of this assembly.
         /// </summary>

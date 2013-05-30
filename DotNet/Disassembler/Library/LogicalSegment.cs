@@ -25,7 +25,7 @@ namespace Disassembler
     {
         SegmentDefinition definition;
 
-        readonly int id;
+        private int id;
         readonly string fullName;
         readonly byte[] data;
         readonly FixupCollection fixups = new FixupCollection();
@@ -45,6 +45,11 @@ namespace Disassembler
             this.id = id;
             this.fullName = module.Name + "." + def.SegmentName;
             this.data = def.Data;
+        }
+
+        public void SetId(int id)
+        {
+            this.id = id;
         }
 
         public override string Name
@@ -123,7 +128,10 @@ namespace Disassembler
         {
             return string.Format("{0}:{1}", Name, Class);
         }
+
+        public override int Id
+        {
+            get { return this.id; }
+        }
     }
-
-
 }

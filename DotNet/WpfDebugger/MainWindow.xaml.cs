@@ -123,6 +123,7 @@ namespace WpfDebugger
             Executable executable = new Executable(fileName);
             ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
             dasm.Analyze(executable.EntryPoint);
+            executable.Result = dasm.Result;
 
             this.program = executable;
             //this.disassemblyList.Image = image;
@@ -138,7 +139,8 @@ namespace WpfDebugger
             library.ResolveAllSymbols();
 
             LibraryDisassembler dasm = new LibraryDisassembler(library);
-            dasm.AnalyzeAll();
+            dasm.Analyze();
+            library.Result = dasm.Result;
 
             this.program = library;
             this.procedureList.Program = program;

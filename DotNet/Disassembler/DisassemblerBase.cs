@@ -16,6 +16,7 @@ namespace Disassembler
     public abstract class DisassemblerBase
     {
         protected readonly BinaryImage image;
+        protected readonly AnalysisResults results; // may rename to program
 
         protected DisassemblerBase(BinaryImage image)
         {
@@ -23,6 +24,7 @@ namespace Disassembler
                 throw new ArgumentNullException("image");
 
             this.image = image;
+            this.results = new AnalysisResults(image);
         }
 
         /// <summary>
@@ -51,6 +53,13 @@ namespace Disassembler
             get { return Assembly.Errors; }
         }
 
+        public abstract void Analyze();
+
+        public AnalysisResults Result
+        {
+            get { return results; }
+        }
+
         /// <summary>
         /// Analyzes code starting from the given location. That location
         /// should be the entry point of a procedure, or otherwise the
@@ -60,7 +69,7 @@ namespace Disassembler
         /// This location is relative to the beginning of the image.</param>
         /// <param name="entryType">Type of entry, should usually be JMP or
         /// CALL.</param>
-        public void Analyze(Address entryPoint)
+        public virtual void Analyze(Address entryPoint)
         {
             GenerateBasicBlocks(entryPoint);
             GenerateControlFlowGraph();
@@ -546,7 +555,7 @@ namespace Disassembler
                         start.Source);
                     return null;
                 }
-                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip, image);
+                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip, this.results);
 
                 // Create a xref from the previous block to this block.
                 XRef xref = CreateFallThroughXRef(GetLastInstructionInBasicBlock(subBlocks[0]), ip);
@@ -623,7 +632,7 @@ namespace Disassembler
             // Create a basic block unless we failed on the first instruction.
             if (ip.Offset > start.Target.Offset)
             {
-                BasicBlock block = new BasicBlock(start.Target, ip, blockType, image);
+                BasicBlock block = new BasicBlock(start.Target, ip, blockType, results);
                 BasicBlocks.Add(block);
             }
             return null;
@@ -927,7 +936,7 @@ namespace Disassembler
 
             // Create a code piece for this instruction.
             image.UpdateByteType(address, address + instruction.EncodedLength, ByteType.Code);
-            image.SetInstruction(address, instruction);
+            results.Instructions.Add(address, instruction);
 
             // Return the decoded instruction.
             return instruction;
