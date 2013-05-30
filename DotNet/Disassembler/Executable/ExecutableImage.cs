@@ -159,49 +159,37 @@ namespace Disassembler
             return segment.Frame * 16 + address.Offset;
         }
 
-        protected override ByteAttribute GetByteAttribute(Address address)
+        protected override void OnBytesAnalyzed(Address startAddress, Address endAddress)
         {
-            if (!IsAddressValid(address))
-                throw new ArgumentOutOfRangeException("address");
+            if (startAddress.Segment != endAddress.Segment)
+                throw new ArgumentException();
 
-            return attrs[ToLinearAddress(address)];
+            ExtendSegmentCoverage(startAddress.Segment, startAddress.Offset, endAddress.Offset);
+            base.OnBytesAnalyzed(startAddress, endAddress);
         }
 
-        protected override void SetByteAttribute(Address address, ByteAttribute attr)
+        private void ExtendSegmentCoverage(int segmentIndex, int startOffset, int endOffset)
         {
-            if (!IsAddressValid(address))
-                throw new ArgumentOutOfRangeException("address");
-
-            ExtendSegmentCoverage(address);
-
-            attrs[ToLinearAddress(address)] = attr;
-        }
-
-        private void ExtendSegmentCoverage(Address address)
-        {
-            ExecutableSegment segment = GetSegment(address.Segment);
-            int offset = address.Offset;
-
-            if (segment.OffsetCoverage.Contains(offset))
+            ExecutableSegment segment = GetSegment(segmentIndex);
+            if (segment.OffsetCoverage.IsSupersetOf(new Range<int>(startOffset, endOffset)))
                 return;
 
             // Extend the segment's offset coverage.
             if (segment.OffsetCoverage.IsEmpty)
             {
-                segment.OffsetCoverage = new Range<int>(offset, offset + 1);
+                segment.OffsetCoverage = new Range<int>(startOffset, endOffset);
             }
             else
             {
                 segment.OffsetCoverage = new Range<int>(
-                    Math.Min(segment.OffsetCoverage.Begin, offset),
-                    Math.Max(segment.OffsetCoverage.End, offset + 1));
+                    Math.Min(segment.OffsetCoverage.Begin, startOffset),
+                    Math.Max(segment.OffsetCoverage.End, endOffset));
             }
 
             // Shrink the offset bounds of its neighboring segments.
-            int i = segment.Id;
-            if (i > 0)
+            if (segmentIndex > 0)
             {
-                ExecutableSegment segBefore = GetSegment(i - 1);
+                ExecutableSegment segBefore = GetSegment(segmentIndex - 1);
                 int numBytesOverlap = 
                     (segBefore.Frame * 16 + segBefore.OffsetBounds.End) -
                     (segment.Frame * 16 + segment.OffsetCoverage.Begin);
@@ -212,9 +200,9 @@ namespace Disassembler
                         segBefore.OffsetBounds.End - numBytesOverlap));
                 }
             }
-            if (i < base.Segments.Count - 1)
+            if (segmentIndex < base.Segments.Count - 1)
             {
-                ExecutableSegment segAfter = GetSegment(i + 1);
+                ExecutableSegment segAfter = GetSegment(segmentIndex + 1);
                 int numBytesOverlap =
                     (segment.Frame * 16 + segment.OffsetCoverage.End) -
                     (segAfter.Frame * 16 + segAfter.OffsetBounds.Begin);
@@ -240,15 +228,6 @@ namespace Disassembler
             int index = ToLinearAddress(address);
             return new ArraySegment<byte>(bytes, index, count);
         }
-
-        public override ArraySegment<byte> GetBytes(Address address)
-        {
-            if (!IsAddressValid(address))
-                throw new ArgumentOutOfRangeException("address");
-
-            int index = ToLinearAddress(address);
-            return new ArraySegment<byte>(bytes, index, bytes.Length - index);
-        }
     }
 
     /// <summary>
@@ -270,17 +249,17 @@ namespace Disassembler
             this.frameNumber = frameNumber;
         }
 
-        public override int Id
+        public int Id
         {
             get { return this.id; }
         }
 
-        public override string Name
+        public string Name
         {
             get { return frameNumber.ToString("X4"); }
         }
 
-        public override Range<int> OffsetBounds
+        public Range<int> OffsetBounds
         {
             get { return offsetBounds; }
         }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Util.Data;
 using X86Codec;
 
 namespace Disassembler
@@ -16,16 +17,6 @@ namespace Disassembler
             return (LibrarySegment)Segments[index];
         }
 
-        protected override ByteAttribute GetByteAttribute(Address address)
-        {
-            return GetSegment(address.Segment).ByteAttributes[address.Offset];
-        }
-
-        protected override void SetByteAttribute(Address address, ByteAttribute attr)
-        {
-            GetSegment(address.Segment).ByteAttributes[address.Offset] = attr;
-        }
-
         public override ArraySegment<byte> GetBytes(Address address, int count)
         {
             if (!IsAddressValid(address))
@@ -34,20 +25,14 @@ namespace Disassembler
             LibrarySegment seg = GetSegment(address.Segment);
             return new ArraySegment<byte>(seg.Data, address.Offset, count);
         }
-
-        public override ArraySegment<byte> GetBytes(Address address)
-        {
-            LibrarySegment seg = GetSegment(address.Segment);
-            return new ArraySegment<byte>(seg.Data, address.Offset, seg.Data.Length - address.Offset);
-        }
-
+        
         public override string FormatAddress(Address address)
         {
             if (address.Segment < 0 || address.Segment >= Segments.Count)
                 throw new ArgumentOutOfRangeException("address");
 
             return string.Format("{0}+{1:X4}",
-                ((LibrarySegment)Segments[address.Segment]).Name,
+                Segments[address.Segment].Name,
                 address.Offset);
         }
     }
@@ -83,19 +68,19 @@ namespace Disassembler
             get { return segment.Data; }
         }
 
-        public override int Id
+        int Segment.Id
         {
             get { return segment.Id; }
         }
 
-        public override string Name
+        string Segment.Name
         {
             get { return segment.FullName; }
         }
 
-        public override Util.Data.Range<int> OffsetBounds
+        Range<int> Segment.OffsetBounds
         {
-            get { return segment.OffsetBounds; }
+            get { return new Range<int>(0, segment.Length); }
         }
     }
 }

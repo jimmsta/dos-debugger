@@ -20,18 +20,15 @@ namespace Disassembler
     /// Examples: fopen._TEXT, crt0._DATA, etc.
     /// </example>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class LogicalSegment : Segment // create new class LibrarySegment
-                                          // to handle book-keeping of Segment
+    public class LogicalSegment : IAddressReferent
     {
         SegmentDefinition definition;
 
-        private int id;
         readonly string fullName;
         readonly byte[] data;
         readonly FixupCollection fixups = new FixupCollection();
 
         internal LogicalSegment(
-            int id,
             SegmentDefinition def,
             Dictionary<object, object> objectMap,
             ObjectModule module)
@@ -42,34 +39,20 @@ namespace Disassembler
                 throw new NotSupportedException("Segments larger than 64KB are not supported.");
 
             this.definition = def;
-            this.id = id;
             this.fullName = module.Name + "." + def.SegmentName;
             this.data = def.Data;
         }
 
-        public void SetId(int id)
-        {
-            this.id = id;
-        }
-
-        public override string Name
-        {
-            get { return fullName; }
-        }
-
-        public override Range<int> OffsetBounds
-        {
-            get { return new Range<int>(0, this.Length); }
-        }
+        public int Id { get; set; }
 
         /// <summary>
         /// Gets the segment's name, such as "_TEXT". A segment's name
         /// together with its class name uniquely identifies the segment.
         /// </summary>
-        //public new string Name
-        //{
-        //    get { return definition.SegmentName; }
-        //}
+        public string Name
+        {
+            get { return definition.SegmentName; }
+        }
 
         // TODO: make Segment an interface, and explicitly implement
         // its Name property.
@@ -118,20 +101,20 @@ namespace Disassembler
         {
             get { return fixups; }
         }
-
-        protected override string GetLabel()
-        {
-            return Name;
-        }
-
+        
         public override string ToString()
         {
-            return string.Format("{0}:{1}", Name, Class);
+            return string.Format("{0}:{1}", fullName, Class);
         }
 
-        public override int Id
+        string IAddressReferent.Label
         {
-            get { return this.id; }
+            get { return fullName; }
+        }
+
+        Address IAddressReferent.Resolve()
+        {
+            return new Address(Id, 0);
         }
     }
 }

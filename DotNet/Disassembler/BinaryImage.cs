@@ -26,6 +26,7 @@ namespace Disassembler
     public abstract class BinaryImage
     {
         readonly SegmentCollection segments = new SegmentCollection();
+        readonly ByteAttributeCollection attributes;
         readonly InstructionCollection instructions;
         readonly XRefCollection crossReferences = new XRefCollection();
         readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
@@ -35,30 +36,21 @@ namespace Disassembler
         protected BinaryImage()
         {
             this.instructions = new InstructionCollection(this);
+            this.attributes = new ByteAttributeCollection(this);
         }
 
-        #region Abstract Methods
+        #region Overridable Methods
 
         /// <summary>
-        /// Gets the underlying image data starting from the given address.
+        /// Gets the underlying image data starting at the given address and
+        /// for the given number of bytes.
         /// </summary>
         /// <param name="address">Address to start return.</param>
         /// <param name="count">Number of bytes to return. Must be within the
         /// segment.</param>
         /// <returns></returns>
         public abstract ArraySegment<byte> GetBytes(Address address, int count);
-
-        /// <summary>
-        /// Gets all data within the segment starting at the given address.
-        /// </summary>
-        /// <param name="address"></param>
-        /// <returns></returns>
-        public abstract ArraySegment<byte> GetBytes(Address address);
-
-        #endregion
-
-        #region Overridable Methods
-
+        
         /// <summary>
         /// Gets a user-friendly display string for the address.
         /// </summary>
@@ -109,18 +101,29 @@ namespace Disassembler
         }
 
         /// <summary>
+        /// Gets the underlying image data starting at the given address up
+        /// to the end of the segment.
+        /// </summary>
+        public ArraySegment<byte> GetBytes(Address address)
+        {
+            if (!IsAddressValid(address))
+                throw new ArgumentOutOfRangeException("address");
+
+            int end = Segments[address.Segment].OffsetBounds.End;
+            int offset = address.Offset;
+            return GetBytes(address, end - offset);
+        }
+
+        /// <summary>
         /// Returns information about a byte the given address.
         /// </summary>
         /// <param name="address">Address of the byte to return.</param>
         /// <returns></returns>
         public ByteAttribute this[Address address]
         {
-            get { return GetByteAttribute(address); }
+            get { return attributes.GetAt(address); }
+            private set { attributes.SetAt(address, value); }
         }
-
-        protected abstract ByteAttribute GetByteAttribute(Address address);
-
-        protected abstract void SetByteAttribute(Address address, ByteAttribute attr);
 
         #region Properties
 
@@ -156,9 +159,6 @@ namespace Disassembler
 
         #endregion
 
-        // may change to
-        // GetSegmentCount();
-        // GetSegment(int index);
 
         // TODO: move this out somewhere
         public UInt16 GetUInt16(Address address)
@@ -178,7 +178,7 @@ namespace Disassembler
 
             for (Address p = startAddress; p != endAddress; p = p + 1)
             {
-                if (GetByteAttribute(p).Type != type)
+                if (this[p].Type != type)
                     return false;
             }
             return true;
@@ -204,7 +204,7 @@ namespace Disassembler
                     Type = type,
                     IsLeadByte = (p == startAddress),
                 };
-                SetByteAttribute(p, attr);
+                this[p] = attr;
             }
 
             OnBytesAnalyzed(startAddress, endAddress);
@@ -233,6 +233,45 @@ namespace Disassembler
             return true;
         }
 #endif
+    }
+
+    public class ByteAttributeCollection
+    {
+        readonly List<ByteAttribute[]> attrs = new List<ByteAttribute[]>();
+        readonly BinaryImage image;
+
+        public ByteAttributeCollection(BinaryImage image)
+        {
+            this.image = image;
+        }
+
+        public ByteAttribute GetAt(Address address)
+        {
+            int segmentIndex = address.Segment;
+            if (segmentIndex < 0 || segmentIndex >= attrs.Count )
+                return new ByteAttribute();
+            if (attrs[segmentIndex] == null)
+                return new ByteAttribute();
+
+            int offset = address.Offset;
+            if (offset < 0 || offset >= attrs[segmentIndex].Length)
+                throw new ArgumentOutOfRangeException("address");
+
+            return attrs[segmentIndex][offset];
+        }
+
+        public void SetAt(Address address, ByteAttribute attribute)
+        {
+            if (!image.IsAddressValid(address))
+                throw new ArgumentOutOfRangeException("address");
+
+            for (int i = attrs.Count; i < image.Segments.Count; i++)
+            {
+                attrs.Add(new ByteAttribute[image.Segments[i].OffsetBounds.End]);
+            }
+
+            attrs[address.Segment][address.Offset] = attribute;
+        }
     }
 
     /// <summary>

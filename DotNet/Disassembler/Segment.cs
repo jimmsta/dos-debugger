@@ -1,68 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Util.Data;
-using X86Codec;
 
 namespace Disassembler
 {
     /// <summary>
-    /// Represents a segment in a binary image. A segment is a contiguous
-    /// block of bytes that are addressible by the same segment selector.
-    /// This segment selector is a zero-based index that identifies the
-    /// segment within the binary image.
+    /// Provides information about a segment in a binary image.
     /// </summary>
-    public abstract class Segment : IAddressReferent // ?? should we implement IAddressReferent?
+    /// <remarks>
+    /// A segment is a contiguous block of bytes that are addressible by the
+    /// same segment selector. This segment selector is a zero-based index
+    /// that identifies the segment within the binary image.
+    /// </remarks>
+    public interface Segment
     {
         /// <summary>
         /// Gets the zero-based index of the segment within the binary image.
         /// </summary>
-        public abstract int Id { get; }
+        int Id { get; }
 
         /// <summary>
         /// Gets the display name of the segment.
         /// </summary>
-        public abstract string Name { get; }
-
-#if false
-        /// <summary>
-        /// Gets the length of the segment. This is equal to the offset of
-        /// the maximum addressible byte, plus one. Note that not all bytes
-        /// within 0 to Length are necessarily valid.
-        /// </summary>
-        public abstract int Length { get; }
-#endif
+        string Name { get; }
 
         /// <summary>
-        /// Gets the range of addressible offsets within this segment. All
-        /// bytes within this range must be accessible, i.e. they will have
-        /// IsAddressValid() return true.
+        /// Gets the range of accessible offsets within this segment. All
+        /// bytes within this range will have IsAddressValid() return true.
         /// 
-        /// The return value may change overtime, but it can only shrink
+        /// The returned range may change overtime, but it can only shrink
         /// and must never grow. This ensures that the return value from
-        /// the very first call to OffsetBounds can be used to allocate a
-        /// sufficiently large buffer.
+        /// any call to OffsetBounds can be used to allocate a sufficiently
+        /// large buffer for succeeding operations.
         /// 
         /// The returned range does not necessarily start from offset zero.
         /// </summary>
-        public abstract Range<int> OffsetBounds { get; }
-
-        protected virtual string GetLabel()
-        {
-            throw new NotImplementedException();
-        }
-
-        string IAddressReferent.Label
-        {
-            get { return GetLabel(); }
-        }
-
-        public virtual Address Resolve()
-        {
-            return new Address(this.Id, 0);
-        }
+        Range<int> OffsetBounds { get; }
     }
 
+#if false
     public enum SegmentType
     {
         /// <summary>
@@ -99,12 +75,91 @@ namespace Disassembler
         /// </remarks>
         Relocatable,
     }
+#endif
 
-    public class SegmentCollection : List<Segment>
+    /// <summary>
+    /// Represents a collection of segments. This collection can only be
+    /// added to and queried. Existing items in the collection cannot be
+    /// modified.
+    /// </summary>
+    public class SegmentCollection : IList<Segment>
     {
+        readonly List<Segment> segments = new List<Segment>();
+
         public T Get<T>(int index) where T : Segment
         {
-            return (T)base[index];
+            return (T)segments[index];
+        }
+
+        public Segment this[int index]
+        {
+            get { return segments[index]; }
+            set { throw new NotSupportedException(); }
+        }
+
+        public bool Contains(Segment item)
+        {
+            return segments.Contains(item);
+        }
+
+        public void CopyTo(Segment[] array, int arrayIndex)
+        {
+            segments.CopyTo(array, arrayIndex);
+        }
+
+        public int Count
+        {
+            get { return segments.Count; }
+        }
+
+        public int IndexOf(Segment item)
+        {
+            return segments.IndexOf(item);
+        }
+
+        public void Add(Segment segment)
+        {
+            if (segment == null)
+                throw new ArgumentNullException("segment");
+            if (segment.Id != segments.Count)
+                throw new ArgumentException("The segment to add has inconsistent id.");
+
+            segments.Add(segment);
+        }
+
+        public bool IsReadOnly
+        {
+            get { return false; }
+        }
+
+        void ICollection<Segment>.Clear()
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<Segment>.Insert(int index, Segment item)
+        {
+            throw new NotSupportedException();
+        }
+
+        void IList<Segment>.RemoveAt(int index)
+        {
+            throw new NotSupportedException();
+        }
+
+        public bool Remove(Segment item)
+        {
+            throw new NotSupportedException();
+        }
+
+        public IEnumerator<Segment> GetEnumerator()
+        {
+            return segments.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

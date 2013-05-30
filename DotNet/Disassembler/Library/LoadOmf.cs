@@ -127,7 +127,7 @@ namespace Disassembler
             ObjectModule module)
         {
             // Convert the record.
-            LogicalSegment segment = new LogicalSegment(0, def, objectMap, module);
+            LogicalSegment segment = new LogicalSegment(def, objectMap, module);
             return segment;
         }
 

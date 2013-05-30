@@ -35,40 +35,11 @@ namespace Disassembler
     /// </remarks>
     public abstract class Assembly
     {
-#if false
-        readonly XRefCollection crossReferences = new XRefCollection();
-        readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
-        readonly ProcedureCollection procedures = new ProcedureCollection();
-        readonly ErrorCollection errors = new ErrorCollection();
-#endif
         readonly ModuleCollection modules = new ModuleCollection();
-        //readonly Dictionary<int, Segment> segments = new Dictionary<int, Segment>();
 
         public Assembly()
         {
         }
-
-#if false
-        public XRefCollection CrossReferences
-        {
-            get { return crossReferences; }
-        }
-
-        public BasicBlockCollection BasicBlocks
-        {
-            get { return basicBlocks; }
-        }
-
-        public ProcedureCollection Procedures
-        {
-            get { return procedures; }
-        }
-
-        public ErrorCollection Errors
-        {
-            get { return errors; }
-        }
-#endif
 
         public ModuleCollection Modules
         {

@@ -77,7 +77,7 @@ namespace Disassembler
             {
                 foreach (LogicalSegment segment in module.Segments)
                 {
-                    segment.SetId(Image.Segments.Count);
+                    segment.Id = Image.Segments.Count;
                     Image.Segments.Add(new LibrarySegment(segment));
                 }
             }
