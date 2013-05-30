@@ -204,6 +204,11 @@ namespace WpfDebugger
                 get { return procedure.EntryPoint; }
             }
 
+            public string EntryPointString
+            {
+                get { return program.GetImage().FormatAddress(procedure.EntryPoint); }
+            }
+
             public int Size
             {
                 get { return Procedure.Size; }

@@ -39,6 +39,15 @@ namespace Disassembler
         /// </summary>
         public abstract string Name { get; }
 
+#if false
+        /// <summary>
+        /// Gets the length of the segment. This is equal to the offset of
+        /// the maximum addressible byte, plus one. Note that not all bytes
+        /// within 0 to Length are necessarily valid.
+        /// </summary>
+        public abstract int Length { get; }
+#endif
+
         /// <summary>
         /// Gets the range of addressible offsets within this segment. Any
         /// offset within this range must have IsAddressValid() return true.

@@ -73,6 +73,19 @@ namespace Disassembler
             SegmentImage seg = segmentImages[address.Segment];
             seg.Instructions[address.Offset] = instruction;
         }
+
+        public override string FormatAddress(Address address)
+        {
+            // Note: it is possible that an offset is out of bounds, e.g.
+            // when we format the location of an error. But we do not
+            // allow segment to be out of bounds.
+            //if (!IsAddressValid(address))
+            //    throw new ArgumentOutOfRangeException("address");
+
+            return string.Format("{0}+{1:X4}",
+                segmentImages[address.Segment].Segment.FullName,
+                address.Offset);
+        }
     }
 
     class SegmentImage

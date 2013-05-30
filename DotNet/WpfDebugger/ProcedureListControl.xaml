@@ -76,7 +76,7 @@
                                 <TextBlock TextTrimming="CharacterEllipsis"><Hyperlink
                                     Style="{StaticResource HoverHyperlinkStyle}"
                                     NavigateUri="{Binding Uri}"
-                                    Click="Hyperlink_Click"><Run Text="{Binding EntryPoint,Mode=OneWay}"/></Hyperlink></TextBlock>
+                                    Click="Hyperlink_Click"><Run Text="{Binding Path=EntryPointString,Mode=OneWay}"/></Hyperlink></TextBlock>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

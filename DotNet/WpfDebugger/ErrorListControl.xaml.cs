@@ -143,7 +143,7 @@ namespace WpfDebugger
 
             int n = program.Errors.Count;
             allItems = (from error in program.Errors
-                        select new ErrorListItem(error)).ToArray();
+                        select new ErrorListItem(error, program)).ToArray();
             foreach (ErrorListItem item in allItems)
             {
                 switch (item.Error.Category)
@@ -187,16 +187,23 @@ namespace WpfDebugger
 
         internal class ErrorListItem
         {
+            private Assembly program;
             public Error Error { get; private set; }
 
-            public ErrorListItem(Error error)
+            public ErrorListItem(Error error,Assembly program)
             {
                 this.Error = error;
+                this.program = program;
             }
 
             public Address Location
             {
                 get { return Error.Location; }
+            }
+
+            public string LocationString
+            {
+                get { return program.GetImage().FormatAddress(Error.Location); }
             }
 
             public string Message

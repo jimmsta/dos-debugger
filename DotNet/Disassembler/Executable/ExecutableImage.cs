@@ -139,6 +139,16 @@ namespace Disassembler
                 return false;
         }
 
+        public override string FormatAddress(Address address)
+        {
+            if (!IsAddressValid(address))
+                throw new ArgumentOutOfRangeException("address");
+
+            return string.Format("{0:X4}:{1:X4}",
+                segments.Values[address.Segment].Frame,
+                address.Offset);
+        }
+
         private int ToLinearAddress(Address address)
         {
             return segments.Values[address.Segment].Frame * 16 + address.Offset;

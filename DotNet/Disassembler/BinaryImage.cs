@@ -31,6 +31,11 @@ namespace Disassembler
         public abstract bool IsAddressValid(Address address);
 
         /// <summary>
+        /// Returns a user-friendly display string for the address.
+        /// </summary>
+        public abstract string FormatAddress(Address address);
+
+        /// <summary>
         /// Returns information about a byte the given address.
         /// </summary>
         /// <param name="address">Address of the byte to return.</param>

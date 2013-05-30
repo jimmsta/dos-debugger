@@ -65,7 +65,7 @@
                                     itenso:RangeColumn.MinWidth="50">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Location}"/>
+                                <TextBlock Text="{Binding Path=LocationString}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
