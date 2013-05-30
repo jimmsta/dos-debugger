@@ -140,14 +140,42 @@ namespace Disassembler
     {
         public static int TimesSplit = 0;
 
+        // Use a two-tier data structure to store the blocks.
+        // First, since a basic block must be on a single segment,
+        // we group the blocks by segments.
+        // Then, we use a SortedList<int, int> to map the starting offset
+        // of a block to the block's index in 'blocks'. It would have been
+        // better to use SortedDictionary for better insertion, but
+        // unfortunately that one doesn't support binary search, so
+        // there is no way to quickly find a block that covers a byte.
+        readonly List<SortedList<int, int>> map = 
+            new List<SortedList<int, int>>();
+
+        // Keep a list of blocks so that we don't have to implement
+        // IEnumerable ourselves. Strictly speaking this is redundant.
         readonly List<BasicBlock> blocks = new List<BasicBlock>();
-        readonly RangeDictionary<Address, BasicBlock> map =
-            new RangeDictionary<Address, BasicBlock>();
+
         readonly ControlFlowGraph controlFlowGraph;
 
         public BasicBlockCollection()
         {
             controlFlowGraph = new ControlFlowGraph(this);
+        }
+
+        public bool Contains(BasicBlock item)
+        {
+            if (item == null)
+                return false;
+
+            int segment = item.Location.Segment;
+            if (segment < 0 || segment >= map.Count)
+                return false;
+
+            int index;
+            if (!map[segment].TryGetValue(item.Location.Offset, out index))
+                return false;
+
+            return (blocks[index] == item);
         }
 
         public void Add(BasicBlock block)
@@ -157,8 +185,13 @@ namespace Disassembler
             if (this.Contains(block))
                 throw new ArgumentException("Block already exists in the collection.");
 
+            int segment = block.Location.Segment;
+            while (segment >= map.Count)
+                map.Add(new SortedList<int, int>());
+
+            int index = this.blocks.Count;
             this.blocks.Add(block);
-            this.map.Add(block.Bounds, block);
+            this.map[segment].Add(block.Location.Offset, index);
         }
 
         /// <summary>
@@ -169,8 +202,23 @@ namespace Disassembler
         /// <returns></returns>
         public BasicBlock Find(Address address)
         {
-            return map.GetValueOrDefault(
-                new Range<Address>(address, address + 1));
+            int segment = address.Segment;
+            if (segment < 0 || segment >= map.Count)
+                return null;
+
+            int k = map[segment].Keys.BinarySearch(address.Offset, Comparer<int>.Default.Compare);
+            if (k >= 0)
+                return blocks[map[segment].Values[k]];
+
+            k = ~k;
+            if (k == 0)
+                return null;
+
+            BasicBlock block = blocks[map[segment].Values[k - 1]];
+            if (block.Bounds.Contains(address))
+                return block;
+            else
+                return null;
         }
 
         /// <summary>
@@ -188,8 +236,12 @@ namespace Disassembler
             if (cutoff == block.Location)
                 return null;
 
-            int k = blocks.IndexOf(block);
-            if (k < 0)
+            int segment = block.Location.Segment;
+            if (segment < 0 || segment >= map.Count)
+                throw new ArgumentException("Block must be within the collection.");
+
+            int index;
+            if (!map[segment].TryGetValue(block.Location.Offset, out index))
                 throw new ArgumentException("Block must be within the collection.");
 
             // Create two blocks.
@@ -199,13 +251,11 @@ namespace Disassembler
 
             // Replace the big block from this collection and add the newly
             // created smaller blocks.
-            blocks[k] = block1;
+            blocks[index] = block1;
             blocks.Add(block2);
 
             // Update lookup map.
-            map.Remove(block.Bounds);
-            map.Add(block1.Bounds, block1);
-            map.Add(block2.Bounds, block2);
+            map[segment].Add(block2.Location.Offset, blocks.Count - 1);
 
             // Return the two basic blocks.
             return new BasicBlock[2] { block1, block2 };
@@ -217,14 +267,6 @@ namespace Disassembler
         {
             blocks.Clear();
             map.Clear();
-        }
-
-        public bool Contains(BasicBlock item)
-        {
-            if (item == null)
-                return false;
-            else
-                return Find(item.Location) == item;
         }
 
         public void CopyTo(BasicBlock[] array, int arrayIndex)

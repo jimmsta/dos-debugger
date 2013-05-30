@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "X86Codec", "X86Codec\X86Codec.csproj", "{BD1B05D2-429D-4080-BDDF-981C0F78A192}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Disassembler", "Disassembler\Disassembler.csproj", "{FE4ABC64-1873-4E7D-B930-D50D2E948E1E}"
@@ -12,6 +12,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Util.Windows", "Util\Windows\Util.Windows.csproj", "{34EC1F7B-CEAA-4171-A49B-48F1FA4406FB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileFormats", "FileFormats\FileFormats.csproj", "{536C6FE2-6F7B-4FCA-8E56-47B6BE7F9ECD}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "Tester", "Tester\Tester.vbproj", "{2762AA4E-02CE-4B32-B172-F52D754C013C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{40851422-2AA3-4671-ADCA-5C2114C0C193}"
+	ProjectSection(SolutionItems) = preProject
+		Performance1.psess = Performance1.psess
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -115,6 +122,19 @@ Global
 		{536C6FE2-6F7B-4FCA-8E56-47B6BE7F9ECD}.Release|x64.ActiveCfg = Release|Any CPU
 		{536C6FE2-6F7B-4FCA-8E56-47B6BE7F9ECD}.Release|x86.ActiveCfg = Release|x86
 		{536C6FE2-6F7B-4FCA-8E56-47B6BE7F9ECD}.Release|x86.Build.0 = Release|x86
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|x86.ActiveCfg = Debug|x86
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Debug|x86.Build.0 = Debug|x86
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|x64.ActiveCfg = Release|Any CPU
+		{2762AA4E-02CE-4B32-B172-F52D754C013C}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

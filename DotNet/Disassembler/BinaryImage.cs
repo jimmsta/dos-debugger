@@ -194,17 +194,26 @@ namespace Disassembler
             if (startAddress.Segment != endAddress.Segment)
                 throw new ArgumentException("startAddress and endAddress must be on the same segment.");
 
-            if (!CheckByteType(startAddress, endAddress, ByteType.Unknown))
-                throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
+            ArraySegment<ByteAttribute> attrs = attributes.GetAttributes(
+                startAddress, endAddress.Offset - startAddress.Offset);
 
-            for (Address p = startAddress; p != endAddress; p = p + 1)
+            for (int i = 0; i < attrs.Count; i++)
             {
-                ByteAttribute attr = new ByteAttribute
+                if (attrs.Array[attrs.Offset + i].Type != ByteType.Unknown)
                 {
+                    // Undo
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        attrs.Array[attrs.Offset + j] = ByteAttribute.Empty;
+                    }
+                    throw new ArgumentException("[start, end) overlaps with analyzed bytes.");
+                }
+
+                ByteAttribute attr = new ByteAttribute {
                     Type = type,
-                    IsLeadByte = (p == startAddress),
+                    IsLeadByte = (i == 0),
                 };
-                this[p] = attr;
+                attrs.Array[attrs.Offset + i] = attr;
             }
 
             OnBytesAnalyzed(startAddress, endAddress);
@@ -243,6 +252,25 @@ namespace Disassembler
         public ByteAttributeCollection(BinaryImage image)
         {
             this.image = image;
+        }
+
+        public ArraySegment<ByteAttribute> GetAttributes(Address location, int count)
+        {
+            int segmentIndex = location.Segment;
+            if (segmentIndex < 0 || segmentIndex >= image.Segments.Count)
+                throw new ArgumentOutOfRangeException("location");
+
+            int offset = location.Offset;
+            if (!image.Segments[segmentIndex].OffsetBounds.IsSupersetOf(
+                new Range<int>(offset, offset + count)))
+                throw new ArgumentOutOfRangeException("location");
+
+            for (int i = attrs.Count; i < image.Segments.Count; i++)
+            {
+                attrs.Add(new ByteAttribute[image.Segments[i].OffsetBounds.End]);
+            }
+
+            return new ArraySegment<ByteAttribute>(attrs[segmentIndex], offset, count);
         }
 
         public ByteAttribute GetAt(Address address)
@@ -314,6 +342,8 @@ namespace Disassembler
                     attr &= 0xF7;
             }
         }
+
+        public static readonly ByteAttribute Empty = new ByteAttribute();
     }
 
 #if false

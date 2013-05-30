@@ -35,6 +35,11 @@ namespace Disassembler
             graph.Add(xFlow);
         }
 
+        public ICollection<XRef> Edges
+        {
+            get { return graph; }
+        }
+
         public IEnumerable<BasicBlock> GetSuccessors(BasicBlock source)
         {
             foreach (XRef xref in graph.GetReferencesFrom(source.Location))

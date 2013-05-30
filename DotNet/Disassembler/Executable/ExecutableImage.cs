@@ -9,7 +9,6 @@ namespace Disassembler
     public class ExecutableImage : BinaryImage
     {
         readonly byte[] bytes;
-        readonly ByteAttribute[] attrs;
         readonly int[] relocatableLocations;
         readonly Address entryPoint;
 
@@ -45,7 +44,6 @@ namespace Disassembler
                 throw new ArgumentNullException("file");
 
             this.bytes = file.Image;
-            this.attrs = new ByteAttribute[bytes.Length];
 
             // Store relocatable locations for future use.
             List<int> relocs = new List<int>();
@@ -109,10 +107,12 @@ namespace Disassembler
                 MapFrameToSegment(file.EntryPoint.Segment), file.EntryPoint.Offset);
         }
 
+#if false
         public int Length
         {
             get { return bytes.Length; }
         }
+#endif
 
         public int[] RelocatableLocations
         {
@@ -215,10 +215,12 @@ namespace Disassembler
             }
         }
 
+#if false
         public byte[] Data
         {
             get { return bytes; }
         }
+#endif
 
         public override ArraySegment<byte> GetBytes(Address address, int count)
         {
