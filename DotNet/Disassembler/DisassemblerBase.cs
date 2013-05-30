@@ -16,7 +16,6 @@ namespace Disassembler
     public abstract class DisassemblerBase
     {
         protected readonly BinaryImage image;
-        protected readonly AnalysisResults results; // may rename to program
 
         protected DisassemblerBase(BinaryImage image)
         {
@@ -24,7 +23,6 @@ namespace Disassembler
                 throw new ArgumentNullException("image");
 
             this.image = image;
-            this.results = new AnalysisResults(image);
         }
 
         /// <summary>
@@ -35,30 +33,25 @@ namespace Disassembler
 
         protected XRefCollection CrossReferences
         {
-            get { return Assembly.CrossReferences; }
+            get { return image.CrossReferences; }
         }
 
         protected BasicBlockCollection BasicBlocks
         {
-            get { return Assembly.BasicBlocks; }
+            get { return image.BasicBlocks; }
         }
 
         protected ProcedureCollection Procedures
         {
-            get { return Assembly.Procedures; }
+            get { return image.Procedures; }
         }
 
         protected ErrorCollection Errors
         {
-            get { return Assembly.Errors; }
+            get { return image.Errors; }
         }
 
         public abstract void Analyze();
-
-        public AnalysisResults Result
-        {
-            get { return results; }
-        }
 
         /// <summary>
         /// Analyzes code starting from the given location. That location
@@ -555,7 +548,7 @@ namespace Disassembler
                         start.Source);
                     return null;
                 }
-                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip, this.results);
+                BasicBlock[] subBlocks = BasicBlocks.SplitBasicBlock(block, ip, image);
 
                 // Create a xref from the previous block to this block.
                 XRef xref = CreateFallThroughXRef(GetLastInstructionInBasicBlock(subBlocks[0]), ip);
@@ -632,7 +625,7 @@ namespace Disassembler
             // Create a basic block unless we failed on the first instruction.
             if (ip.Offset > start.Target.Offset)
             {
-                BasicBlock block = new BasicBlock(start.Target, ip, blockType, results);
+                BasicBlock block = new BasicBlock(start.Target, ip, blockType, image);
                 BasicBlocks.Add(block);
             }
             return null;
@@ -936,7 +929,7 @@ namespace Disassembler
 
             // Create a code piece for this instruction.
             image.UpdateByteType(address, address + instruction.EncodedLength, ByteType.Code);
-            results.Instructions.Add(address, instruction);
+            image.Instructions.Add(address, instruction);
 
             // Return the decoded instruction.
             return instruction;

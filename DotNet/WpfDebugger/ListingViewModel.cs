@@ -40,7 +40,7 @@ namespace WpfDebugger
             // put this logic into ErrorCollection. But for convenience we
             // leave it here for the moment.
             List<Error> errors =
-                (from error in assembly.Errors
+                (from error in assembly.GetImage().Errors
                  where error.Location.Segment == segmentId
                  orderby error.Location
                  select error).ToList();
@@ -79,7 +79,7 @@ namespace WpfDebugger
                     }
 #endif
 
-                    Instruction insn = assembly.Result.Instructions.Find(address);
+                    Instruction insn = image.Instructions.Find(address);
                     System.Diagnostics.Debug.Assert(insn != null);
                     rows.Add(new CodeListingRow(
                         assembly, address, insn, 
@@ -314,7 +314,7 @@ namespace WpfDebugger
             get
             {
                 // Check whether we have a procedure starting at this address.
-                Procedure proc = assembly.Procedures.Find(this.Location);
+                Procedure proc = assembly.GetImage().Procedures.Find(this.Location);
                 if (proc != null)
                     return proc.Name;
                 else

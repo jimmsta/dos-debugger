@@ -35,11 +35,12 @@ namespace Disassembler
     /// </remarks>
     public abstract class Assembly
     {
+#if false
         readonly XRefCollection crossReferences = new XRefCollection();
         readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
         readonly ProcedureCollection procedures = new ProcedureCollection();
         readonly ErrorCollection errors = new ErrorCollection();
-
+#endif
         readonly ModuleCollection modules = new ModuleCollection();
         //readonly Dictionary<int, Segment> segments = new Dictionary<int, Segment>();
 
@@ -47,6 +48,7 @@ namespace Disassembler
         {
         }
 
+#if false
         public XRefCollection CrossReferences
         {
             get { return crossReferences; }
@@ -66,42 +68,17 @@ namespace Disassembler
         {
             get { return errors; }
         }
+#endif
 
         public ModuleCollection Modules
         {
             get { return modules; }
         }
 
-        public AnalysisResults Result { get; set; }
-
         /// <summary>
         /// Returns the binary image of this assembly.
         /// </summary>
         public abstract BinaryImage GetImage();
-
-#if false
-        /// <summary>
-        /// Finds the segment with the given segment selector.
-        /// </summary>
-        /// <param name="address"></param>
-        /// <returns></returns>
-        public abstract Segment GetSegment(int segmentId)
-        {
-            return segments[segmentSelector];
-        }
-#endif
-
-#if false
-        /// <summary>
-        /// Finds the segment with the given segment selector.
-        /// </summary>
-        /// <param name="address"></param>
-        /// <returns></returns>
-        public void AddSegment(int segmentSelector, Segment segment)
-        {
-            segments.Add(segmentSelector, segment);
-        }
-#endif
     }
 
     /// <summary>

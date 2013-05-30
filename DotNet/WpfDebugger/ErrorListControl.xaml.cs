@@ -141,8 +141,8 @@ namespace WpfDebugger
             int warningCount = 0;
             int messageCount = 0;
 
-            int n = program.Errors.Count;
-            allItems = (from error in program.Errors
+            int n = program.GetImage().Errors.Count;
+            allItems = (from error in program.GetImage().Errors
                         select new ErrorListItem(error, program)).ToArray();
             foreach (ErrorListItem item in allItems)
             {

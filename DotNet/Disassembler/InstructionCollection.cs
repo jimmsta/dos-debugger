@@ -5,6 +5,7 @@ using X86Codec;
 
 namespace Disassembler
 {
+#if false
     /// <summary>
     /// Contains the analysis results and related information about a binary
     /// image. The information include:
@@ -23,55 +24,7 @@ namespace Disassembler
     /// though in reality the segmentation of an executable is indeed guessed
     /// from the analysis.
     /// </summary>
-    public class AnalysisResults // may rename to AnalyzedImage
-    {
-        //ByteAttribute[] attrs;
-        readonly BinaryImage image;
-        readonly InstructionCollection instructions;
-        readonly XRefCollection crossReferences = new XRefCollection();
-        readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
-        readonly ProcedureCollection procedures = new ProcedureCollection();
-        readonly ErrorCollection errors = new ErrorCollection();
-
-        public AnalysisResults(BinaryImage image)
-        {
-            if (image == null)
-                throw new ArgumentNullException("image");
-
-            this.image = image;
-            this.instructions = new InstructionCollection(image);
-        }
-
-        public BinaryImage Image
-        {
-            get { return image; }
-        }
-
-        public InstructionCollection Instructions
-        {
-            get { return instructions; }
-        }
-
-        public XRefCollection CrossReferences
-        {
-            get { return crossReferences; }
-        }
-
-        public BasicBlockCollection BasicBlocks
-        {
-            get { return basicBlocks; }
-        }
-
-        public ProcedureCollection Procedures
-        {
-            get { return procedures; }
-        }
-
-        public ErrorCollection Errors
-        {
-            get { return errors; }
-        }
-    }
+#endif
 
     /// <summary>
     /// Maintains a collection of instructions and provides methods to

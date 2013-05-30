@@ -99,4 +99,12 @@ namespace Disassembler
         /// </remarks>
         Relocatable,
     }
+
+    public class SegmentCollection : List<Segment>
+    {
+        public T Get<T>(int index) where T : Segment
+        {
+            return (T)base[index];
+        }
+    }
 }

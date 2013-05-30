@@ -11,12 +11,30 @@ namespace Disassembler
     /// Provides methods to access the bytes in a binary image and keeps
     /// track of related analysis results.
     /// </summary>
+    /// <remarks>
+    /// The base class keeps track of the following information:
+    /// 
+    /// - byte attributes (code/data/padding)
+    /// - instructions
+    /// - basic blocks
+    /// - procedures
+    /// - analysis errors
+    /// 
+    /// A derived class must provide the actual image data as well as
+    /// segmentation information about the image.
+    /// </remarks>
     public abstract class BinaryImage
     {
-        readonly List<Segment> segments = new List<Segment>();
+        readonly SegmentCollection segments = new SegmentCollection();
+        readonly InstructionCollection instructions;
+        readonly XRefCollection crossReferences = new XRefCollection();
+        readonly BasicBlockCollection basicBlocks = new BasicBlockCollection();
+        readonly ProcedureCollection procedures = new ProcedureCollection();
+        readonly ErrorCollection errors = new ErrorCollection();
 
         protected BinaryImage()
         {
+            this.instructions = new InstructionCollection(this);
         }
 
         #region Abstract Methods
@@ -106,7 +124,35 @@ namespace Disassembler
 
         #region Properties
 
-        public List<Segment> Segments { get { return segments; } }
+        public SegmentCollection Segments
+        {
+            get { return segments; }
+        }
+
+        public InstructionCollection Instructions
+        {
+            get { return instructions; }
+        }
+
+        public XRefCollection CrossReferences
+        {
+            get { return crossReferences; }
+        }
+
+        public BasicBlockCollection BasicBlocks
+        {
+            get { return basicBlocks; }
+        }
+
+        public ProcedureCollection Procedures
+        {
+            get { return procedures; }
+        }
+
+        public ErrorCollection Errors
+        {
+            get { return errors; }
+        }
 
         #endregion
 

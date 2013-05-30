@@ -163,7 +163,7 @@ namespace WpfDebugger
         public ProcedureListViewModel(Assembly program)
         {
             this.Items = new List<ProcedureItem>();
-            var list = from proc in program.Procedures
+            var list = from proc in program.GetImage().Procedures
                        orderby proc.EntryPoint
                        select proc;
             foreach (Procedure proc in list)

@@ -72,7 +72,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Address.cs" />
-    <Compile Include="AnalysisResults.cs" />
     <Compile Include="Assembly.cs" />
     <Compile Include="BasicBlock.cs" />
     <Compile Include="BinaryImage.cs" />
@@ -86,6 +85,7 @@
     <Compile Include="Executable\ExecutableImage.cs" />
     <Compile Include="Executable\MZLoader.cs" />
     <Compile Include="FunctionSignature.cs" />
+    <Compile Include="InstructionCollection.cs" />
     <Compile Include="Library\Fixup.cs" />
     <Compile Include="Library\LibraryDisassembler.cs" />
     <Compile Include="Library\LibraryImage.cs" />
