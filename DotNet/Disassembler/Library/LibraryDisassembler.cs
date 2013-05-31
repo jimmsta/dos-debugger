@@ -65,6 +65,22 @@ namespace Disassembler
             // that comes after.
             FixupCollection fixups = library.Image.GetSegment(address.Segment).Segment.Fixups;
             int fixupIndex = fixups.BinarySearch(address.Offset);
+
+            // If there's a fixup right at the beginning of the instruction,
+            // it is likely that the location is actually data, unless the
+            // fixup is a floating point emulator which use a trick to change
+            // the opcode.
+            if (fixupIndex >= 0 && fixups[fixupIndex].StartIndex == address.Offset)
+            {
+                if (!IsFloatingPointEmulatorFixup(fixups[fixupIndex]))
+                {
+                    AddError(address, ErrorCode.BrokenFixup,
+                        "Cannot decode instruction at a fix-up location: {0}",
+                        fixups[fixupIndex]);
+                    return null;
+                }
+            }
+
             if (fixupIndex < 0)
                 fixupIndex = ~fixupIndex;
 

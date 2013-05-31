@@ -44,8 +44,14 @@ namespace Disassembler
         {
             foreach (XRef xref in graph.GetReferencesFrom(source.Location))
             {
+                // TODO: change Find to ExactMatch.
                 yield return blocks.Find(xref.Target);
             }
+        }
+
+        public XRefCollection Graph
+        {
+            get { return graph; }
         }
     }
 }

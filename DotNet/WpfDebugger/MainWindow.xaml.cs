@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -350,7 +351,7 @@ namespace WpfDebugger
         private void FileOpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "Executable file|*.exe|Library file|*.lib";
+            dlg.Filter = "All supported files|*.exe;*.lib|Executable file|*.exe|Library file|*.lib";
             dlg.Title = "Select File To Analyze";
 
             if (dlg.ShowDialog(this) == true)
@@ -368,6 +369,32 @@ namespace WpfDebugger
         public void libraryBrowser_RequestProperty(object sender, RequestPropertyEventArgs e)
         {
             propertiesWindow.SelectedObject = e.SelectedObject;
+        }
+
+        private void mnuToolsExportChecksum_Click(object sender, RoutedEventArgs e)
+        {
+            if (program == null)
+                return;
+
+            BinaryImage image = program.GetImage();
+            using (StreamWriter writer = new StreamWriter(@"E:\TestDDD-Procedures.txt"))
+            {
+                foreach (Procedure procedure in image.Procedures)
+                {
+                    CodeChecksum checksum = CodeChecksum.Compute(procedure, image);
+                    writer.WriteLine("{0} {1} {2} {3}",
+                                     image.FormatAddress(procedure.EntryPoint),
+                                     procedure.Name,
+                                     BytesToString(checksum.OpcodeChecksum).ToLowerInvariant(),
+                                     procedure.Size);
+                }
+            }
+        }
+
+        private static string BytesToString(byte[] bytes)
+        {
+            var soapBinary = new System.Runtime.Remoting.Metadata.W3cXsd2001.SoapHexBinary(bytes);
+            return soapBinary.ToString();
         }
     }
 }

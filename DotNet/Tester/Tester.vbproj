@@ -126,6 +126,10 @@
       <Project>{70014904-13E0-4AFA-A6DD-0EC93100C3C7}</Project>
       <Name>Util-v2.0</Name>
     </ProjectReference>
+    <ProjectReference Include="..\X86Codec\X86Codec.csproj">
+      <Project>{bd1b05d2-429d-4080-bddf-981c0f78a192}</Project>
+      <Name>X86Codec</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

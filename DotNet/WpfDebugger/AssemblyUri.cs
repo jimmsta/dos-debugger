@@ -153,9 +153,9 @@ namespace WpfDebugger
                 if (assembly != null)
                     throw new ArgumentException("Cannot specify assembly without specifying referent.");
             }
-            else if (referent is Segment)
+            else if (referent is LogicalSegment)
             {
-                sb.AppendFormat("seg/{0}/", ((Segment)referent).Id);
+                sb.AppendFormat("seg/{0}/", ((LogicalSegment)referent).Id);
             }
             else
             {

@@ -76,6 +76,7 @@
     <Compile Include="BasicBlock.cs" />
     <Compile Include="BinaryImage.cs" />
     <Compile Include="CallGraph.cs" />
+    <Compile Include="CodeChecksum.cs" />
     <Compile Include="CodeFeatures.cs" />
     <Compile Include="ControlFlowGraph.cs" />
     <Compile Include="DisassemblerBase.cs" />

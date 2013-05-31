@@ -213,6 +213,9 @@ namespace Disassembler
     /// Maintains a collection of cross references and provides methods to
     /// find xrefs by source or target efficiently.
     /// </summary>
+    // TODO: maybe we should make an interface IGraph<TNode,TEdge>
+    // and make XRefCollection implement that interface. That's better
+    // because we are much more than a collection!
     public class XRefCollection : ICollection<XRef>
     {
         readonly Graph<Address, XRef> graph;

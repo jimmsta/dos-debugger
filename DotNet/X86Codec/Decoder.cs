@@ -1,4 +1,10 @@
-﻿using System;
+﻿#define SUPPORTS_8086
+#define SUPPORTS_8087
+#undef SUPPORTS_80186
+#undef SUPPORTS_80286
+#undef SUPPORTS_80386
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -1094,6 +1100,10 @@ namespace X86Codec
                 case O.M_: // r/m must refer to memory; contains void pointer
                     return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Default, context);
 
+                case O.Ma: // r/m must refer to memory; contains a pair of words or dwords
+                    // TODO: handle 32-bit
+                    return DecodeMemoryOperand(reader, RegisterType.None, CpuSize.Use32Bit, context);
+
                 case O.Mp: // r/m must refer to memory; contains far pointer
                     // seg:ptr of 32, 48, or 80 bits.
                     if (context.OperandSize != CpuSize.Use16Bit)
@@ -1171,6 +1181,14 @@ namespace X86Codec
                         Base = Register.SI.Resize(context.AddressSize)
                     };
 
+                case O.Xz: // memory addressed by DS:rSI; 16 or 32 bit
+                    return new MemoryOperand
+                    {
+                        Size = CpuSize.Use16Bit, // TODO: handle 32 bit
+                        Segment = Register.DS,
+                        Base = Register.SI.Resize(context.AddressSize)
+                    };
+
                 case O.Yb: // memory addressed by ES:rDI; byte
                     return new MemoryOperand
                     {
@@ -1183,6 +1201,14 @@ namespace X86Codec
                     return new MemoryOperand
                     {
                         Size = context.OperandSize,
+                        Segment = Register.ES,
+                        Base = Register.DI.Resize(context.AddressSize)
+                    };
+
+                case O.Yz: // memory addressed by ES:rDI; 16 or 32 bit
+                    return new MemoryOperand
+                    {
+                        Size = CpuSize.Use16Bit, // TODO: handle 32 bit
                         Segment = Register.ES,
                         Base = Register.DI.Resize(context.AddressSize)
                     };

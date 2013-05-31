@@ -101,6 +101,11 @@
                     <MenuItem Header="VS2010" Name="mnuViewThemeVS2010" Click="mnuViewThemeItem_Click"/>
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="Export Procedure Checksums..." 
+                          Name="mnuToolsExportChecksum" 
+                          Click="mnuToolsExportChecksum_Click"/>
+            </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Name="mnuHelpTest" Header="_Test" Click="mnuHelpTest_Click"/>
                 <MenuItem Header="_About" Name="mnuHelpAbout" Click="mnuHelpAbout_Click"/>

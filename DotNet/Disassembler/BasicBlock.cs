@@ -29,6 +29,8 @@ namespace Disassembler
     /// 
     /// A basic block is always contained in a single segment.
     /// </remarks>
+    // TODO: we might want to make BasicBlockInfo struct to store, and then
+    //       make BasicBlock a wrapper around it with rich functionalities.
     public class BasicBlock
     {
         readonly Address location;
@@ -139,6 +141,11 @@ namespace Disassembler
     public class BasicBlockCollection : ICollection<BasicBlock>
     {
         public static int TimesSplit = 0;
+
+        // Consider using a specialized AddressDictionary or
+        // AddressSortedDictionary, or TwoTierDictionary, or
+        // TwoTierSortedDictionary, to make the implementation
+        // cleaner.
 
         // Use a two-tier data structure to store the blocks.
         // First, since a basic block must be on a single segment,

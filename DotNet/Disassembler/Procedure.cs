@@ -291,34 +291,3 @@ namespace Disassembler
         }
     }
 }
-
-#if false
-        /// <summary>
-        /// Raised when a new xref is added to the binary image. We update
-        /// our call graph in this handler.
-        /// </summary>
-        private void CrossReferences_XRefAdded(object sender, XRefAddedEventArgs e)
-        {
-            XRef x = e.XRef;
-            if ((x.Type == XRefType.NearCall || x.Type == XRefType.FarCall) &&
-                (x.Source != Pointer.Invalid && x.Target != Pointer.Invalid))
-            {
-                Procedure caller = image[x.Source].Procedure; // image.FindProcedure(x.Source.LinearAddress);
-                Procedure callee = Find(entryPoint: x.Target.LinearAddress);
-                if (caller == null || callee == null)
-                {
-                    throw new InvalidOperationException(
-                        "A function call cross reference was added, but the functions are not defined.");
-                }
-                Debug.Assert(callee.EntryPoint.LinearAddress == x.Target.LinearAddress);
-
-                XRef xCall = new XRef(
-                    type: x.Type,
-                    source: caller.EntryPoint,
-                    target: x.Target,
-                    dataLocation: x.Source
-                );
-                callGraph.Add(xCall);
-            }
-        }
-#endif

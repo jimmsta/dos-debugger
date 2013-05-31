@@ -59,5 +59,10 @@ namespace Disassembler
         {
             return instructions[address];
         }
+
+        public int Count
+        {
+            get { return instructions.Count; }
+        }
     }
 }
