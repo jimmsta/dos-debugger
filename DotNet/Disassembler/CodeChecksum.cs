@@ -40,61 +40,115 @@ namespace Disassembler
             // TODO: add the traversal logic into Graph class.
             // or maybe GraphAlgorithms.Traversal(...).
 
-            // Create a stack to simulate depth-first-search. It doesn't
-            // matter whether DFS or BFS is used as long as we use the same
-            // traversal order for library function and executable function.
-            // Since DFS is simpler (can use deque), we use it.
-            Stack<Address> queue = new Stack<Address>();
-            queue.Push(procedure.EntryPoint);
+            // Create a queue to simulate breadth-first-search. It doesn't
+            // really matter whether DFS or BFS is used as long as we stick
+            // to it, but BFS has the benefit that it's easier to understand.
+            // Therefore we use it.
+            Queue<Address> queue = new Queue<Address>();
+            queue.Enqueue(procedure.EntryPoint);
 
             // Map the entry point address of a basic block to its index
-            // in the sequence of blocks visited.
-            Dictionary<Address, int> visitedOrder = new Dictionary<Address, int>();
+            // in the sequence of blocks visited. Each block that is the
+            // target of a none-fall-through control flow edge is assigned
+            // an index the first time it is encountered. This index is
+            // included in the hash to provide a hint of the graph's
+            // structure.
+            Dictionary<Address, int> visitOrder = new Dictionary<Address, int>();
+
+            XRefCollection cfg = image.BasicBlocks.ControlFlowGraph.Graph;
 
             // Traverse the graph.
             while (queue.Count > 0)
             {
-                Address source = queue.Pop();
-                BasicBlock block = image.BasicBlocks.Find(source);
-                System.Diagnostics.Debug.Assert(block != null);
+                Address source = queue.Dequeue();
 
-                // Find the visit order of this block, and hash this order.
+                // Check if this block has been visited before. If it has,
+                // we just hash its order and work on next one.
                 int order;
-                if (visitedOrder.TryGetValue(source, out order)) // visited
+                if (visitOrder.TryGetValue(source, out order)) // visited
                 {
                     ComputeMore(hasher, order);
                     continue;
                 }
-                order = visitedOrder.Count;
-                visitedOrder.Add(source, order);
+
+                // If the block has not been visited, assign a unique order
+                // to it, and hash this order.
+                order = visitOrder.Count;
+                visitOrder.Add(source, order);
                 ComputeMore(hasher, order);
 
-                // Hash the instructions in the basic block. Only the opcode
-                // part of each instruction is hashed; the displacement and
-                // immediate parts are potentially subject to fix-up, and are
-                // therefore ignored in the hash.
-                ComputeMore(hasher, block, image);
-
-                // Enumerate each block referred to from this block.
-                // We must order the outgoing edges by type to make sure
-                // the traversal produce the same order every time.
-                // If the outgoing edges are of the same type, we
-                // order them by their hash values. (Note: this will lead to 
-                // recursion) or alternatively we throw an exception.
+                // Next, we hash the instructions in the block. We follow any
+                // fall-through edges so that the resulting hash will not be
+                // affected by artificial blocks. To see this, consider the
+                // following example:
                 //
-                // TODO: control flow graph should order the edges by
-                // xref type already.
-                XRefCollection cfg = image.BasicBlocks.ControlFlowGraph.Graph;
-                List<XRef> flows = new List<XRef>(cfg.GetReferencesFrom(block.Location));
-                flows.Sort(XRef.CompareByPriority); // may rename to CompareByType
-
-                foreach (XRef flow in flows)
+                // MySub:                LibSub1:
+                //       mov ax, bx            mov ax, bx
+                //                       LibSub2:
+                //       mov bx, cx            mov bx, cx
+                //       ret                   ret
+                //
+                // MySub and LibSub1 are identical procedures with three
+                // instructions. However, if someone calls into the middle of
+                // LibSub1, the block must be split in two and a fall-through
+                // edge is created from LibSub1 to LibSub2. If we don't follow
+                // the fall-through edge, it will generate a different hash
+                // from the left-side one.
+                while (true)
                 {
-                    // Hash the flow type.
-                    ComputeMore(hasher, (int)flow.Type);
+                    BasicBlock block = image.BasicBlocks.Find(source);
+                    System.Diagnostics.Debug.Assert(block != null);
 
-                    // Add the target address into the queue.
-                    queue.Push(flow.Target);
+                    // Hash the instructions in the block. Only the opcode
+                    // part of each instruction is hashed; the displacement
+                    // and immediate parts are potentially subject to fix-up,
+                    // and are therefore ignored in the hash.
+                    ComputeMore(hasher, block, image);
+
+                    // Enumerate each block referred to from this block.
+                    // We must order the (none-fall-through) outgoing flow
+                    // edges in a way that depends only on the graph's
+                    // structure and not on the particular arrangement of
+                    // target blocks. (Note: this is not a concern if we only
+                    // have one none-fall-through outgoing edge; but this may
+                    // be of concern if we have multiple outgoing edges, such
+                    // as in an indexed jump.)
+                    //
+                    // TBD: handle multiple outgoing edges.
+                    XRef fallThroughEdge = null;
+                    XRef nonFallThroughEdge = null;
+                    foreach (XRef flow in cfg.GetReferencesFrom(source))
+                    {
+                        if (flow.Type == XRefType.FallThrough)
+                        {
+                            if (fallThroughEdge != null)
+                                throw new InvalidOperationException("Cannot have more than one fall-through edge.");
+                            fallThroughEdge = flow;
+                        }
+                        else
+                        {
+                            if (nonFallThroughEdge != null)
+                                throw new InvalidOperationException("Cannot have more than one non-fall-through edge.");
+                            nonFallThroughEdge = flow;
+                        }
+                    }
+
+                    // Hash the special flow type and add target to queue.
+                    if (nonFallThroughEdge != null)
+                    {
+                        ComputeMore(hasher, (int)nonFallThroughEdge.Type);
+                        queue.Enqueue(nonFallThroughEdge.Target);
+                    }
+                    
+                    // Fall through to the next block if any.
+                    if (fallThroughEdge != null)
+                    {
+                        source = fallThroughEdge.Target;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
