@@ -128,7 +128,7 @@ namespace WpfDebugger
             // at segment 0. We should fix this later.
             Executable executable = new Executable(fileName);
             ExecutableDisassembler dasm = new ExecutableDisassembler(executable);
-            dasm.Analyze(executable.EntryPoint);
+            dasm.Analyze();
 
             this.program = executable;
             //this.disassemblyList.Image = image;

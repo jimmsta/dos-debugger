@@ -31,10 +31,12 @@ namespace WpfDebugger
 
         public void SetView(Assembly assembly, Address address)
         {
-            this.DataContext = null;
-
-            this.viewModel = new ListingViewModel(assembly, address.Segment);
-            this.DataContext = viewModel;
+            if (viewModel == null || viewModel.Image != assembly.GetImage())
+            {
+                this.DataContext = null;
+                this.viewModel = new ListingViewModel(assembly, address.Segment);
+                this.DataContext = viewModel;
+            }
             GoToAddress(address.Offset);
         }
 
@@ -55,6 +57,10 @@ namespace WpfDebugger
 
             // Now scroll the actual item into view.
             lvListing.ScrollIntoView(viewModel.Rows[index]);
+
+            // TBD: The first time we scroll, it won't actually scroll to the
+            // location, even if we call UpdateLayout() again. Find out why.
+            //lvListing.UpdateLayout();
 
             // Select the item.
             lvListing.SelectedIndex = index;

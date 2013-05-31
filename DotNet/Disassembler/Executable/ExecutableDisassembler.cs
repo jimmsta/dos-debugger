@@ -64,8 +64,15 @@ namespace Disassembler
             base.GenerateProcedures();
             foreach (Procedure proc in Procedures)
             {
-                int offset = proc.EntryPoint.Segment * 16 + proc.EntryPoint.Offset;
-                proc.Name = string.Format("sub_{0:X5}", offset);
+                if (proc.EntryPoint == executable.EntryPoint)
+                {
+                    proc.Name = "start";
+                }
+                else
+                {
+                    int offset = proc.EntryPoint.Segment * 16 + proc.EntryPoint.Offset;
+                    proc.Name = string.Format("sub_{0:X5}", offset);
+                }
             }
         }
 
@@ -473,7 +480,7 @@ namespace Disassembler
 
         public override void Analyze()
         {
-            base.Analyze(executable.Image.EntryPoint);
+            base.Analyze(executable.Image.EntryPoint, XRefType.FarCall);
         }
 
 #if false

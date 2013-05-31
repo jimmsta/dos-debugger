@@ -230,7 +230,7 @@ namespace Disassembler
 
                     Address entryPoint = new Address(
                         symbol.BaseSegment.Id, (int)symbol.Offset);
-                    GenerateBasicBlocks(entryPoint);
+                    GenerateBasicBlocks(entryPoint, XRefType.UserSpecified);
                 }
             }
 

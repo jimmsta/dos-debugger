@@ -62,9 +62,9 @@ namespace Disassembler
         /// This location is relative to the beginning of the image.</param>
         /// <param name="entryType">Type of entry, should usually be JMP or
         /// CALL.</param>
-        public virtual void Analyze(Address entryPoint)
+        public virtual void Analyze(Address entryPoint, XRefType entryType)
         {
-            GenerateBasicBlocks(entryPoint);
+            GenerateBasicBlocks(entryPoint, entryType);
             GenerateControlFlowGraph();
             GenerateProcedures();
             AddBasicBlocksToProcedures();
@@ -74,7 +74,7 @@ namespace Disassembler
         /// Analyzes code starting from the given location, and create basic
         /// blocks iteratively.
         /// </summary>
-        public void GenerateBasicBlocks(Address entryPoint)
+        public void GenerateBasicBlocks(Address entryPoint, XRefType entryType)
         {
             Address address = entryPoint;
 
@@ -94,7 +94,7 @@ namespace Disassembler
             // Create a a dummy xref entry using the user-supplied starting
             // address.
             xrefQueue.Enqueue(new XRef(
-                type: XRefType.None,
+                type: entryType,
                 source: Address.Invalid,
                 target: entryPoint
             ));
