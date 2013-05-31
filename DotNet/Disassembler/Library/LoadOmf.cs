@@ -48,13 +48,33 @@ namespace Disassembler
             return library;
         }
 
+        public static ObjectLibrary LoadObject(string fileName)
+        {
+            if (fileName == null)
+                throw new ArgumentNullException("fileName");
+
+            using (Stream stream = File.OpenRead(fileName))
+            using (BinaryReader reader = new BinaryReader(stream))
+            {
+                ObjectLibrary library = new ObjectLibrary();
+
+                var context = FileFormats.Omf.OmfLoader.LoadObject(reader);
+                ObjectModule module = LoadObject(context);
+                library.Modules.Add(module);
+
+                library.AssignIdsToSegments();
+                library.FileName = fileName;
+                return library;
+            }
+        }
+
         /// <summary>
         /// Returns null if LibraryEnd record is encountered before
         /// MODEND or MODEND32 record is encountered.
         /// </summary>
         /// <param name="reader"></param>
         /// <returns></returns>
-        public static ObjectModule LoadObject(FileFormats.Omf.Records.RecordContext context)
+        private static ObjectModule LoadObject(FileFormats.Omf.Records.RecordContext context)
         {
             ObjectModule module = new ObjectModule();
 

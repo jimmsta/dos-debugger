@@ -20,6 +20,8 @@
         <BitmapImage x:Key="ProcedureAliasImage" UriSource="Resources/Method-Shortcut_641.png"/>
         <BitmapImage x:Key="ModuleImage" UriSource="Resources/Module_648.png"/>
         <BitmapImage x:Key="LibraryImage" UriSource="Resources/Library_6213.png"/>
+        <BitmapImage x:Key="SegmentImage" UriSource="Resources/Namespace_654.png"/>
+        <BitmapImage x:Key="PrivateSegmentImage" UriSource="Resources/Namespace-Private_658.png"/>
 
         <!-- Action icons -->
         <BitmapImage x:Key="OpenFileImage" UriSource="Resources/Open_6529.png"/>

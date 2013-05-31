@@ -46,8 +46,9 @@ namespace WpfDebugger
             string fileName = @"E:\Dev\Projects\DosDebugger\Test\New\NEWHELLO.EXE";
             DoOpenFile(fileName);
 #else
-            string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
+            //string fileName = @"..\..\..\..\Test\SLIBC7.LIB";
             //string fileName = @"E:\Dev\Projects\DosDebugger\Test\Q.EXE";
+            string fileName = @"..\..\..\..\Test\DEMO\DEMO1.OBJ";
             //mnuHelpTest_Click(null, null);
             DoOpenFile(fileName);
 #endif
@@ -109,6 +110,10 @@ namespace WpfDebugger
             else if (fileName.EndsWith(".lib", StringComparison.InvariantCultureIgnoreCase))
             {
                 DoOpenLibFile(fileName);
+            }
+            else if (fileName.EndsWith(".obj", StringComparison.InvariantCultureIgnoreCase))
+            {
+                DoOpenObjFile(fileName);
             }
             else
             {
@@ -175,6 +180,21 @@ namespace WpfDebugger
 
             this.disassemblyList.SetView(library, symbol.BaseSegment);
 #endif
+        }
+
+        private void DoOpenObjFile(string fileName)
+        {
+            ObjectLibrary library = OmfLoader.LoadObject(fileName);
+            library.ResolveAllSymbols();
+
+            LibraryDisassembler dasm = new LibraryDisassembler(library);
+            dasm.Analyze();
+
+            this.program = library;
+            this.procedureList.Program = program;
+            this.errorList.Program = program;
+            this.segmentList.Program = program;
+            this.libraryBrowser.Library = library;
         }
 
         private void mnuHelpTest_Click(object sender, RoutedEventArgs e)
@@ -351,7 +371,12 @@ namespace WpfDebugger
         private void FileOpenCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "All supported files|*.exe;*.lib|Executable file|*.exe|Library file|*.lib";
+            dlg.Filter =
+                "All supported files|*.exe;*.lib;*.obj" +
+                "|Executable files|*.exe" +
+                "|Library files|*.lib" +
+                "|Object files|*.obj";
+
             dlg.Title = "Select File To Analyze";
 
             if (dlg.ShowDialog(this) == true)
